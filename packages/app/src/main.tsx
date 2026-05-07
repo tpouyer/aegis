@@ -36,6 +36,12 @@ declare module '@tanstack/react-router' {
 const rootElement = document.getElementById('root')!
 
 async function bootstrap() {
+  // Register Service Worker for auth token injection and LLM relay
+  if ('serviceWorker' in navigator) {
+    const swUrl = `${import.meta.env.BASE_URL || '/'}sw.js`
+    navigator.serviceWorker.register(swUrl, { scope: import.meta.env.BASE_URL || '/' }).catch(() => {})
+  }
+
   await initTelemetry()
   instrumentNavigation(router)
 

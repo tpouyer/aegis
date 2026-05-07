@@ -16,6 +16,7 @@ This is a monorepo with two packages:
 - **`packages/engine/`** — Rust WASM module (compiled via `wasm-pack`)
 - **`config/`** — scope definitions (`scopes.yml`) and component-to-repo mapping (`components.yml`)
 - **`packages/app/public/.well-known/aegis-configuration`** — runtime deployment config (see Configuration section)
+- **`workers/github-oauth-proxy/`** — Cloudflare Worker for OAuth token exchange (GitHub + Google client_secret injection)
 
 ## Build Commands
 
@@ -83,7 +84,15 @@ Three user classes with progressive auth (acquired lazily on first feature use):
 
 Content visibility is tiered (`public` / `github` / `redhat-sso`) and filtered by the WASM engine at resolution time. Build pipeline generates layered manifests (`manifest-public.json`, `manifest-github.json`, `manifest-internal.json`).
 
-OAuth connect buttons on the landing page and settings page are fully wired to the PKCE initiation functions. The `/auth/callback` route handles code exchange for all four providers. Provider configs are centralized in `src/lib/auth/config.ts` using `VITE_*` environment variables with sensible defaults. The Service Worker checks token expiry before injection (with 60s buffer), and API clients (Jira, GitHub) detect 401 responses and clear stale tokens to trigger re-auth UI. On app startup, `authManager.clearExpiredTokens()` proactively cleans expired metadata.
+OAuth connect buttons on the landing page and settings page are wired to the initiation functions. GitHub uses standard Authorization Code flow (no PKCE — GitHub OAuth Apps don't support it). Atlassian, Google, and Red Hat SSO use PKCE with S256. The `/auth/callback` route handles code exchange for all four providers. Provider configs are centralized in `src/lib/auth/config.ts`, reading from `.well-known/aegis-configuration` with `VITE_*` env var fallbacks.
+
+OAuth state and PKCE verifiers are stored in `localStorage` (not `sessionStorage`) to survive the GitHub Pages 404.html SPA redirect. The callback URL includes `import.meta.env.BASE_URL` to work on subdirectory deployments.
+
+GitHub and Google token exchanges require a `client_secret` which browsers can't hold securely. A **Cloudflare Worker** (`workers/github-oauth-proxy/`) proxies both exchanges, injecting the secrets from Cloudflare Worker environment variables. The worker URL is configured via `auth.githubTokenProxyUrl` in `.well-known/aegis-configuration`.
+
+The Service Worker checks token expiry before injection (with 60s buffer), and API clients (Jira, GitHub) detect 401 responses and clear stale tokens to trigger re-auth UI. On app startup, `authManager.clearExpiredTokens()` proactively cleans expired metadata.
+
+**Known limitation**: OAuth tokens live in Service Worker memory and are lost on page reload. Users must re-authenticate after a full page refresh. API key-based providers (OpenAI, Anthropic) are not affected since their keys persist in the SW via `sendTokenToSW()`.
 
 ### Deployment Configuration
 
@@ -105,7 +114,8 @@ public/.well-known/aegis-configuration
     "atlassianClientId": "your-atlassian-app-id",
     "rhSsoIssuerUrl": "https://sso.redhat.com/auth/realms/redhat-external",
     "rhSsoClientId": "your-rhsso-client-id",
-    "googleClientId": "your-google-client-id"
+    "googleClientId": "your-google-client-id",
+    "githubTokenProxyUrl": "https://your-proxy.workers.dev"
   }
 }
 ```
@@ -122,7 +132,7 @@ The file is fetched asynchronously on app startup (`loadWellKnownConfig()` in `s
 
 All providers implement a common `LLMProvider` interface with `AsyncIterable<ChatChunk>` streaming. Five providers: Vertex AI (Claude), Anthropic direct, OpenAI, Ollama, and custom endpoints.
 
-API keys are stored in the Service Worker's memory (not page JS). Provider `fetch()` calls route through `/_aegis/llm/{provider}/...` — the SW rewrites URLs and injects auth headers. When a provider lacks tool use support, org context is inlined in the system prompt and tool-dependent features degrade gracefully.
+API keys are stored in the Service Worker's memory (not page JS). Provider `fetch()` calls route through `{BASE_URL}_aegis/llm/{provider}/...` — the SW rewrites URLs and injects auth headers. The relay URL includes `import.meta.env.BASE_URL` to work on subdirectory deployments (e.g., `/aegis/_aegis/llm/openai/...`). When a provider lacks tool use support, org context is inlined in the system prompt and tool-dependent features degrade gracefully.
 
 All five providers pass `AbortSignal` to `fetch()` for stream cancellation (Escape key or Stop button). Chat errors are displayed as distinct UI banners (not inline markdown) with a Retry button. Provider switching mid-session uses the store's `switchProvider` action to preserve chat history.
 
@@ -214,7 +224,7 @@ Three GitHub Actions workflows in `.github/workflows/`:
 The threat model (`docs/security/threat-model.md`) documents 12 attack vectors analyzed via STRIDE. Three rounds of security audit (`docs/security/audit-{1,2,3}/`) resolved all critical and high-severity issues:
 
 - **LLM relay hardening**: Custom and Vertex AI relay endpoints restricted to configured/validated URLs only
-- **XSS prevention**: SafeLink component filters `javascript:`/`data:` URIs in all ReactMarkdown rendering; CSP meta tag restricts script sources
+- **XSS prevention**: SafeLink component filters `javascript:`/`data:` URIs in all ReactMarkdown rendering; CSP meta tag restricts script sources (injected only in production builds via Vite plugin; dev mode has no CSP to allow HMR)
 - **Prompt injection defense**: User-controlled content in LLM system prompts wrapped in `<user_content>` boundary tags
 - **API security**: Error messages sanitized (no response body leakage); URL path parameters encoded
 - **Token management**: SW checks token expiry before injection; 401 responses trigger token cleanup; expired metadata evicted on startup

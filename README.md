@@ -105,6 +105,7 @@ aegis/
 │   └── engine/               # Rust WASM module
 │       └── src/              # Hierarchy resolution, config parsing, MCP protocol
 ├── config/                   # Scope definitions, component-to-repo mapping
+├── workers/                  # Cloudflare Worker for OAuth token exchange proxy
 ├── .github/workflows/        # CI, Publish (GitHub Pages), Release workflows
 ├── docs/                     # Design doc, user stories, API reference, threat model, security audits
 ├── arch/                     # Architecture Decision Records (ADRs)

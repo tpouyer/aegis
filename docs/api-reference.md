@@ -216,7 +216,7 @@ const authManager: AuthManager;
 
 ### Config (`config.ts`)
 ```typescript
-function getGitHubConfig(): GitHubOAuthConfig;
+function getGitHubConfig(): GitHubOAuthConfig;   // reads from .well-known > VITE_* > defaults
 function getAtlassianConfig(): AtlassianOAuthConfig;
 function getRedHatConfig(): RedHatSSOConfig;
 function getGoogleConfig(): GoogleOAuthConfig;
@@ -224,7 +224,7 @@ function getGoogleConfig(): GoogleOAuthConfig;
 Resolution: `.well-known/aegis-configuration` > `VITE_*` env vars > defaults.
 
 ### OAuth Flows
-Each provider has `initiate*Auth(config)` (redirects to provider) and `handle*Callback(params, config): Promise<TokenSet>` (exchanges code). All use PKCE with S256. State/verifier stored in `sessionStorage`, cleared after callback.
+Each provider has `initiate*Auth(config)` (redirects to provider) and `handle*Callback(params, config): Promise<TokenSet>` (exchanges code). GitHub uses standard Authorization Code flow (no PKCE). Atlassian, Google, and Red Hat SSO use PKCE with S256. State and PKCE verifiers stored in `localStorage` (survives SPA redirect), cleaned up after callback. GitHub and Google token exchanges route through a Cloudflare Worker proxy that injects `client_secret`.
 
 ### SW Bridge (`sw-bridge.ts`)
 ```typescript
@@ -504,7 +504,7 @@ sm: 0.25rem, md: 0.5rem, lg: 0.75rem, xl: 1rem
 - `*.atlassian.net/rest/api` → inject Atlassian token
 - `api.github.com` → inject GitHub token
 - `*-aiplatform.googleapis.com` → inject Google token (URL validated against regex)
-- `/_aegis/llm/{provider}/...` → LLM relay
+- `*/_aegis/llm/{provider}/...` → LLM relay (matches any base path prefix)
 
 **LLM relay URL construction**:
 - `anthropic` → `https://api.anthropic.com/{path}`
