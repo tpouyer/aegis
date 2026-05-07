@@ -109,29 +109,27 @@ export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) 
             </CardContent>
 
             {/* Action buttons */}
-            <CardFooter className="flex gap-2 border-t border-border px-3 py-2">
+            <CardFooter className="flex items-center justify-center gap-1 border-t border-border px-3 py-1.5">
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-11 flex-1 gap-1 text-xs md:h-7"
+                className="h-8 w-8 p-0"
                 asChild
                 onClick={(e) => e.stopPropagation()}
               >
-                <Link to="/issue/$issueKey/chat" params={{ issueKey: key }}>
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  AI Chat
+                <Link to="/issue/$issueKey/chat" params={{ issueKey: key }} title="AI Chat">
+                  <MessageSquare className="h-4 w-4" />
                 </Link>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-11 flex-1 gap-1 text-xs md:h-7"
+                className="h-8 w-8 p-0"
                 asChild
                 onClick={(e) => e.stopPropagation()}
               >
-                <Link to="/issue/$issueKey/ide" params={{ issueKey: key }}>
-                  <Code2 className="h-3.5 w-3.5" />
-                  Open IDE
+                <Link to="/issue/$issueKey/ide" params={{ issueKey: key }} title="Open IDE">
+                  <Code2 className="h-4 w-4" />
                 </Link>
               </Button>
             </CardFooter>

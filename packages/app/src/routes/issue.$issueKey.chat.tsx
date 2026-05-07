@@ -8,6 +8,7 @@ import { Loading } from '@/components/shared/Loading'
 import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
 import { useIssue } from '@/lib/jira/queries'
 import { authManager } from '@/lib/auth/manager'
+import { useRecentStore } from '@/stores/recent'
 import type { JiraIssue } from '@/lib/jira/types'
 
 export const Route = createFileRoute('/issue/$issueKey/chat')({
@@ -180,6 +181,12 @@ function ChatPage() {
   const issueDescription = issue?.fields.description
     ? extractText(issue.fields.description)
     : undefined
+
+  // Record visit for recent issues on landing page
+  const recordVisit = useRecentStore((s) => s.recordVisit)
+  useEffect(() => {
+    recordVisit(issueKey, issueSummary, 'chat')
+  }, [issueKey, issueSummary, recordVisit])
 
   return (
     <div className="flex h-full">

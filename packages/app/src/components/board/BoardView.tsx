@@ -17,7 +17,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 import { AlertTriangle, RefreshCw, LayoutDashboard } from 'lucide-react';
-import { Loading } from '@/components/shared/Loading';
+import { BoardSkeleton } from './BoardSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Button } from '@/components/ui/button';
 import { useBoard, useIssues, useTransitionMutation } from '@/lib/jira/queries';
@@ -302,7 +302,7 @@ export function BoardView({ boardId }: BoardViewProps) {
   // -----------------------------------------------------------------------
 
   if (boardLoading || issuesLoading) {
-    return <Loading className="h-full" message="Loading board..." />;
+    return <BoardSkeleton />;
   }
 
   if (boardError || issuesError) {

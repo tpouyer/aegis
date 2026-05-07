@@ -120,9 +120,8 @@ describe('SettingsPage', () => {
 
   it('renders all tab triggers', () => {
     renderSettings()
-    expect(screen.getByRole('tab', { name: /connections/i })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: /llm/i })).toBeInTheDocument()
-    expect(screen.getByRole('tab', { name: /appearance/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /integrations/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /preferences/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /about/i })).toBeInTheDocument()
   })
 
@@ -196,11 +195,10 @@ describe('SettingsPage', () => {
   // -------------------------------------------------------------------------
 
   describe('LLM Provider', () => {
-    it('renders the LLM provider section when tab is clicked', () => {
+    it('renders the LLM provider section in the integrations tab', () => {
       renderSettings()
 
-      activateTab(/^llm$/i)
-
+      // Integrations is the default tab, so LLM Provider should be visible
       expect(screen.getByText('LLM Provider')).toBeInTheDocument()
       expect(
         screen.getByText('Configure the AI model used for chat assistance.'),
@@ -210,8 +208,6 @@ describe('SettingsPage', () => {
     it('shows empty state when no LLM provider is registered', () => {
       mockGetDefaultProvider.mockReturnValue(undefined)
       renderSettings()
-
-      activateTab(/^llm$/i)
 
       expect(screen.getByText(/no ai provider configured/i)).toBeInTheDocument()
     })
@@ -228,8 +224,6 @@ describe('SettingsPage', () => {
 
       renderSettings()
 
-      activateTab(/^llm$/i)
-
       expect(screen.getByText('Anthropic')).toBeInTheDocument()
       expect(screen.getByText('Tool Use')).toBeInTheDocument()
       expect(screen.getByText('Streaming')).toBeInTheDocument()
@@ -241,10 +235,10 @@ describe('SettingsPage', () => {
   // -------------------------------------------------------------------------
 
   describe('Theme Toggle', () => {
-    it('renders the theme toggle in the appearance tab', () => {
+    it('renders the theme toggle in the preferences tab', () => {
       renderSettings()
 
-      activateTab(/appearance/i)
+      activateTab(/preferences/i)
 
       expect(screen.getByText('Theme')).toBeInTheDocument()
       expect(screen.getByLabelText('Toggle theme')).toBeInTheDocument()
@@ -253,7 +247,7 @@ describe('SettingsPage', () => {
     it('toggles between light and dark mode', () => {
       renderSettings()
 
-      activateTab(/appearance/i)
+      activateTab(/preferences/i)
 
       const toggleButton = screen.getByLabelText('Toggle theme')
 

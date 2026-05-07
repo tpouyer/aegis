@@ -8,6 +8,10 @@ import {
   Github,
   KeyRound,
   ArrowRight,
+  ChevronDown,
+  ChevronRight,
+  Settings,
+  Cpu,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,6 +23,8 @@ import { AuthLevel } from '@/lib/auth/types'
 import { initiateGitHubAuth } from '@/lib/auth/github'
 import { initiateRedHatAuth } from '@/lib/auth/redhat-sso'
 import { getGitHubConfig, getRedHatConfig } from '@/lib/auth/config'
+import { useRecentStore } from '@/stores/recent'
+import type { RecentIssue } from '@/stores/recent'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -66,6 +72,10 @@ function authLevelLabel(level: AuthLevel): string {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Hero section (used for unauthenticated users at the top)
+// ---------------------------------------------------------------------------
+
 function HeroSection() {
   return (
     <div className="text-center">
@@ -84,6 +94,10 @@ function HeroSection() {
     </div>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Feature cards (collapsible about section)
+// ---------------------------------------------------------------------------
 
 function FeatureCards() {
   return (
@@ -108,7 +122,42 @@ function FeatureCards() {
   )
 }
 
-function QuickStartSection() {
+// ---------------------------------------------------------------------------
+// About Aegis — collapsible wrapper around feature cards
+// ---------------------------------------------------------------------------
+
+function AboutSection({ defaultExpanded }: { defaultExpanded: boolean }) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
+
+  return (
+    <div>
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 py-2 text-left text-sm font-medium text-muted-foreground hover:text-foreground"
+        onClick={() => setExpanded((prev) => !prev)}
+        aria-expanded={expanded}
+      >
+        {expanded ? (
+          <ChevronDown className="h-4 w-4" />
+        ) : (
+          <ChevronRight className="h-4 w-4" />
+        )}
+        About Aegis
+      </button>
+      {expanded && (
+        <div className="mt-2">
+          <FeatureCards />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Auth CTA for unauthenticated users
+// ---------------------------------------------------------------------------
+
+function AuthCTA() {
   const handleConnectGitHub = useCallback(() => {
     initiateGitHubAuth(getGitHubConfig())
   }, [])
@@ -165,45 +214,166 @@ function QuickStartSection() {
   )
 }
 
-function AuthStatusSection() {
-  const authState = useAuthState()
+// ---------------------------------------------------------------------------
+// Auth status badges (shown inline with greeting for authenticated users)
+// ---------------------------------------------------------------------------
 
-  if (!authState.isAuthenticated) return null
-
+function AuthBadges({ authState }: { authState: AuthState }) {
   const connectedProviders = (
     Object.keys(authState.tokens) as Array<keyof typeof authState.tokens>
   ).filter((p) => authManager.isConnected(p))
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Welcome back</CardTitle>
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Badge>{authLevelLabel(authState.level)}</Badge>
+      {connectedProviders.map((provider) => (
+        <Badge key={provider} variant="secondary">
+          {provider}
+        </Badge>
+      ))}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Recent issues grid
+// ---------------------------------------------------------------------------
+
+function RecentIssueCard({ issue }: { issue: RecentIssue }) {
+  const linkTo = issue.lastView === 'ide'
+    ? '/issue/$issueKey/ide'
+    : '/issue/$issueKey/chat'
+  const viewLabel = issue.lastView === 'ide' ? 'IDE' : 'Chat'
+  const ViewIcon = issue.lastView === 'ide' ? Code2 : MessageSquare
+
+  return (
+    <Card className="flex flex-col justify-between">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold">{issue.key}</CardTitle>
+        <CardDescription className="line-clamp-2 text-xs">
+          {issue.summary}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Badge>{authLevelLabel(authState.level)}</Badge>
-          {authState.user?.displayName && (
-            <span className="text-sm text-foreground">
-              {authState.user.displayName}
-            </span>
-          )}
-        </div>
-        {connectedProviders.length > 0 && (
-          <>
-            <Separator />
-            <div className="flex flex-wrap gap-1.5">
-              {connectedProviders.map((provider) => (
-                <Badge key={provider} variant="secondary">
-                  {provider}
-                </Badge>
-              ))}
-            </div>
-          </>
-        )}
+      <CardContent className="pt-0">
+        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
+          <Link to={linkTo} params={{ issueKey: issue.key }}>
+            <ViewIcon className="mr-1 h-3.5 w-3.5" />
+            {viewLabel}
+            <ArrowRight className="ml-1 h-3 w-3" />
+          </Link>
+        </Button>
       </CardContent>
     </Card>
   )
 }
+
+function RecentIssuesSection() {
+  const issues = useRecentStore((s) => s.issues)
+
+  if (issues.length === 0) return null
+
+  return (
+    <div>
+      <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+        Recent Issues
+      </h2>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {issues.map((issue) => (
+          <RecentIssueCard key={issue.key} issue={issue} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Quick actions
+// ---------------------------------------------------------------------------
+
+function QuickActions() {
+  return (
+    <div>
+      <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+        Quick Actions
+      </h2>
+      <div className="flex flex-wrap gap-3">
+        <Button variant="outline" asChild>
+          <Link to="/board/$boardId" params={{ boardId: '1' }}>
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            Open Board
+          </Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to="/settings" search={{ tab: 'connections' }}>
+            <Cpu className="mr-2 h-4 w-4" />
+            Configure AI
+          </Link>
+        </Button>
+        <Button variant="outline" asChild>
+          <Link to="/settings">
+            <Settings className="mr-2 h-4 w-4" />
+            Settings
+          </Link>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Authenticated landing
+// ---------------------------------------------------------------------------
+
+function AuthenticatedLanding({ authState }: { authState: AuthState }) {
+  const recentIssues = useRecentStore((s) => s.issues)
+  const hasRecent = recentIssues.length > 0
+
+  return (
+    <div className="space-y-8">
+      {/* Greeting + auth badges */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Welcome back{authState.user?.displayName ? `, ${authState.user.displayName}` : ''}
+        </h1>
+        <AuthBadges authState={authState} />
+      </div>
+
+      {/* Recent issues */}
+      <RecentIssuesSection />
+
+      {/* Quick actions */}
+      <QuickActions />
+
+      <Separator />
+
+      {/* About Aegis — collapsed for returning users (who have recent issues) */}
+      <AboutSection defaultExpanded={!hasRecent} />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Unauthenticated landing
+// ---------------------------------------------------------------------------
+
+function UnauthenticatedLanding() {
+  return (
+    <div className="space-y-8">
+      <HeroSection />
+
+      <AuthCTA />
+
+      <Separator />
+
+      {/* About Aegis — expanded for first visit */}
+      <AboutSection defaultExpanded={true} />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Home page
+// ---------------------------------------------------------------------------
 
 function HomePage() {
   const authState = useAuthState()
@@ -212,15 +382,11 @@ function HomePage() {
 
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <div className="space-y-8">
-        <HeroSection />
-
-        <FeatureCards />
-
-        <Separator />
-
-        {authState.isAuthenticated ? <AuthStatusSection /> : <QuickStartSection />}
-      </div>
+      {authState.isAuthenticated ? (
+        <AuthenticatedLanding authState={authState} />
+      ) : (
+        <UnauthenticatedLanding />
+      )}
     </div>
   )
 }

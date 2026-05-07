@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { authManager } from '@/lib/auth/manager'
 import { providerRegistry } from '@/lib/llm/provider-registry'
@@ -419,28 +420,22 @@ function SettingsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="connections" className="w-full">
+      <Tabs defaultValue="integrations" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="connections">Connections</TabsTrigger>
-          <TabsTrigger value="llm">LLM</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
-          <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="about">About</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="connections">
+        <TabsContent value="integrations" className="space-y-6">
           <AuthConnectionsSection />
-        </TabsContent>
-
-        <TabsContent value="llm">
+          <Separator />
           <LLMProviderSection />
         </TabsContent>
 
-        <TabsContent value="appearance">
+        <TabsContent value="preferences" className="space-y-6">
           <AppearanceSection />
-        </TabsContent>
-
-        <TabsContent value="telemetry">
+          <Separator />
           <TelemetrySection />
         </TabsContent>
 

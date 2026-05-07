@@ -5,6 +5,7 @@ import { IDELayout } from '@/components/ide/IDELayout'
 import { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
 import { githubClient } from '@/lib/github/client'
 import { useIDEStore } from '@/stores/ide'
+import { useRecentStore } from '@/stores/recent'
 import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
 import type { TreeEntry } from '@/lib/github/types'
 import { AlertTriangle } from 'lucide-react'
@@ -37,6 +38,12 @@ function IdePage() {
   const setActiveRepo = useIDEStore((s) => s.setActiveRepo)
 
   useEffect(() => { document.title = `${issueKey} IDE — Aegis` }, [issueKey])
+
+  // Record visit for recent issues on landing page
+  const recordVisit = useRecentStore((s) => s.recordVisit)
+  useEffect(() => {
+    recordVisit(issueKey, 'IDE Session', 'ide')
+  }, [issueKey, recordVisit])
 
   // Activate IDE-scope keyboard shortcut handling
   useShortcuts('ide')

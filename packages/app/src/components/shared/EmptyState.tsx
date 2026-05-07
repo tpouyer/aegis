@@ -76,7 +76,7 @@ export function EmptyState({
   return (
     <Card
       className={cn(
-        'mx-auto max-w-md border-dashed',
+        'mx-auto max-w-md bg-gradient-to-b from-muted/50 to-transparent',
         className,
       )}
       role="status"
@@ -84,7 +84,7 @@ export function EmptyState({
     >
       <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
         <Icon
-          className={cn('h-12 w-12', iconColor)}
+          className={cn('h-10 w-10', iconColor)}
           aria-hidden="true"
         />
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { createElement } from 'react'
 
 // ---------------------------------------------------------------------------
@@ -44,6 +44,14 @@ vi.mock('@/lib/auth/manager', () => ({
   },
 }))
 
+// Mock the recent store
+const mockRecentIssues = vi.fn().mockReturnValue([])
+
+vi.mock('@/stores/recent', () => ({
+  useRecentStore: (selector: (s: { issues: unknown[] }) => unknown) =>
+    selector({ issues: mockRecentIssues() }),
+}))
+
 // Import the module to capture the component
 await import('../index')
 
@@ -61,6 +69,7 @@ describe('Landing Page', () => {
       isAuthenticated: false,
     })
     mockIsConnected.mockReturnValue(false)
+    mockRecentIssues.mockReturnValue([])
   })
 
   afterEach(() => {
@@ -73,10 +82,10 @@ describe('Landing Page', () => {
   }
 
   // -------------------------------------------------------------------------
-  // Hero section
+  // Unauthenticated — Hero section
   // -------------------------------------------------------------------------
 
-  describe('Hero Section', () => {
+  describe('Hero Section (unauthenticated)', () => {
     it('renders "Aegis" title', () => {
       renderLanding()
       expect(screen.getByText('Aegis')).toBeInTheDocument()
@@ -98,13 +107,14 @@ describe('Landing Page', () => {
   })
 
   // -------------------------------------------------------------------------
-  // Feature cards
+  // Feature cards (About section)
   // -------------------------------------------------------------------------
 
   describe('Feature Cards', () => {
-    it('renders three feature cards', () => {
+    it('renders three feature cards when About section is expanded', () => {
       renderLanding()
 
+      // For unauthenticated users, About section is expanded by default
       expect(screen.getByText('Kanban Board')).toBeInTheDocument()
       expect(screen.getByText('AI Chat')).toBeInTheDocument()
       expect(screen.getByText('Web IDE')).toBeInTheDocument()
@@ -123,10 +133,25 @@ describe('Landing Page', () => {
         screen.getByText('Browser-based editing with branch management'),
       ).toBeInTheDocument()
     })
+
+    it('can toggle About section', () => {
+      renderLanding()
+
+      const aboutButton = screen.getByText('About Aegis')
+      expect(screen.getByText('Kanban Board')).toBeInTheDocument()
+
+      // Collapse
+      fireEvent.click(aboutButton)
+      expect(screen.queryByText('Kanban Board')).not.toBeInTheDocument()
+
+      // Expand
+      fireEvent.click(aboutButton)
+      expect(screen.getByText('Kanban Board')).toBeInTheDocument()
+    })
   })
 
   // -------------------------------------------------------------------------
-  // Quick start section
+  // Quick start section (unauthenticated)
   // -------------------------------------------------------------------------
 
   describe('Quick Start Section', () => {
@@ -176,9 +201,9 @@ describe('Landing Page', () => {
 
       renderLanding()
 
-      expect(screen.getByText('Welcome back')).toBeInTheDocument()
+      expect(screen.getByText(/Welcome back/)).toBeInTheDocument()
       expect(screen.getByText('Contributor')).toBeInTheDocument()
-      expect(screen.getByText('Test User')).toBeInTheDocument()
+      expect(screen.getByText(/Test User/)).toBeInTheDocument()
     })
 
     it('does not show quick start when authenticated', () => {
@@ -198,6 +223,134 @@ describe('Landing Page', () => {
       renderLanding()
 
       expect(screen.queryByText('Get Started')).not.toBeInTheDocument()
+    })
+
+    it('shows quick actions when authenticated', () => {
+      mockGetState.mockReturnValue({
+        level: 'github',
+        user: null,
+        tokens: {
+          github: {
+            accessToken: 'test',
+            expiresAt: Date.now() + 3600_000,
+            provider: 'github',
+          },
+        },
+        isAuthenticated: true,
+      })
+
+      renderLanding()
+
+      expect(screen.getByText('Open Board')).toBeInTheDocument()
+      expect(screen.getByText('Configure AI')).toBeInTheDocument()
+      expect(screen.getByText('Settings')).toBeInTheDocument()
+    })
+  })
+
+  // -------------------------------------------------------------------------
+  // Recent issues
+  // -------------------------------------------------------------------------
+
+  describe('Recent Issues', () => {
+    it('shows recent issues grid when issues exist', () => {
+      mockGetState.mockReturnValue({
+        level: 'github',
+        user: { displayName: 'Dev', authLevel: 'github', connectedProviders: ['github'] },
+        tokens: { github: { accessToken: 'x', expiresAt: Date.now() + 3600_000, provider: 'github' } },
+        isAuthenticated: true,
+      })
+      mockRecentIssues.mockReturnValue([
+        { key: 'PROJ-123', summary: 'Fix login bug', lastVisited: Date.now(), lastView: 'chat' },
+        { key: 'PROJ-456', summary: 'Add dark mode', lastVisited: Date.now() - 1000, lastView: 'ide' },
+      ])
+
+      renderLanding()
+
+      expect(screen.getByText('Recent Issues')).toBeInTheDocument()
+      expect(screen.getByText('PROJ-123')).toBeInTheDocument()
+      expect(screen.getByText('Fix login bug')).toBeInTheDocument()
+      expect(screen.getByText('PROJ-456')).toBeInTheDocument()
+      expect(screen.getByText('Add dark mode')).toBeInTheDocument()
+    })
+
+    it('does not show recent issues section when empty', () => {
+      mockGetState.mockReturnValue({
+        level: 'github',
+        user: null,
+        tokens: { github: { accessToken: 'x', expiresAt: Date.now() + 3600_000, provider: 'github' } },
+        isAuthenticated: true,
+      })
+      mockRecentIssues.mockReturnValue([])
+
+      renderLanding()
+
+      expect(screen.queryByText('Recent Issues')).not.toBeInTheDocument()
+    })
+
+    it('shows Chat action for chat-viewed issues', () => {
+      mockGetState.mockReturnValue({
+        level: 'github',
+        user: null,
+        tokens: { github: { accessToken: 'x', expiresAt: Date.now() + 3600_000, provider: 'github' } },
+        isAuthenticated: true,
+      })
+      mockRecentIssues.mockReturnValue([
+        { key: 'PROJ-1', summary: 'Test', lastVisited: Date.now(), lastView: 'chat' },
+      ])
+
+      renderLanding()
+
+      expect(screen.getByText('Chat')).toBeInTheDocument()
+    })
+
+    it('shows IDE action for ide-viewed issues', () => {
+      mockGetState.mockReturnValue({
+        level: 'github',
+        user: null,
+        tokens: { github: { accessToken: 'x', expiresAt: Date.now() + 3600_000, provider: 'github' } },
+        isAuthenticated: true,
+      })
+      mockRecentIssues.mockReturnValue([
+        { key: 'PROJ-2', summary: 'Test', lastVisited: Date.now(), lastView: 'ide' },
+      ])
+
+      renderLanding()
+
+      expect(screen.getByText('IDE')).toBeInTheDocument()
+    })
+
+    it('collapses About section by default when recent issues exist', () => {
+      mockGetState.mockReturnValue({
+        level: 'github',
+        user: null,
+        tokens: { github: { accessToken: 'x', expiresAt: Date.now() + 3600_000, provider: 'github' } },
+        isAuthenticated: true,
+      })
+      mockRecentIssues.mockReturnValue([
+        { key: 'PROJ-1', summary: 'Test', lastVisited: Date.now(), lastView: 'chat' },
+      ])
+
+      renderLanding()
+
+      // About section collapsed — feature cards should NOT be visible
+      expect(screen.queryByText('Kanban Board')).not.toBeInTheDocument()
+      // The toggle button should still be there
+      expect(screen.getByText('About Aegis')).toBeInTheDocument()
+    })
+
+    it('expands About section by default when no recent issues', () => {
+      mockGetState.mockReturnValue({
+        level: 'github',
+        user: null,
+        tokens: { github: { accessToken: 'x', expiresAt: Date.now() + 3600_000, provider: 'github' } },
+        isAuthenticated: true,
+      })
+      mockRecentIssues.mockReturnValue([])
+
+      renderLanding()
+
+      // About section expanded — feature cards should be visible
+      expect(screen.getByText('Kanban Board')).toBeInTheDocument()
     })
   })
 })

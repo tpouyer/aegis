@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { createRootRoute, Outlet, useNavigate } from '@tanstack/react-router'
+import { createRootRoute, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Sidebar } from '@/components/shared/Sidebar'
 import { Header } from '@/components/shared/Header'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { Toaster } from '@/components/shared/Toaster'
 import { CommandPalette } from '@/components/shared/CommandPalette'
 import { ShortcutHelp } from '@/components/shared/ShortcutHelp'
+import { IssueContextBar } from '@/components/shared/IssueContextBar'
 import { registerDefaultCommands } from '@/lib/commands/default-commands'
 import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
 import { authManager } from '@/lib/auth/manager'
@@ -17,6 +18,11 @@ export const Route = createRootRoute({
 function RootLayout() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const navigate = useNavigate()
+
+  // Extract issue key from current route if applicable
+  const routerState = useRouterState()
+  const issueMatch = routerState.location.pathname.match(/\/issue\/([^/]+)\//)
+  const issueKey = issueMatch?.[1] ?? null
 
   // Activate global-scope keyboard shortcut handling
   useShortcuts('global')
@@ -83,6 +89,7 @@ function RootLayout() {
           Skip to main content
         </a>
         <Header />
+        {issueKey && <IssueContextBar issueKey={issueKey} />}
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
           <main id="main-content" className="flex-1 overflow-auto bg-background">

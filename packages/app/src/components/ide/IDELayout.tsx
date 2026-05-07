@@ -1,10 +1,9 @@
 /**
- * IDELayout — three-panel layout for the browser IDE.
+ * IDELayout — two-panel layout for the browser IDE.
  *
  * Layout:
  *   - Left panel:   FileExplorer (resizable, ~250px default)
  *   - Center panel:  EditorTabs + editor area (MonacoEditor / MonacoDiffView)
- *   - Right panel:  AI chat sidebar (not yet integrated into IDE layout)
  *   - Bottom panel: SourceControl (collapsible)
  *
  * Uses CSS flexbox for the panel layout. Monaco is lazy-loaded so the
@@ -13,7 +12,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Code, MessageSquare, GitCompareArrows, FileCode, FolderOpen, Github, PanelLeft, PanelRight } from 'lucide-react'
+import { Code, GitCompareArrows, FileCode, FolderOpen, Github, PanelLeft } from 'lucide-react'
 import { FileExplorer } from './FileExplorer'
 import { EditorTabs } from './EditorTabs'
 import { MonacoEditor } from './MonacoEditor'
@@ -66,7 +65,6 @@ export function IDELayout({
   const [diffTarget, setDiffTarget] = useState<DiffTarget | null>(null)
   const [isLoadingFile, setIsLoadingFile] = useState(false)
   const [explorerVisible, setExplorerVisible] = useState(false)
-  const [aiSidebarVisible, setAiSidebarVisible] = useState(false)
 
   // Current active tab info
   const currentTab = activeTab >= 0 && activeTab < openTabs.length
@@ -195,7 +193,7 @@ export function IDELayout({
         </div>
       </div>
 
-      {/* Mobile panel toggle buttons */}
+      {/* Mobile panel toggle button */}
       <div className="flex items-center gap-1 border-b border-border bg-muted/10 px-2 py-1 lg:hidden">
         <Button
           variant={explorerVisible ? 'secondary' : 'ghost'}
@@ -206,16 +204,6 @@ export function IDELayout({
         >
           <PanelLeft className="h-3.5 w-3.5" />
           Files
-        </Button>
-        <Button
-          variant={aiSidebarVisible ? 'secondary' : 'ghost'}
-          size="sm"
-          className="h-7 gap-1 text-xs"
-          onClick={() => setAiSidebarVisible((v) => !v)}
-          aria-label="Toggle AI sidebar"
-        >
-          <PanelRight className="h-3.5 w-3.5" />
-          AI
         </Button>
       </div>
 
@@ -279,25 +267,6 @@ export function IDELayout({
                 />
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Right panel -- AI Chat placeholder */}
-        <div className={cn(
-          'w-72 shrink-0 border-l border-border bg-muted/10',
-          aiSidebarVisible ? 'block' : 'hidden',
-          'lg:block',
-        )}>
-          <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              AI Assistant
-            </span>
-          </div>
-          <div className="flex h-full items-center justify-center p-4">
-            <p className="text-center text-xs text-muted-foreground">
-              Use the AI Chat route for this issue to get coding assistance
-            </p>
           </div>
         </div>
       </div>
