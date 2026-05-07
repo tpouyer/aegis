@@ -24,7 +24,7 @@ export class GitHubClient {
 
   // ── Helpers ──────────────────────────────────────────────────────
 
-  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  private async request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
     const url = `${this.baseUrl}${path}`
     const response = await resilientFetch(url, {
       ...options,
@@ -36,8 +36,12 @@ export class GitHubClient {
     })
 
     if (!response.ok) {
-      // On 401, clear the GitHub token so the UI shows re-auth state
       if (response.status === 401) {
+        if (!isRetry && authManager.isConnected('github')) {
+          // Token exists but SW may not have it — re-sync and retry once
+          await authManager.syncAllTokensToSW()
+          return this.request<T>(path, options, true)
+        }
         authManager.disconnect('github').catch(() => {})
       }
 

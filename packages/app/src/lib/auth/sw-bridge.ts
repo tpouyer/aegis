@@ -58,14 +58,32 @@ export async function getTokenStatusFromSW(): Promise<Record<AuthProvider, boole
 }
 
 /**
+ * Get a reference to the active Service Worker. Tries `controller` first
+ * (set after the SW claims the page), then falls back to the registration's
+ * `active` worker (available once the SW finishes activation, even before
+ * it claims clients).
+ */
+async function getActiveWorker(): Promise<ServiceWorker | null> {
+  if (navigator.serviceWorker?.controller) {
+    return navigator.serviceWorker.controller
+  }
+
+  try {
+    const reg = await Promise.race([navigator.serviceWorker?.ready, new Promise<undefined>((r) => setTimeout(r, 3000))])
+    return reg?.active ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
  * Post a message to the active Service Worker and wait for a response
  * via a MessageChannel.
  */
 async function postMessageToSW(message: unknown): Promise<unknown> {
-  const sw = navigator.serviceWorker?.controller
+  const sw = await getActiveWorker()
   if (!sw) {
-    // SW not yet active — this is expected on first load before install
-    console.warn('[auth/sw-bridge] No active Service Worker controller')
+    console.warn('[auth/sw-bridge] No active Service Worker available')
     return undefined
   }
 
