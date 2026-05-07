@@ -1,8 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { AlertTriangle } from 'lucide-react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { AlertTriangle, Github } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { IDELayout } from '@/components/ide/IDELayout'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { Loading } from '@/components/shared/Loading'
+import { authManager } from '@/lib/auth/manager'
 import { githubClient } from '@/lib/github/client'
 import type { TreeEntry } from '@/lib/github/types'
 import { shortcutRegistry, useShortcuts } from '@/lib/shortcuts'
@@ -94,6 +96,9 @@ function IdePage() {
     }
   }, [])
 
+  const navigate = useNavigate()
+  const isGitHubConnected = authManager.isConnected('github')
+
   const [vfs, setVfs] = useState<VirtualFileSystem | null>(null)
   const [tree, setTree] = useState<TreeEntry[]>([])
   const [branch, setBranch] = useState('')
@@ -103,6 +108,11 @@ function IdePage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!isGitHubConnected) {
+      setIsLoading(false)
+      return
+    }
+
     let cancelled = false
 
     async function init() {
@@ -143,7 +153,24 @@ function IdePage() {
     return () => {
       cancelled = true
     }
-  }, [issueKey, setActiveRepo])
+  }, [issueKey, setActiveRepo, isGitHubConnected])
+
+  if (!isGitHubConnected) {
+    return (
+      <div className="flex h-full items-center justify-center p-8">
+        <EmptyState
+          variant="auth-required"
+          icon={Github}
+          title="Connect GitHub to use the IDE"
+          description="The web IDE needs access to your GitHub repositories. Connect your GitHub account in Settings."
+          action={{
+            label: 'Go to Settings',
+            onClick: () => navigate({ to: '/settings' }),
+          }}
+        />
+      </div>
+    )
+  }
 
   if (isLoading) {
     return <Loading className="h-full" message={`Initializing IDE for ${issueKey}...`} />
