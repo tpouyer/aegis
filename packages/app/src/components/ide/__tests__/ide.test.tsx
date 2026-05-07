@@ -343,85 +343,98 @@ describe('SourceControl', () => {
   it('disables commit button when there are no changes', async () => {
     const { SourceControl } = await import('../SourceControl')
 
-    await act(async () => {
-      render(
-        <SourceControl
-          changes={[]}
-          repoKey="org/repo"
-          onCommit={vi.fn().mockResolvedValue('sha')}
-          onCreatePR={vi.fn().mockResolvedValue('url')}
-          onFileClick={vi.fn()}
-        />,
-      )
+    const { unmount } = render(
+      <SourceControl
+        changes={[]}
+        repoKey="org/repo"
+        onCommit={vi.fn().mockResolvedValue('sha')}
+        onCreatePR={vi.fn().mockResolvedValue('url')}
+        onFileClick={vi.fn()}
+      />,
+    )
+
+    // Let Zustand store subscription settle
+    await waitFor(() => {
+      expect(screen.getByText('No changes')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('No changes')).toBeInTheDocument()
+    unmount()
   })
 
   it('disables commit button when commit message is empty', async () => {
     const { SourceControl } = await import('../SourceControl')
 
-    await act(async () => {
-      render(
-        <SourceControl
-          changes={[
-            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-          ]}
-          repoKey="org/repo"
-          onCommit={vi.fn().mockResolvedValue('sha')}
-          onCreatePR={vi.fn().mockResolvedValue('url')}
-          onFileClick={vi.fn()}
-        />,
-      )
+    const { unmount } = render(
+      <SourceControl
+        changes={[
+          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+        ]}
+        repoKey="org/repo"
+        onCommit={vi.fn().mockResolvedValue('sha')}
+        onCreatePR={vi.fn().mockResolvedValue('url')}
+        onFileClick={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      const commitBtn = screen.getByRole('button', { name: /Commit/ })
+      expect(commitBtn).toBeDisabled()
     })
 
-    const commitBtn = screen.getByRole('button', { name: /Commit/ })
-    expect(commitBtn).toBeDisabled()
+    unmount()
   })
 
   it('enables commit button when there are changes and a message', async () => {
     const { SourceControl } = await import('../SourceControl')
 
-    // Set commit message in the store
-    useIDEStore.setState({ commitMessage: 'fix: update logic' })
-
-    await act(async () => {
-      render(
-        <SourceControl
-          changes={[
-            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-          ]}
-          repoKey="org/repo"
-          onCommit={vi.fn().mockResolvedValue('sha')}
-          onCreatePR={vi.fn().mockResolvedValue('url')}
-          onFileClick={vi.fn()}
-        />,
-      )
+    // Set commit message in the store before rendering
+    act(() => {
+      useIDEStore.setState({ commitMessage: 'fix: update logic' })
     })
 
-    const commitBtn = screen.getByRole('button', { name: /Commit/ })
-    expect(commitBtn).not.toBeDisabled()
+    const { unmount } = render(
+      <SourceControl
+        changes={[
+          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+        ]}
+        repoKey="org/repo"
+        onCommit={vi.fn().mockResolvedValue('sha')}
+        onCreatePR={vi.fn().mockResolvedValue('url')}
+        onFileClick={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      const commitBtn = screen.getByRole('button', { name: /Commit/ })
+      expect(commitBtn).not.toBeDisabled()
+    })
+
+    unmount()
   })
 
   it('shows commit SHA after successful commit', async () => {
     const { SourceControl } = await import('../SourceControl')
 
-    useIDEStore.setState({ commitMessage: 'fix: update logic' })
+    act(() => {
+      useIDEStore.setState({ commitMessage: 'fix: update logic' })
+    })
 
     const onCommit = vi.fn().mockResolvedValue('abc1234def5678')
 
-    await act(async () => {
-      render(
-        <SourceControl
-          changes={[
-            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-          ]}
-          repoKey="org/repo"
-          onCommit={onCommit}
-          onCreatePR={vi.fn().mockResolvedValue('url')}
-          onFileClick={vi.fn()}
-        />,
-      )
+    const { unmount } = render(
+      <SourceControl
+        changes={[
+          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+        ]}
+        repoKey="org/repo"
+        onCommit={onCommit}
+        onCreatePR={vi.fn().mockResolvedValue('url')}
+        onFileClick={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Commit/ })).toBeInTheDocument()
     })
 
     const commitBtn = screen.getByRole('button', { name: /Commit/ })
@@ -430,27 +443,33 @@ describe('SourceControl', () => {
     await waitFor(() => {
       expect(screen.getByText('abc1234')).toBeInTheDocument()
     })
+
+    unmount()
   })
 
   it('shows error message when commit fails', async () => {
     const { SourceControl } = await import('../SourceControl')
 
-    useIDEStore.setState({ commitMessage: 'fix: update logic' })
+    act(() => {
+      useIDEStore.setState({ commitMessage: 'fix: update logic' })
+    })
 
     const onCommit = vi.fn().mockRejectedValue(new Error('Network error'))
 
-    await act(async () => {
-      render(
-        <SourceControl
-          changes={[
-            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-          ]}
-          repoKey="org/repo"
-          onCommit={onCommit}
-          onCreatePR={vi.fn().mockResolvedValue('url')}
-          onFileClick={vi.fn()}
-        />,
-      )
+    const { unmount } = render(
+      <SourceControl
+        changes={[
+          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+        ]}
+        repoKey="org/repo"
+        onCommit={onCommit}
+        onCreatePR={vi.fn().mockResolvedValue('url')}
+        onFileClick={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Commit/ })).toBeInTheDocument()
     })
 
     const commitBtn = screen.getByRole('button', { name: /Commit/ })
@@ -459,6 +478,8 @@ describe('SourceControl', () => {
     await waitFor(() => {
       expect(screen.getByText('Network error')).toBeInTheDocument()
     })
+
+    unmount()
   })
 
   it('shows PR URL after successful PR creation', async () => {
@@ -466,18 +487,20 @@ describe('SourceControl', () => {
 
     const onCreatePR = vi.fn().mockResolvedValue('https://github.com/org/repo/pull/42')
 
-    await act(async () => {
-      render(
-        <SourceControl
-          changes={[
-            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-          ]}
-          repoKey="org/repo"
-          onCommit={vi.fn().mockResolvedValue('sha')}
-          onCreatePR={onCreatePR}
-          onFileClick={vi.fn()}
-        />,
-      )
+    const { unmount } = render(
+      <SourceControl
+        changes={[
+          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+        ]}
+        repoKey="org/repo"
+        onCommit={vi.fn().mockResolvedValue('sha')}
+        onCreatePR={onCreatePR}
+        onFileClick={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Create PR/ })).toBeInTheDocument()
     })
 
     const prBtn = screen.getByRole('button', { name: /Create PR/ })
@@ -491,29 +514,33 @@ describe('SourceControl', () => {
         'https://github.com/org/repo/pull/42',
       )
     })
+
+    unmount()
   })
 
   it('displays file change status badges correctly', async () => {
     const { SourceControl } = await import('../SourceControl')
 
-    await act(async () => {
-      render(
-        <SourceControl
-          changes={[
-            { path: 'new-file.ts', status: 'added', repo: 'org/repo' },
-            { path: 'changed.ts', status: 'modified', repo: 'org/repo' },
-            { path: 'removed.ts', status: 'deleted', repo: 'org/repo' },
-          ]}
-          repoKey="org/repo"
-          onCommit={vi.fn().mockResolvedValue('sha')}
-          onCreatePR={vi.fn().mockResolvedValue('url')}
-          onFileClick={vi.fn()}
-        />,
-      )
+    const { unmount } = render(
+      <SourceControl
+        changes={[
+          { path: 'new-file.ts', status: 'added', repo: 'org/repo' },
+          { path: 'changed.ts', status: 'modified', repo: 'org/repo' },
+          { path: 'removed.ts', status: 'deleted', repo: 'org/repo' },
+        ]}
+        repoKey="org/repo"
+        onCommit={vi.fn().mockResolvedValue('sha')}
+        onCreatePR={vi.fn().mockResolvedValue('url')}
+        onFileClick={vi.fn()}
+      />,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('A')).toBeInTheDocument()
+      expect(screen.getByText('M')).toBeInTheDocument()
+      expect(screen.getByText('D')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('A')).toBeInTheDocument()
-    expect(screen.getByText('M')).toBeInTheDocument()
-    expect(screen.getByText('D')).toBeInTheDocument()
+    unmount()
   })
 })

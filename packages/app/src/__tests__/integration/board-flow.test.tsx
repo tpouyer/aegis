@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FilterBar } from '@/components/board/FilterBar';
 import { useBoardStore } from '@/stores/board';
@@ -169,19 +169,27 @@ describe('Card data correctness', () => {
 // ---------------------------------------------------------------------------
 
 describe('FilterBar integration with board store', () => {
-  it('renders the search input and filter dropdowns', () => {
-    render(<FilterBar issues={issues} />);
+  it('renders the search input and filter dropdowns', async () => {
+    const { unmount } = render(<FilterBar issues={issues} />);
 
-    expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument();
-    expect(screen.getByText('Assignee')).toBeInTheDocument();
-    expect(screen.getByText('Component')).toBeInTheDocument();
-    expect(screen.getByText('Priority')).toBeInTheDocument();
-    expect(screen.getByText('Type')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument();
+      expect(screen.getByText('Assignee')).toBeInTheDocument();
+      expect(screen.getByText('Component')).toBeInTheDocument();
+      expect(screen.getByText('Priority')).toBeInTheDocument();
+      expect(screen.getByText('Type')).toBeInTheDocument();
+    });
+
+    unmount();
   });
 
   it('text filter updates the store and can filter issues client-side', async () => {
     const user = userEvent.setup();
-    render(<FilterBar issues={issues} />);
+    const { unmount } = render(<FilterBar issues={issues} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument();
+    });
 
     const searchInput = screen.getByPlaceholderText('Search issues...');
     await user.type(searchInput, 'auth');
@@ -202,11 +210,17 @@ describe('FilterBar integration with board store', () => {
       'AEGIS-1',
       'AEGIS-3',
     ]);
+
+    unmount();
   });
 
   it('clearing the text filter resets the store value to null', async () => {
     const user = userEvent.setup();
-    render(<FilterBar issues={issues} />);
+    const { unmount } = render(<FilterBar issues={issues} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument();
+    });
 
     const searchInput = screen.getByPlaceholderText('Search issues...');
     await user.type(searchInput, 'bug');
@@ -214,11 +228,17 @@ describe('FilterBar integration with board store', () => {
 
     await user.clear(searchInput);
     expect(useBoardStore.getState().filters.text).toBeNull();
+
+    unmount();
   });
 
   it('text filter by issue key narrows to a single issue', async () => {
     const user = userEvent.setup();
-    render(<FilterBar issues={issues} />);
+    const { unmount } = render(<FilterBar issues={issues} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument();
+    });
 
     const searchInput = screen.getByPlaceholderText('Search issues...');
     await user.type(searchInput, 'AEGIS-2');
@@ -232,11 +252,17 @@ describe('FilterBar integration with board store', () => {
 
     expect(filtered).toHaveLength(1);
     expect(filtered[0].key).toBe('AEGIS-2');
+
+    unmount();
   });
 
   it('text filter with no matches returns empty result', async () => {
     const user = userEvent.setup();
-    render(<FilterBar issues={issues} />);
+    const { unmount } = render(<FilterBar issues={issues} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Search issues...')).toBeInTheDocument();
+    });
 
     const searchInput = screen.getByPlaceholderText('Search issues...');
     await user.type(searchInput, 'nonexistent-query-xyz');
@@ -249,5 +275,7 @@ describe('FilterBar integration with board store', () => {
     );
 
     expect(filtered).toHaveLength(0);
+
+    unmount();
   });
 });
