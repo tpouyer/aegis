@@ -239,26 +239,26 @@ describe('SettingsPage', () => {
       expect(screen.getByLabelText('Toggle theme')).toBeInTheDocument()
     })
 
-    it('toggles between light and dark mode', () => {
+    it('toggles between dark and light mode', () => {
       renderSettings()
 
       activateTab(/preferences/i)
 
       const toggleButton = screen.getByLabelText('Toggle theme')
 
-      // Initially light mode — button should say "Dark"
-      expect(screen.getByText('Dark')).toBeInTheDocument()
-
-      fireEvent.click(toggleButton)
-
-      // Now dark mode — button should say "Light"
+      // Default is dark mode — button should say "Light"
       expect(screen.getByText('Light')).toBeInTheDocument()
-      expect(document.documentElement.classList.contains('dark')).toBe(true)
 
       fireEvent.click(toggleButton)
 
+      // Now light mode — button should say "Dark"
       expect(screen.getByText('Dark')).toBeInTheDocument()
       expect(document.documentElement.classList.contains('dark')).toBe(false)
+
+      fireEvent.click(toggleButton)
+
+      expect(screen.getByText('Light')).toBeInTheDocument()
+      expect(document.documentElement.classList.contains('dark')).toBe(true)
     })
   })
 })

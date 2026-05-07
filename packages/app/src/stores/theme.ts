@@ -6,8 +6,8 @@ interface ThemeState {
 }
 
 function getInitialTheme(): boolean {
-  if (typeof document === 'undefined') return false
-  let isDark = false
+  if (typeof document === 'undefined') return true
+  let isDark = true
   try {
     const stored = localStorage.getItem('aegis_theme')
     if (stored) isDark = stored === 'dark'
