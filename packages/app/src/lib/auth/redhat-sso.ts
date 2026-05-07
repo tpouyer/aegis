@@ -59,8 +59,8 @@ export async function initiateRedHatAuth(config: RedHatSSOConfig): Promise<void>
   const challenge = await generateCodeChallenge(verifier)
   const state = generateState()
 
-  sessionStorage.setItem(SESSION_KEY_VERIFIER, verifier)
-  sessionStorage.setItem(SESSION_KEY_STATE, state)
+  localStorage.setItem(SESSION_KEY_VERIFIER, verifier)
+  localStorage.setItem(SESSION_KEY_STATE, state)
 
   const params = new URLSearchParams({
     client_id: config.clientId,
@@ -98,18 +98,18 @@ export async function handleRedHatCallback(params: URLSearchParams, config: RedH
     throw new Error('Red Hat SSO callback missing authorization code')
   }
 
-  const savedState = sessionStorage.getItem(SESSION_KEY_STATE)
+  const savedState = localStorage.getItem(SESSION_KEY_STATE)
   if (!state || state !== savedState) {
     throw new Error('Red Hat SSO state mismatch — possible CSRF attack')
   }
 
-  const verifier = sessionStorage.getItem(SESSION_KEY_VERIFIER)
+  const verifier = localStorage.getItem(SESSION_KEY_VERIFIER)
   if (!verifier) {
     throw new Error('Red Hat SSO PKCE verifier not found in session')
   }
 
-  sessionStorage.removeItem(SESSION_KEY_STATE)
-  sessionStorage.removeItem(SESSION_KEY_VERIFIER)
+  localStorage.removeItem(SESSION_KEY_STATE)
+  localStorage.removeItem(SESSION_KEY_VERIFIER)
 
   const oidcConfig = await discoverOIDCConfig(config.issuerUrl)
 

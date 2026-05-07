@@ -23,7 +23,7 @@ const SESSION_KEY_STATE = 'aegis_github_oauth_state'
 
 export async function initiateGitHubAuth(config: GitHubOAuthConfig): Promise<void> {
   const state = generateState()
-  sessionStorage.setItem(SESSION_KEY_STATE, state)
+  localStorage.setItem(SESSION_KEY_STATE, state)
 
   const params = new URLSearchParams({
     client_id: config.clientId,
@@ -49,12 +49,12 @@ export async function handleGitHubCallback(params: URLSearchParams, config: GitH
     throw new Error('GitHub OAuth callback missing authorization code')
   }
 
-  const savedState = sessionStorage.getItem(SESSION_KEY_STATE)
+  const savedState = localStorage.getItem(SESSION_KEY_STATE)
   if (!state || state !== savedState) {
     throw new Error('GitHub OAuth state mismatch — possible CSRF attack')
   }
 
-  sessionStorage.removeItem(SESSION_KEY_STATE)
+  localStorage.removeItem(SESSION_KEY_STATE)
 
   const proxyUrl = getWellKnownConfig().auth?.githubTokenProxyUrl
   const tokenUrl = proxyUrl || GITHUB_TOKEN_URL_DIRECT
