@@ -132,9 +132,22 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
   }, [])
 
   const handleSelect = useCallback(
-    (id: string) => {
+    async (id: string) => {
       setSelectedId(id)
       resetForm()
+
+      // Pre-populate from saved config if this provider was previously configured
+      const { useLLMConfigStore } = await import('@/stores/llm-config')
+      const saved = useLLMConfigStore.getState().providers.find((p) => p.id === id)
+      if (saved) {
+        if (saved.apiKey) setApiKey(saved.apiKey)
+        if (saved.endpoint) setEndpoint(saved.endpoint)
+        if (saved.model) setModel(saved.model)
+        if (saved.gcpProject) setGcpProject(saved.gcpProject)
+        if (saved.gcpRegion) setGcpRegion(saved.gcpRegion)
+        return
+      }
+
       const opt = PROVIDER_OPTIONS.find((p) => p.id === id)
       if (opt?.defaultEndpoint) {
         setEndpoint(opt.defaultEndpoint)
