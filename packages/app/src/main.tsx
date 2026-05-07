@@ -6,6 +6,7 @@ import { authManager } from './lib/auth/manager'
 import { CacheStore } from './lib/cache/indexeddb'
 import { initJiraClient } from './lib/jira/client'
 import { restoreProviders } from './lib/llm/restore-providers'
+import { loadWellKnownConfig } from './lib/telemetry/config'
 import { initTelemetry } from './lib/telemetry/init'
 import { instrumentNavigation } from './lib/telemetry/instruments/navigation'
 import { routeTree } from './routeTree.gen'
@@ -44,6 +45,10 @@ async function bootstrap() {
     const swUrl = `${import.meta.env.BASE_URL || '/'}sw.js`
     navigator.serviceWorker.register(swUrl, { scope: import.meta.env.BASE_URL || '/' }).catch(() => {})
   }
+
+  // Load .well-known config before Jira client init — the client reads
+  // githubTokenProxyUrl from it to route API token auth through the CORS proxy.
+  await loadWellKnownConfig()
 
   restoreProviders()
 
