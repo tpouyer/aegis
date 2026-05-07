@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronDown, Kanban, LayoutDashboard, ListChecks } from 'lucide-react'
+import { ChevronDown, Kanban, LayoutDashboard, ListChecks, Star } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,78 +21,68 @@ const INITIAL_LIMIT = 6
 
 export function BoardPicker({ boards }: BoardPickerProps) {
   const recentBoards = useBoardPrefsStore((s) => s.recentBoards)
+  const starredIds = useBoardPrefsStore((s) => s.starredBoardIds)
+  const toggleStar = useBoardPrefsStore((s) => s.toggleStar)
   const [showAll, setShowAll] = useState(false)
 
-  // Sort: recently used boards first, then alphabetical
-  const sorted = useMemo(() => {
-    const recentIds = new Map(recentBoards.map((r) => [r.id, r.lastVisited]))
-    return [...boards].sort((a, b) => {
-      const aRecent = recentIds.get(a.id) ?? 0
-      const bRecent = recentIds.get(b.id) ?? 0
-      if (aRecent !== bRecent) return bRecent - aRecent
-      return a.name.localeCompare(b.name)
-    })
-  }, [boards, recentBoards])
+  const starredSet = useMemo(() => new Set(starredIds), [starredIds])
+  const recentIdMap = useMemo(() => new Map(recentBoards.map((r) => [r.id, r.lastVisited])), [recentBoards])
 
-  const hasRecent = recentBoards.length > 0
-  const recentIds = new Set(recentBoards.map((r) => r.id))
-  const recentSorted = sorted.filter((b) => recentIds.has(b.id))
-  const otherSorted = sorted.filter((b) => !recentIds.has(b.id))
+  const starred = useMemo(() => boards.filter((b) => starredSet.has(b.id)), [boards, starredSet])
+  const recentOnly = useMemo(
+    () =>
+      boards
+        .filter((b) => !starredSet.has(b.id) && recentIdMap.has(b.id))
+        .sort((a, b) => {
+          const aTime = recentIdMap.get(a.id) ?? 0
+          const bTime = recentIdMap.get(b.id) ?? 0
+          return bTime - aTime
+        }),
+    [boards, starredSet, recentIdMap],
+  )
+  const other = useMemo(
+    () =>
+      boards
+        .filter((b) => !starredSet.has(b.id) && !recentIdMap.has(b.id))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [boards, starredSet, recentIdMap],
+  )
 
-  const displayBoards = showAll ? sorted : sorted.slice(0, INITIAL_LIMIT)
-  const hasMore = sorted.length > INITIAL_LIMIT
+  const remaining = [...recentOnly, ...other]
+  const limitedRemaining = showAll ? remaining : remaining.slice(0, INITIAL_LIMIT)
+  const hasMore = remaining.length > INITIAL_LIMIT
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <div>
         <h1 className="text-lg font-semibold text-foreground">Select a Board</h1>
-        <p className="text-sm text-muted-foreground">
-          Choose a board to view. Your selection will be remembered for next time.
-        </p>
+        <p className="text-sm text-muted-foreground">Choose a board to view. Star boards to keep them at the top.</p>
       </div>
 
-      {/* Recent boards section */}
-      {hasRecent && recentSorted.length > 0 && !showAll && (
-        <div>
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">Recent</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {recentSorted.map((board) => (
-              <BoardCard key={board.id} board={board} />
-            ))}
-          </div>
-        </div>
+      {starred.length > 0 && (
+        <BoardSection title="Starred" boards={starred} starredSet={starredSet} onToggleStar={toggleStar} />
       )}
 
-      {/* All boards (or remaining boards if recent section shown) */}
-      {showAll ? (
-        <div>
-          <h2 className="mb-2 text-sm font-medium text-muted-foreground">All Boards</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {displayBoards.map((board) => (
-              <BoardCard key={board.id} board={board} />
-            ))}
-          </div>
-        </div>
-      ) : (
-        otherSorted.length > 0 && (
-          <div>
-            <h2 className="mb-2 text-sm font-medium text-muted-foreground">{hasRecent ? 'Other Boards' : 'Boards'}</h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {(hasRecent ? otherSorted : displayBoards.filter((b) => !recentIds.has(b.id)))
-                .slice(0, INITIAL_LIMIT - recentSorted.length)
-                .map((board) => (
-                  <BoardCard key={board.id} board={board} />
-                ))}
-            </div>
-          </div>
-        )
+      {recentOnly.length > 0 && !showAll && (
+        <BoardSection title="Recent" boards={recentOnly} starredSet={starredSet} onToggleStar={toggleStar} />
+      )}
+
+      {(showAll ? remaining.length > 0 : other.length > 0) && (
+        <BoardSection
+          title={starred.length > 0 || recentOnly.length > 0 ? 'Other Boards' : 'Boards'}
+          boards={
+            showAll ? limitedRemaining : other.slice(0, Math.max(1, INITIAL_LIMIT - starred.length - recentOnly.length))
+          }
+          starredSet={starredSet}
+          onToggleStar={toggleStar}
+        />
       )}
 
       {hasMore && !showAll && (
         <div className="text-center">
           <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => setShowAll(true)}>
             <ChevronDown className="h-3.5 w-3.5" />
-            Show all {sorted.length} boards
+            Show all {boards.length} boards
           </Button>
         </div>
       )}
@@ -100,28 +90,72 @@ export function BoardPicker({ boards }: BoardPickerProps) {
   )
 }
 
-function BoardCard({ board }: { board: JiraBoard }) {
+function BoardSection({
+  title,
+  boards,
+  starredSet,
+  onToggleStar,
+}: {
+  title: string
+  boards: JiraBoard[]
+  starredSet: Set<number>
+  onToggleStar: (id: number) => void
+}) {
+  return (
+    <div>
+      <h2 className="mb-2 text-sm font-medium text-muted-foreground">{title}</h2>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {boards.map((board) => (
+          <BoardCard key={board.id} board={board} isStarred={starredSet.has(board.id)} onToggleStar={onToggleStar} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BoardCard({
+  board,
+  isStarred,
+  onToggleStar,
+}: {
+  board: JiraBoard
+  isStarred: boolean
+  onToggleStar: (id: number) => void
+}) {
   const Icon = BOARD_TYPE_ICONS[board.type] ?? LayoutDashboard
   return (
-    <Link to="/board/$boardId" params={{ boardId: String(board.id) }} className="block">
-      <Card className="transition-colors hover:border-primary/50 hover:bg-accent/50">
-        <CardContent className="flex items-start gap-3 p-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Icon className="h-4 w-4 text-primary" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-foreground">{board.name}</p>
-            <div className="mt-1 flex items-center gap-2">
-              <Badge variant="outline" className="text-[10px] capitalize">
-                {board.type}
-              </Badge>
-              {board.location?.projectKey && (
-                <span className="text-[10px] text-muted-foreground">{board.location.projectKey}</span>
-              )}
+    <div className="relative">
+      <Link to="/board/$boardId" params={{ boardId: String(board.id) }} className="block">
+        <Card className="transition-colors hover:border-primary/50 hover:bg-accent/50">
+          <CardContent className="flex items-start gap-3 p-4 pr-9">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <Icon className="h-4 w-4 text-primary" />
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{board.name}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <Badge variant="outline" className="text-[10px] capitalize">
+                  {board.type}
+                </Badge>
+                {board.location?.projectKey && (
+                  <span className="text-[10px] text-muted-foreground">{board.location.projectKey}</span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+      <button
+        type="button"
+        className="absolute right-3 top-3 rounded p-1 transition-colors hover:bg-accent"
+        onClick={(e) => {
+          e.preventDefault()
+          onToggleStar(board.id)
+        }}
+        title={isStarred ? 'Unstar board' : 'Star board'}
+      >
+        <Star className={`h-3.5 w-3.5 ${isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+      </button>
+    </div>
   )
 }

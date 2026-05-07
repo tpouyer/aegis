@@ -15,7 +15,7 @@
 
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import { useNavigate } from '@tanstack/react-router'
-import { AlertTriangle, ChevronDown, LayoutDashboard, LayoutGrid, List, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ChevronDown, LayoutDashboard, LayoutGrid, List, RefreshCw, Star } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
@@ -45,8 +45,14 @@ function BoardSwitcher({ currentBoardId }: { currentBoardId: number }) {
   const navigate = useNavigate()
   const { data: boards } = useBoards()
   const { data: currentConfig } = useBoard(currentBoardId)
+  const starredIds = useBoardPrefsStore((s) => s.starredBoardIds)
+  const toggleStar = useBoardPrefsStore((s) => s.toggleStar)
 
   const currentName = currentConfig?.name ?? `Board ${currentBoardId}`
+
+  const starredSet = useMemo(() => new Set(starredIds), [starredIds])
+  const starred = useMemo(() => boards?.filter((b) => starredSet.has(b.id)) ?? [], [boards, starredSet])
+  const unstarred = useMemo(() => boards?.filter((b) => !starredSet.has(b.id)) ?? [], [boards, starredSet])
 
   if (!boards || boards.length <= 1) {
     return <span className="text-sm font-medium text-foreground">{currentName}</span>
@@ -60,22 +66,31 @@ function BoardSwitcher({ currentBoardId }: { currentBoardId: number }) {
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
-        {boards.map((board, idx) => (
-          <div key={board.id}>
-            {idx > 0 && board.location?.projectKey !== boards[idx - 1]?.location?.projectKey && (
-              <DropdownMenuSeparator />
-            )}
-            <DropdownMenuItem
-              className={board.id === currentBoardId ? 'bg-accent' : ''}
-              onClick={() => navigate({ to: '/board/$boardId', params: { boardId: String(board.id) } })}
-            >
-              <span className="flex-1 truncate">{board.name}</span>
-              {board.location?.projectKey && (
-                <span className="ml-2 text-[10px] text-muted-foreground">{board.location.projectKey}</span>
-              )}
-            </DropdownMenuItem>
-          </div>
+      <DropdownMenuContent align="start" className="max-h-80 overflow-y-auto">
+        {starred.length > 0 && (
+          <>
+            {starred.map((board) => (
+              <BoardSwitcherItem
+                key={board.id}
+                board={board}
+                isCurrent={board.id === currentBoardId}
+                isStarred
+                onNavigate={() => navigate({ to: '/board/$boardId', params: { boardId: String(board.id) } })}
+                onToggleStar={() => toggleStar(board.id)}
+              />
+            ))}
+            <DropdownMenuSeparator />
+          </>
+        )}
+        {unstarred.map((board) => (
+          <BoardSwitcherItem
+            key={board.id}
+            board={board}
+            isCurrent={board.id === currentBoardId}
+            isStarred={false}
+            onNavigate={() => navigate({ to: '/board/$boardId', params: { boardId: String(board.id) } })}
+            onToggleStar={() => toggleStar(board.id)}
+          />
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -88,6 +103,40 @@ function BoardSwitcher({ currentBoardId }: { currentBoardId: number }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+function BoardSwitcherItem({
+  board,
+  isCurrent,
+  isStarred,
+  onNavigate,
+  onToggleStar,
+}: {
+  board: { id: number; name: string; location?: { projectKey?: string } }
+  isCurrent: boolean
+  isStarred: boolean
+  onNavigate: () => void
+  onToggleStar: () => void
+}) {
+  return (
+    <DropdownMenuItem className={`group gap-1.5 ${isCurrent ? 'bg-accent' : ''}`} onClick={onNavigate}>
+      <button
+        type="button"
+        className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 data-[starred=true]:opacity-100"
+        data-starred={isStarred}
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggleStar()
+        }}
+      >
+        <Star className={`h-3 w-3 ${isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`} />
+      </button>
+      <span className="flex-1 truncate">{board.name}</span>
+      {board.location?.projectKey && (
+        <span className="ml-2 text-[10px] text-muted-foreground">{board.location.projectKey}</span>
+      )}
+    </DropdownMenuItem>
   )
 }
 
