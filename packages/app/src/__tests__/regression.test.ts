@@ -24,8 +24,8 @@ describe('Bug regressions', () => {
     expect(src).not.toContain('code_challenge')
   })
 
-  // Bug #14: Vertex AI should not send empty Authorization header
-  it('Vertex provider omits Authorization header when token is empty', async () => {
+  // Bug #14: Vertex AI returns error when token is empty (not a 401 from Google)
+  it('Vertex provider returns error chunk when token is empty', async () => {
     const { VertexProvider } = await import('@/lib/llm/providers/vertex')
     const provider = new VertexProvider({
       project: 'test-project',
@@ -33,31 +33,20 @@ describe('Bug regressions', () => {
       accessToken: '',
     })
 
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: false,
-      text: () => Promise.resolve('error'),
+    const stream = provider.chat({
+      model: 'claude-sonnet-4-6',
+      messages: [{ id: '1', role: 'user', content: 'test', timestamp: Date.now() }],
+      stream: true,
     })
-    const originalFetch = globalThis.fetch
-    globalThis.fetch = mockFetch
 
-    try {
-      const stream = provider.chat({
-        model: 'claude-sonnet-4-6',
-        messages: [{ id: '1', role: 'user', content: 'test', timestamp: Date.now() }],
-        stream: true,
-      })
-
-      for await (const _chunk of stream) {
-        break
-      }
-
-      expect(mockFetch).toHaveBeenCalled()
-      const [, options] = mockFetch.mock.calls[0]
-      const headers = options.headers as Record<string, string>
-      expect(headers.Authorization).toBeUndefined()
-    } finally {
-      globalThis.fetch = originalFetch
+    const chunks = []
+    for await (const chunk of stream) {
+      chunks.push(chunk)
     }
+
+    expect(chunks).toHaveLength(1)
+    expect(chunks[0].type).toBe('error')
+    expect(chunks[0].error).toContain('Google auth token not available')
   })
 
   // Bug #14 positive case: Vertex sends auth when token is provided

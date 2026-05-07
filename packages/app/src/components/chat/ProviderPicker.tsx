@@ -228,23 +228,26 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
 
     switch (selected.id) {
       case 'anthropic':
-        providerRegistry.register(new AnthropicProvider({}))
+        providerRegistry.register(new AnthropicProvider({ apiKey }))
         break
       case 'openai':
-        providerRegistry.register(new OpenAIProvider({}))
+        providerRegistry.register(new OpenAIProvider({ apiKey }))
         break
       case 'ollama':
         providerRegistry.register(new OllamaProvider({ endpoint }))
         break
-      case 'vertex':
+      case 'vertex': {
+        const { authManager } = await import('@/lib/auth/manager')
+        const googleToken = authManager.getState().tokens.google
         providerRegistry.register(
           new VertexProvider({
             project: gcpProject,
             region: gcpRegion,
-            accessToken: '',
+            accessToken: googleToken?.accessToken || '',
           }),
         )
         break
+      }
       case 'custom':
         providerRegistry.register(
           new CustomProvider({

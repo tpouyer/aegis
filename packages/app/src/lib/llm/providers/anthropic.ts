@@ -76,13 +76,12 @@ export class AnthropicProvider implements LLMProvider {
   readonly supportsStreaming = true
   readonly maxContextWindow = 200_000
 
-  private relayUrl: string
+  private apiUrl: string
+  private apiKey: string
 
-  constructor(_config: { apiKey?: string; baseUrl?: string }) {
-    // Route through Service Worker relay — SW injects the API key
-    // The key is sent to SW via sendTokenToSW() at registration time
-    const base = import.meta.env.BASE_URL || '/'
-    this.relayUrl = `${base}_aegis/llm/anthropic`
+  constructor(config: { apiKey?: string; baseUrl?: string }) {
+    this.apiKey = config.apiKey || ''
+    this.apiUrl = config.baseUrl || 'https://api.anthropic.com'
   }
 
   async *chat(params: ChatParams): AsyncIterable<ChatChunk> {
@@ -109,12 +108,17 @@ export class AnthropicProvider implements LLMProvider {
       }))
     }
 
-    const response = await fetch(`${this.relayUrl}/v1/messages`, {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'anthropic-version': '2023-06-01',
+    }
+    if (this.apiKey) {
+      headers['x-api-key'] = this.apiKey
+    }
+
+    const response = await fetch(`${this.apiUrl}/v1/messages`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-      },
+      headers,
       body: JSON.stringify(body),
       signal: params.signal,
     })

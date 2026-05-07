@@ -127,11 +127,18 @@ export class VertexProvider implements LLMProvider {
       }))
     }
 
+    if (!this.accessToken) {
+      yield {
+        type: 'error',
+        error:
+          'Google auth token not available. Go to Settings > Integrations and connect Google, then reconfigure Vertex AI.',
+      }
+      return
+    }
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-    }
-    if (this.accessToken) {
-      headers.Authorization = `Bearer ${this.accessToken}`
+      Authorization: `Bearer ${this.accessToken}`,
     }
 
     const response = await fetch(url, {
