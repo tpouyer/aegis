@@ -10,6 +10,6 @@
     "rhSsoIssuerUrl": null,
     "rhSsoClientId": null,
     "googleClientId": "480122918692-n2dc7fdum6ubpfft70sa04gh6lf0uueq.apps.googleusercontent.com",
-    "githubTokenProxyUrl": null
+    "githubTokenProxyUrl": "https://github-oauth-proxy.tpouyer.workers.dev"
   }
 }
