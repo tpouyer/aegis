@@ -17,8 +17,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         Home
       </Link>
       <Link
-        to="/board/$boardId"
-        params={{ boardId: '1' }}
+        to="/board"
         className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-accent"
         activeProps={{ className: 'bg-accent text-accent-foreground', 'aria-current': 'page' as const }}
         onClick={onNavigate}

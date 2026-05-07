@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { BoardView } from '@/components/board/BoardView'
 import { shortcutRegistry, useShortcuts } from '@/lib/shortcuts'
 import { useBoardStore } from '@/stores/board'
+import { useBoardPrefsStore } from '@/stores/board-prefs'
 
 export const Route = createFileRoute('/board/$boardId')({
   component: BoardPage,
@@ -15,6 +16,13 @@ function BoardPage() {
   useEffect(() => {
     document.title = `Board ${boardId} — Aegis`
   }, [boardId])
+
+  // Persist this board as the last-used board
+  useEffect(() => {
+    if (!Number.isNaN(numericBoardId)) {
+      useBoardPrefsStore.getState().setLastBoard(numericBoardId)
+    }
+  }, [numericBoardId])
 
   // Activate board-scope keyboard shortcut handling
   useShortcuts('board')

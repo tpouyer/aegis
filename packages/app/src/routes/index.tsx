@@ -177,7 +177,7 @@ function AuthCTA() {
             <p className="text-xs text-muted-foreground">Browse public docs</p>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link to="/board/$boardId" params={{ boardId: '1' }}>
+            <Link to="/board">
               Browse
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Link>
@@ -295,16 +295,14 @@ const ROLE_WIDGETS: Record<
     icon: Zap,
     title: 'Quick Actions',
     description: 'Jump into your board, configure AI, or open settings',
-    linkTo: '/board/$boardId',
-    linkParams: { boardId: '1' },
+    linkTo: '/board',
     linkLabel: 'Open Board',
   },
   pm: {
     icon: ClipboardList,
     title: 'Sprint Focus',
     description: 'Open the board in table view for a detailed sprint overview',
-    linkTo: '/board/$boardId',
-    linkParams: { boardId: '1' },
+    linkTo: '/board',
     linkLabel: 'View Board',
   },
   qa: {
@@ -327,8 +325,7 @@ const ROLE_WIDGETS: Record<
     icon: Users,
     title: 'Team Overview',
     description: 'View the board in table mode to track progress by assignee',
-    linkTo: '/board/$boardId',
-    linkParams: { boardId: '1' },
+    linkTo: '/board',
     linkLabel: 'View Board',
   },
   support: {
@@ -382,7 +379,7 @@ function QuickActions() {
       <h2 className="mb-3 text-sm font-medium text-muted-foreground">Quick Actions</h2>
       <div className="flex flex-wrap gap-3">
         <Button variant="outline" asChild>
-          <Link to="/board/$boardId" params={{ boardId: '1' }}>
+          <Link to="/board">
             <LayoutDashboard className="mr-2 h-4 w-4" />
             Open Board
           </Link>

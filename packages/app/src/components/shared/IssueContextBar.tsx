@@ -15,7 +15,7 @@ export function IssueContextBar({ issueKey }: IssueContextBarProps) {
     <div className="flex items-center justify-between border-b border-border bg-card px-4 py-1.5">
       {/* Breadcrumbs */}
       <div className="flex items-center gap-1 text-sm">
-        <Link to="/board/$boardId" params={{ boardId: '1' }} className="text-muted-foreground hover:text-foreground">
+        <Link to="/board" className="text-muted-foreground hover:text-foreground">
           Board
         </Link>
         <ChevronRight className="h-3 w-3 text-muted-foreground" />

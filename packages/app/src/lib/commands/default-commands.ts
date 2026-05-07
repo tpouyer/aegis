@@ -49,7 +49,7 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
       category: 'navigation',
       keywords: ['board', 'kanban', 'issues', 'sprint'],
       shortcut: '⌘2',
-      action: () => navigate({ to: '/board/$boardId', params: { boardId: '1' } }),
+      action: () => navigate({ to: '/board' }),
     },
     {
       id: 'nav.go-to-chat',
@@ -155,7 +155,7 @@ export function registerIssueCommands(
         label: `Open ${issue.key}: ${issue.summary}`,
         category: 'issue',
         keywords: [issue.key, issue.summary],
-        action: () => navigate({ to: '/board/$boardId', params: { boardId: '1' } }),
+        action: () => navigate({ to: '/issue/$issueKey/chat', params: { issueKey: issue.key } }),
       }),
     )
   }

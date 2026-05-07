@@ -46,7 +46,7 @@ function RootLayout() {
       key: 'g b',
       scope: 'global',
       description: 'Go to board',
-      action: () => navigate({ to: '/board/$boardId', params: { boardId: '1' } }),
+      action: () => navigate({ to: '/board' }),
     })
 
     const unregisterGoSettings = shortcutRegistry.register({

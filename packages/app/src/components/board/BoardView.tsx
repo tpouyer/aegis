@@ -15,13 +15,20 @@
 
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import { useNavigate } from '@tanstack/react-router'
-import { AlertTriangle, LayoutDashboard, LayoutGrid, List, RefreshCw } from 'lucide-react'
+import { AlertTriangle, ChevronDown, LayoutDashboard, LayoutGrid, List, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { authManager } from '@/lib/auth/manager'
 import { getJiraClient } from '@/lib/jira/client'
-import { useBoard, useIssues, useTransitionMutation } from '@/lib/jira/queries'
+import { useBoard, useBoards, useIssues, useTransitionMutation } from '@/lib/jira/queries'
 import type { BoardColumn, JiraTransition } from '@/lib/jira/types'
 import { useBoardStore } from '@/stores/board'
 import { toast } from '@/stores/toast'
@@ -31,6 +38,49 @@ import { CardDetail } from './CardDetail'
 import { Column } from './Column'
 import { FilterBar } from './FilterBar'
 import { TransitionModal } from './TransitionModal'
+
+function BoardSwitcher({ currentBoardId }: { currentBoardId: number }) {
+  const navigate = useNavigate()
+  const { data: boards } = useBoards()
+  const { data: currentConfig } = useBoard(currentBoardId)
+
+  const currentName = currentConfig?.name ?? `Board ${currentBoardId}`
+
+  if (!boards || boards.length <= 1) {
+    return <span className="text-sm font-medium text-foreground">{currentName}</span>
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-7 gap-1 text-sm font-medium">
+          {currentName}
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
+        {boards.map((board, idx) => (
+          <div key={board.id}>
+            {idx > 0 && board.location?.projectKey !== boards[idx - 1]?.location?.projectKey && (
+              <DropdownMenuSeparator />
+            )}
+            <DropdownMenuItem
+              className={board.id === currentBoardId ? 'bg-accent' : ''}
+              onClick={() => navigate({ to: '/board/$boardId', params: { boardId: String(board.id) } })}
+            >
+              <span className="flex-1 truncate">{board.name}</span>
+              {board.location?.projectKey && (
+                <span className="ml-2 text-[10px] text-muted-foreground">{board.location.projectKey}</span>
+              )}
+            </DropdownMenuItem>
+          </div>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => navigate({ to: '/board' })}>All boards...</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 interface BoardViewProps {
   boardId: number
@@ -341,8 +391,10 @@ export function BoardView({ boardId }: BoardViewProps) {
       {/* Filter bar with refresh controls */}
       <FilterBar issues={allIssues} />
 
-      {/* Board header with refresh button and timestamp */}
-      <div className="flex items-center justify-end gap-3 border-b border-border bg-card px-4 py-1.5">
+      {/* Board header with board switcher, refresh button, and timestamp */}
+      <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-1.5">
+        <BoardSwitcher currentBoardId={boardId} />
+        <div className="flex-1" />
         {lastUpdated && <span className="text-xs text-muted-foreground">Last updated: {lastUpdated}</span>}
         <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
           <Button
