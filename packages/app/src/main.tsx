@@ -4,10 +4,12 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { authManager } from './lib/auth/manager'
 import { CacheStore } from './lib/cache/indexeddb'
+import { initJiraClient } from './lib/jira/client'
 import { restoreProviders } from './lib/llm/restore-providers'
 import { initTelemetry } from './lib/telemetry/init'
 import { instrumentNavigation } from './lib/telemetry/instruments/navigation'
 import { routeTree } from './routeTree.gen'
+import { useJiraConfigStore } from './stores/jira-config'
 import './app.css'
 
 authManager.clearExpiredTokens()
@@ -44,6 +46,16 @@ async function bootstrap() {
   }
 
   restoreProviders()
+
+  const jiraConfig = useJiraConfigStore.getState().config
+  if (jiraConfig) {
+    initJiraClient({
+      baseUrl: jiraConfig.baseUrl,
+      email: jiraConfig.email,
+      apiToken: jiraConfig.apiToken,
+    })
+  }
+
   await initTelemetry()
   instrumentNavigation(router)
 

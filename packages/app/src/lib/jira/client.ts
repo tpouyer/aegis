@@ -34,11 +34,16 @@ export class JiraClientError extends Error {
 
 export class JiraClient {
   private baseUrl: string
-  private cloudId: string
+  private cloudId: string | undefined
+  private authHeader: string | undefined
 
   constructor(config: JiraConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '')
     this.cloudId = config.cloudId
+
+    if (config.email && config.apiToken) {
+      this.authHeader = `Basic ${btoa(`${config.email}:${config.apiToken}`)}`
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -46,20 +51,32 @@ export class JiraClient {
   // -----------------------------------------------------------------------
 
   private apiUrl(path: string): string {
-    return `${this.baseUrl}/ex/jira/${this.cloudId}/rest${path}`
+    if (this.cloudId) {
+      return `${this.baseUrl}/ex/jira/${this.cloudId}/rest${path}`
+    }
+    return `${this.baseUrl}/rest${path}`
   }
 
   private agileUrl(path: string): string {
-    return `${this.baseUrl}/ex/jira/${this.cloudId}/rest/agile/1.0${path}`
+    if (this.cloudId) {
+      return `${this.baseUrl}/ex/jira/${this.cloudId}/rest/agile/1.0${path}`
+    }
+    return `${this.baseUrl}/rest/agile/1.0${path}`
   }
 
   private async request<T>(url: string, init?: RequestInit): Promise<T> {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(init?.headers as Record<string, string>),
+    }
+
+    if (this.authHeader) {
+      headers.Authorization = this.authHeader
+    }
+
     const response = await resilientFetch(url, {
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        ...(init?.headers as Record<string, string>),
-      },
+      headers,
       ...init,
     })
 

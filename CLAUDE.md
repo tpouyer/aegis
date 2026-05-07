@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Aegis is a zero-infrastructure development platform served as a single WASM binary from a static site (GitHub Pages). It combines organizational context delivery, MCP tool aggregation, and an AI-native development surface (kanban board, AI chat, browser IDE) — all running entirely in the browser with no backend.
 
-The design document lives at `docs/design.md`. The threat model is at `docs/security/threat-model.md`. User stories are at `docs/user-stories.md`. The API reference (all TypeScript interfaces, store shapes, component props) is at `docs/api-reference.md`.
+The design document lives at `docs/design.md`. The threat model is at `docs/security/threat-model.md`. User stories are at `docs/user-stories.md`. The API reference (all TypeScript interfaces, store shapes, component props) is at `docs/api-reference.md`. **Repository guidelines (MUST READ before making changes)** are at `REPOSITORY.md` — covers base path rules, OAuth gotchas, provider architecture, and common pitfalls learned during development.
 
 ## Repository Structure
 

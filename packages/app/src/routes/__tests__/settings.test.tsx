@@ -131,22 +131,22 @@ describe('SettingsPage', () => {
     it('renders the auth connection section with all four providers', () => {
       renderSettings()
 
-      expect(screen.getByText('Auth Connections')).toBeInTheDocument()
+      expect(screen.getByText('Connections')).toBeInTheDocument()
       expect(screen.getByText('GitHub')).toBeInTheDocument()
       expect(screen.getByText('Atlassian')).toBeInTheDocument()
       expect(screen.getByText('Red Hat SSO')).toBeInTheDocument()
       expect(screen.getByText('Google')).toBeInTheDocument()
     })
 
-    it('shows "Disconnected" badge when providers are not connected', () => {
+    it('shows Connect/Configure buttons when providers are not connected', () => {
       mockIsConnected.mockReturnValue(false)
       renderSettings()
 
-      const badges = screen.getAllByText('Disconnected')
-      expect(badges.length).toBe(4)
+      expect(screen.getAllByText('Connect').length).toBeGreaterThanOrEqual(3)
+      expect(screen.getByText('Configure')).toBeInTheDocument()
     })
 
-    it('shows "Connected" badge when a provider is connected', () => {
+    it('shows connection method when a provider is connected', () => {
       mockIsConnected.mockImplementation((provider: string) => provider === 'github')
       mockGetState.mockReturnValue({
         level: 'github',
@@ -163,8 +163,7 @@ describe('SettingsPage', () => {
 
       renderSettings()
 
-      expect(screen.getByText('Connected')).toBeInTheDocument()
-      expect(screen.getAllByText('Disconnected')).toHaveLength(3)
+      expect(screen.getByText(/Connected via OAuth/)).toBeInTheDocument()
     })
 
     it('shows Disconnect button for connected providers', () => {

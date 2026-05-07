@@ -278,14 +278,15 @@ export function BoardView({ boardId }: BoardViewProps) {
     const error = boardError ?? issuesError
 
     // If not authenticated with Atlassian, show auth-required empty state
-    if (!authManager.isConnected('atlassian')) {
+    const jiraConfigured = !!localStorage.getItem('aegis_jira_config')
+    if (!authManager.isConnected('atlassian') && !jiraConfigured) {
       return (
         <div className="flex h-full items-center justify-center p-8">
           <EmptyState
             variant="auth-required"
             icon={LayoutDashboard}
             title="Connect to Jira to see your boards"
-            description="Link your Atlassian account to load boards, view issues, and transition cards with drag-and-drop."
+            description="Go to Settings > Integrations and connect with a Jira API token."
             action={{
               label: 'Connect to Jira',
               onClick: () => {

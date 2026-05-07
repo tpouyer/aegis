@@ -13,8 +13,12 @@
 export interface JiraConfig {
   /** Base URL for the Jira Cloud instance, e.g. https://your-domain.atlassian.net */
   baseUrl: string
-  /** Atlassian Cloud site ID (resolved after OAuth) */
-  cloudId: string
+  /** Atlassian Cloud site ID (for OAuth auth) */
+  cloudId?: string
+  /** API token auth: user email */
+  email?: string
+  /** API token auth: personal API token from id.atlassian.com */
+  apiToken?: string
 }
 
 // ---------------------------------------------------------------------------

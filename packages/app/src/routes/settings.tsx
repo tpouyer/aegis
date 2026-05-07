@@ -53,6 +53,8 @@ function useAuthState(): AuthState {
   return state
 }
 
+import { initJiraClient } from '@/lib/jira/client'
+import { useJiraConfigStore } from '@/stores/jira-config'
 import { PERSONA_DESCRIPTIONS, PERSONA_LABELS, type PersonaRole, usePersonaStore } from '@/stores/persona'
 import { useTelemetryStore } from '@/stores/telemetry'
 import { useThemeStore } from '@/stores/theme'
@@ -63,16 +65,111 @@ function useTheme() {
   return { isDark, toggle }
 }
 
+function connectionMethod(providerId: AuthProvider): string {
+  switch (providerId) {
+    case 'github':
+      return 'OAuth'
+    case 'atlassian':
+      return 'OAuth'
+    case 'redhat-sso':
+      return 'SSO (OIDC)'
+    case 'google':
+      return 'OAuth'
+    default:
+      return 'OAuth'
+  }
+}
+
+function AtlassianConfigPanel({ onConnected }: { onConnected: () => void }) {
+  const { config: jiraConfig, setConfig: setJiraConfig } = useJiraConfigStore()
+  const [baseUrl, setBaseUrl] = useState(jiraConfig?.baseUrl ?? '')
+  const [email, setEmail] = useState(jiraConfig?.email ?? '')
+  const [apiToken, setApiToken] = useState(jiraConfig?.apiToken ?? '')
+
+  const handleTokenSave = useCallback(() => {
+    if (!baseUrl.trim() || !email.trim() || !apiToken.trim()) return
+    const config = {
+      baseUrl: baseUrl.trim().replace(/\/$/, ''),
+      email: email.trim(),
+      apiToken: apiToken.trim(),
+    }
+    setJiraConfig(config)
+    initJiraClient(config)
+    onConnected()
+  }, [baseUrl, email, apiToken, setJiraConfig, onConnected])
+
+  return (
+    <div className="mt-3 space-y-3 rounded-md border border-border bg-muted/30 p-4">
+      <div>
+        <p className="mb-2 text-sm font-medium text-foreground">API Token (Recommended)</p>
+        <p className="mb-3 text-xs text-muted-foreground">
+          No admin approval needed. Create a token at{' '}
+          <a
+            href="https://id.atlassian.com/manage-profile/security/api-tokens"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline"
+          >
+            id.atlassian.com
+          </a>
+        </p>
+        <div className="space-y-2">
+          <Input
+            placeholder="https://your-org.atlassian.net"
+            value={baseUrl}
+            onChange={(e) => setBaseUrl(e.target.value)}
+            aria-label="Jira instance URL"
+            className="text-sm"
+          />
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            aria-label="Email"
+            className="text-sm"
+          />
+          <Input
+            type="password"
+            placeholder="API token"
+            value={apiToken}
+            onChange={(e) => setApiToken(e.target.value)}
+            aria-label="API token"
+            className="text-sm"
+          />
+          <Button size="sm" onClick={handleTokenSave} disabled={!baseUrl.trim() || !email.trim() || !apiToken.trim()}>
+            Connect with API Token
+          </Button>
+        </div>
+      </div>
+      <Separator />
+      <div>
+        <p className="mb-2 text-sm font-medium text-foreground">OAuth</p>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Requires your Atlassian admin to approve the Aegis OAuth app.
+        </p>
+        <Button variant="outline" size="sm" onClick={() => initiateAtlassianAuth(getAtlassianConfig())}>
+          Connect via OAuth
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function AuthConnectionsSection() {
   const authState = useAuthState()
+  const jiraConfig = useJiraConfigStore((s) => s.config)
+  const clearJiraConfig = useJiraConfigStore((s) => s.clearConfig)
+  const [atlassianExpanded, setAtlassianExpanded] = useState(false)
 
   const handleConnect = useCallback((provider: AuthProvider) => {
+    if (provider === 'atlassian') {
+      setAtlassianExpanded((v) => !v)
+      return
+    }
     switch (provider) {
       case 'github':
         initiateGitHubAuth(getGitHubConfig())
-        break
-      case 'atlassian':
-        initiateAtlassianAuth(getAtlassianConfig())
         break
       case 'redhat-sso':
         initiateRedHatAuth(getRedHatConfig())
@@ -83,57 +180,71 @@ function AuthConnectionsSection() {
     }
   }, [])
 
-  const handleDisconnect = useCallback(async (provider: AuthProvider) => {
-    await authManager.disconnect(provider)
-  }, [])
+  const handleDisconnect = useCallback(
+    async (provider: AuthProvider) => {
+      if (provider === 'atlassian' && jiraConfig) {
+        clearJiraConfig()
+      }
+      await authManager.disconnect(provider)
+    },
+    [jiraConfig, clearJiraConfig],
+  )
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Link2 className="h-5 w-5" />
-          Auth Connections
+          Connections
         </CardTitle>
-        <CardDescription>
-          Manage your OAuth provider connections. Tokens are stored securely in the Service Worker.
-        </CardDescription>
+        <CardDescription>Manage connections to external services.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {AUTH_PROVIDERS.map((provider) => {
-          const isConnected = authManager.isConnected(provider.id)
+          const isOAuthConnected = authManager.isConnected(provider.id)
+          const isTokenConnected = provider.id === 'atlassian' && !!jiraConfig
+          const isConnected = isOAuthConnected || isTokenConnected
           const token = authState.tokens[provider.id]
 
+          const method = isTokenConnected ? 'API token' : connectionMethod(provider.id)
+          const detail = isTokenConnected ? jiraConfig?.baseUrl : token ? formatExpiry(token.expiresAt) : undefined
+
           return (
-            <div key={provider.id} className="flex items-center justify-between rounded-lg border border-border p-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`h-2.5 w-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
-                  aria-label={isConnected ? 'Connected' : 'Disconnected'}
-                />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{provider.label}</p>
-                  <p className="text-xs text-muted-foreground">{provider.description}</p>
-                  {isConnected && token && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{formatExpiry(token.expiresAt)}</p>
+            <div key={provider.id}>
+              <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`h-2.5 w-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
+                    aria-label={isConnected ? 'Connected' : 'Disconnected'}
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{provider.label}</p>
+                    <p className="text-xs text-muted-foreground">{provider.description}</p>
+                    {isConnected && (
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        Connected via {method}
+                        {detail && ` · ${detail}`}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isConnected ? (
+                    <Button variant="destructive" size="sm" onClick={() => handleDisconnect(provider.id)}>
+                      <Link2Off className="mr-1 h-3.5 w-3.5" />
+                      Disconnect
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => handleConnect(provider.id)}>
+                      <Link2 className="mr-1 h-3.5 w-3.5" />
+                      {provider.id === 'atlassian' ? 'Configure' : 'Connect'}
+                    </Button>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={isConnected ? 'default' : 'secondary'}>
-                  {isConnected ? 'Connected' : 'Disconnected'}
-                </Badge>
-                {isConnected ? (
-                  <Button variant="destructive" size="sm" onClick={() => handleDisconnect(provider.id)}>
-                    <Link2Off className="mr-1 h-3.5 w-3.5" />
-                    Disconnect
-                  </Button>
-                ) : (
-                  <Button variant="outline" size="sm" onClick={() => handleConnect(provider.id)}>
-                    <Link2 className="mr-1 h-3.5 w-3.5" />
-                    Connect
-                  </Button>
-                )}
-              </div>
+              {provider.id === 'atlassian' && atlassianExpanded && !isConnected && (
+                <AtlassianConfigPanel onConnected={() => setAtlassianExpanded(false)} />
+              )}
             </div>
           )
         })}
