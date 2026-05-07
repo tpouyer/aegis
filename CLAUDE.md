@@ -44,7 +44,7 @@ npm run test         # engine then app
 |---|---|
 | UI | React 18, Vite 6, TanStack Router (file-based), Tailwind CSS v4, Radix UI / Shadcn, Red Hat Display/Text/Mono fonts |
 | Design system | PatternFly 6 color palette, always-dark sidebar, Red Hat Display/Text/Mono typography |
-| State | Zustand (board, chat, IDE, theme, sidebar, telemetry, recent), TanStack Query (server data + caching) |
+| State | Zustand (board, chat, IDE, theme, sidebar, telemetry, recent, persona), TanStack Query (server data + caching) |
 | Observability | OpenTelemetry SDK (metrics), console + OTLP/HTTP exporters (`src/lib/telemetry/`) |
 | Drag-and-drop | @hello-pangea/dnd |
 | Code editor | @monaco-editor/react (lazy-loaded on IDE route only) |
@@ -59,7 +59,7 @@ npm run test         # engine then app
 
 ### Three-Layer Browser Architecture
 
-1. **React SPA** — routes: `/board/:id` (kanban), `/issue/:key/chat` (AI chat), `/issue/:key/ide` (web IDE), `/settings`, `/auth/callback` (OAuth)
+1. **React SPA** — routes: `/board/:id` (kanban + table view), `/issue/:key/chat` (issue chat), `/issue/:key/ide` (web IDE), `/chat` (general chat), `/search` (issue search), `/settings`, `/auth/callback` (OAuth)
 2. **Service Worker** (`public/sw.js`) — handles auth token management (with expiry checking), Jira/GitHub API proxying with IndexedDB caching, MCP protocol, and LLM API relay
 3. **WASM Engine** — hierarchy resolution, config parsing, tool aggregation, QuickJS sandbox, MCP protocol handler, and auth-based content filtering
 
@@ -156,7 +156,11 @@ Phases 1–5 of the design are implemented. Phase 6 (Tool Aggregation with Quick
 | Responsive layout | Done | Collapsible sidebar (hamburger on mobile), stacking board columns, responsive IDE panels |
 | Accessibility (WCAG) | Done | Skip nav, page titles, ARIA roles/labels on all widgets, keyboard focus indicators |
 | Theme management | Done | `src/stores/theme.ts` — single Zustand store, syncs Header/Settings/CmdK |
+| Board table view | Done | `src/components/board/BoardTableView.tsx` — sortable table with kanban/table toggle |
 | Board skeleton loading | Done | `src/components/board/BoardSkeleton.tsx` — animated placeholder columns while data loads |
+| Persona/role system | Done | `src/stores/persona.ts` — 6 roles (Developer, PM, QA, Architect, Manager, Support). Role-aware AI prompts, landing widgets, system prompt |
+| General chat | Done | `src/routes/chat.tsx` — non-issue-scoped chat with persona-aware prompts |
+| Global search | Done | `src/routes/search.tsx` — issue search page (Jira integration placeholder) |
 | Onboarding wizard | Built | `src/components/shared/OnboardingWizard.tsx` — exists but not yet triggered on first visit |
 | User stories | Defined | `docs/user-stories.md` — 15 stories, 5 personas |
 | OTEL metrics | Done | `src/lib/telemetry/` — HTTP, LLM, navigation, Web Vitals. Console + OTLP exporters. Settings UI |
