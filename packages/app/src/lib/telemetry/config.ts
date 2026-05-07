@@ -23,7 +23,8 @@ export async function loadWellKnownConfig(): Promise<WellKnownConfig> {
   if (wellKnownCache) return wellKnownCache
 
   try {
-    const response = await fetch('/.well-known/aegis-configuration')
+    const base = import.meta.env.BASE_URL || '/'
+    const response = await fetch(`${base}.well-known/aegis-configuration`)
     if (response.ok) {
       wellKnownCache = await response.json()
       wellKnownFetched = true
