@@ -15,6 +15,7 @@ This is a monorepo with two packages:
 - **`packages/app/`** — React SPA (Vite, TypeScript)
 - **`packages/engine/`** — Rust WASM module (compiled via `wasm-pack`)
 - **`config/`** — scope definitions (`scopes.yml`) and component-to-repo mapping (`components.yml`)
+- **`packages/app/public/.well-known/aegis-configuration`** — runtime deployment config (see Configuration section)
 
 ## Build Commands
 
@@ -78,6 +79,39 @@ Three user classes with progressive auth (acquired lazily on first feature use):
 Content visibility is tiered (`public` / `github` / `redhat-sso`) and filtered by the WASM engine at resolution time. Build pipeline generates layered manifests (`manifest-public.json`, `manifest-github.json`, `manifest-internal.json`).
 
 OAuth connect buttons on the landing page and settings page are fully wired to the PKCE initiation functions. The `/auth/callback` route handles code exchange for all four providers. Provider configs are centralized in `src/lib/auth/config.ts` using `VITE_*` environment variables with sensible defaults. The Service Worker checks token expiry before injection (with 60s buffer), and API clients (Jira, GitHub) detect 401 responses and clear stale tokens to trigger re-auth UI. On app startup, `authManager.clearExpiredTokens()` proactively cleans expired metadata.
+
+### Deployment Configuration
+
+Aegis uses a `.well-known` runtime config file for deployment-time settings that shouldn't require a rebuild:
+
+```
+public/.well-known/aegis-configuration
+```
+
+```json
+{
+  "telemetry": {
+    "otlpEndpoint": "https://otel-collector.example.com/v1/metrics",
+    "exportIntervalMs": 60000,
+    "enabled": true
+  },
+  "auth": {
+    "githubClientId": "your-github-app-id",
+    "atlassianClientId": "your-atlassian-app-id",
+    "rhSsoIssuerUrl": "https://sso.redhat.com/auth/realms/redhat-external",
+    "rhSsoClientId": "your-rhsso-client-id",
+    "googleClientId": "your-google-client-id"
+  }
+}
+```
+
+**Resolution order** (first non-null wins for each field):
+1. User `localStorage` override (from Settings UI)
+2. `.well-known/aegis-configuration` (deployer edits this file)
+3. `VITE_*` environment variables (build-time)
+4. Hardcoded defaults
+
+The file is fetched asynchronously on app startup (`loadWellKnownConfig()` in `src/lib/telemetry/config.ts`) before the MeterProvider and auth configs are initialized. Both `getTelemetryConfig()` and `get*Config()` auth helpers read from it.
 
 ### LLM Provider Abstraction
 

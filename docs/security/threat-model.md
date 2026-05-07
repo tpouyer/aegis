@@ -21,6 +21,7 @@ Aegis is a single-page application running entirely in the browser. There is no 
 | IndexedDB | Browser storage (per-origin) | Chat session persistence, Jira response caching |
 | localStorage | Browser storage (per-origin) | Token metadata (expiry timestamps, not actual tokens), theme preference |
 | sessionStorage | Browser storage (per-origin) | PKCE verifiers and OAuth state during auth flows |
+| `.well-known/aegis-configuration` | Static file (same origin) | Runtime deployment config: OTLP endpoint, OAuth client IDs |
 
 External dependencies (APIs the app communicates with):
 - GitHub REST API (api.github.com)

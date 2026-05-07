@@ -125,7 +125,7 @@ The following enhancements were made to the original architecture during UAT ref
 
 1. **Auth callback route** (`/auth/callback`): Handles OAuth code exchange for all four providers. Reads `provider` from query params, dispatches to the appropriate `handle*Callback()` function, stores tokens via `authManager.setToken()`, and navigates home on success.
 
-2. **Auth config centralization** (`src/lib/auth/config.ts`): OAuth configs (client IDs, redirect URIs, scopes) are centralized with `VITE_*` environment variable support and sensible defaults for development.
+2. **Auth config centralization** (`src/lib/auth/config.ts`): OAuth configs (client IDs, redirect URIs, scopes) are centralized with a three-tier resolution: (1) `.well-known/aegis-configuration` runtime file for deployment-time config without rebuilding, (2) `VITE_*` environment variables for build-time defaults, (3) hardcoded development defaults. Deployers on GitHub Pages edit the `.well-known` JSON file to set client IDs for all four providers.
 
 3. **Service Worker token expiry**: The SW now checks `token.expiresAt` (with 60s buffer) before injecting auth headers. Expired tokens are removed from the SW's memory map.
 

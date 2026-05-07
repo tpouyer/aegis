@@ -235,3 +235,34 @@ Frequently reviews and triages issues on a phone or tablet while away from their
 2. When the Service Worker detects an expired token, it doesn't inject it
 3. When a Jira/GitHub API returns 401, the token is cleared and the auth-required empty state is shown
 4. The "Connect to Jira" / "Connect to GitHub" empty states link to Settings
+
+---
+
+### US-14: Deployment Configuration via .well-known
+**As** a deployer managing an Aegis instance on GitHub Pages  
+**I want to** configure the OTLP endpoint and OAuth client IDs by editing a single JSON file  
+**So that** I don't need to rebuild the application to change deployment settings.
+
+**Acceptance Criteria:**
+1. `/.well-known/aegis-configuration` is served as a static JSON file
+2. The file contains `telemetry` (otlpEndpoint, exportIntervalMs, enabled) and `auth` (client IDs for all 4 providers) sections
+3. The app fetches this file on startup before initializing telemetry or auth
+4. Values from `.well-known` override build-time `VITE_*` defaults
+5. User localStorage overrides (from Settings UI) take precedence over `.well-known` values
+6. If the file is missing or malformed, the app falls back to env vars and defaults without error
+
+---
+
+### US-15: Telemetry Configuration
+**As** Marcus (Red Hat Engineer)  
+**I want to** configure metrics export via the Settings page  
+**So that** I can send OTEL metrics to my team's collector or disable telemetry entirely.
+
+**Acceptance Criteria:**
+1. Settings page has a "Telemetry" tab with Activity icon
+2. Enable/disable toggle controls whether metrics are collected
+3. OTLP endpoint URL input field with Save button
+4. Export interval selector with 15s/30s/1m/5m options
+5. Local storage metrics toggle
+6. Changes persist to localStorage and take effect without page reload
+7. Console metrics appear in dev mode (browser console, 15s interval)
