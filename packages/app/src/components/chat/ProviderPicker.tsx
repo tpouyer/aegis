@@ -199,7 +199,7 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
     } finally {
       setTesting(false)
     }
-  }, [selected, apiKey, endpoint, model])
+  }, [selected, apiKey, endpoint, model, gcpProject])
 
   const handleSave = useCallback(async () => {
     if (!selected) return
