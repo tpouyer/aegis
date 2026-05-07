@@ -1,0 +1,18 @@
+{
+  "name": "aegis",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=packages/app",
+    "build": "npm run build:engine && npm run build:app",
+    "build:engine": "cd packages/engine && wasm-pack build --target web --out-dir ../app/src/wasm",
+    "build:app": "npm run build --workspace=packages/app",
+    "test": "npm run test:engine && npm run test:app",
+    "test:engine": "cd packages/engine && cargo test",
+    "test:app": "npm run test --workspace=packages/app",
+    "lint": "npm run lint --workspace=packages/app"
+  }
+}

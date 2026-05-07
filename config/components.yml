@@ -1,0 +1,15 @@
+component_repos:
+  API:
+    - org: ansible
+      repo: awx
+      path: awx/api/
+  UI:
+    - org: ansible
+      repo: awx
+      path: awx/ui/
+  Receptor:
+    - org: ansible
+      repo: receptor
+  EDA:
+    - org: ansible
+      repo: eda-server

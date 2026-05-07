@@ -1,0 +1,22 @@
+scopes:
+  - name: ansible-community
+    visibility: public
+    sources:
+      - type: git
+        url: https://github.com/ansible/community-docs
+        path: standards/
+
+  - name: ansible-platform
+    visibility: github
+    repos: [awx, receptor, eda-server]
+    sources:
+      - type: git
+        url: https://github.com/ansible/awx
+        path: docs/dev/
+
+  - name: aap-internal
+    visibility: redhat-sso
+    sources:
+      - type: git
+        url: https://github.com/ansible-automation-platform/internal-docs
+        path: architecture/
