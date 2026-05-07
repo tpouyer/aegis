@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 import path from 'path'
+import fs from 'node:fs'
 
 const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://api.github.com https://*.atlassian.net https://*.atlassian.com https://auth.atlassian.com https://api.anthropic.com https://api.openai.com https://*.googleapis.com https://accounts.google.com https://github.com; img-src 'self' https: data:; font-src 'self' https://fonts.gstatic.com; frame-src 'none';" />`
 
@@ -27,10 +28,8 @@ export default defineConfig(({ command }) => ({
     {
       name: 'spa-fallback-404',
       closeBundle() {
-        const fs = require('node:fs')
-        const distPath = require('node:path').resolve(__dirname, 'dist')
-        const index = require('node:path').join(distPath, 'index.html')
-        const fallback = require('node:path').join(distPath, '404.html')
+        const index = path.resolve(__dirname, 'dist', 'index.html')
+        const fallback = path.resolve(__dirname, 'dist', '404.html')
         if (fs.existsSync(index)) {
           fs.copyFileSync(index, fallback)
         }
