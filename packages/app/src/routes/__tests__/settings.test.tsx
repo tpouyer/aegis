@@ -207,13 +207,13 @@ describe('SettingsPage', () => {
       ).toBeInTheDocument()
     })
 
-    it('shows "No LLM provider configured" when none is registered', () => {
+    it('shows empty state when no LLM provider is registered', () => {
       mockGetDefaultProvider.mockReturnValue(undefined)
       renderSettings()
 
       activateTab(/^llm$/i)
 
-      expect(screen.getByText(/no llm provider configured/i)).toBeInTheDocument()
+      expect(screen.getByText(/no ai provider configured/i)).toBeInTheDocument()
     })
 
     it('displays active provider with capability badges', () => {

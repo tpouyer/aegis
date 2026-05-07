@@ -66,8 +66,12 @@ export function FilterBar({ issues }: FilterBarProps) {
           onChange={(e) =>
             setFilter('text', e.target.value || null)
           }
-          className="h-8 w-48 pl-8 text-xs"
+          className="h-8 w-48 pl-8 pr-8 text-xs"
+          data-shortcut-target="filter-bar"
         />
+        <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-border bg-muted px-1 py-0.5 font-mono text-[10px] text-muted-foreground">
+          F
+        </kbd>
       </div>
 
       {/* Assignee dropdown */}

@@ -36,6 +36,10 @@ export interface BoardState {
   dragState: DragState;
   filters: BoardFilters;
   optimisticUpdates: Map<string, OptimisticUpdate>;
+  /** Index of the keyboard-focused card (-1 = no focus) */
+  focusedCardIndex: number;
+  /** Total number of visible cards (set by BoardView for bounds checking) */
+  totalCardCount: number;
 }
 
 export interface BoardActions {
@@ -45,6 +49,10 @@ export interface BoardActions {
   clearFilters: () => void;
   applyOptimisticUpdate: (update: OptimisticUpdate) => void;
   rollbackOptimisticUpdate: (issueKey: string) => void;
+  focusNextCard: () => void;
+  focusPrevCard: () => void;
+  clearFocus: () => void;
+  setTotalCardCount: (count: number) => void;
 }
 
 export type BoardStore = BoardState & BoardActions;
@@ -72,11 +80,13 @@ const initialFilters: BoardFilters = {
 // Store
 // ---------------------------------------------------------------------------
 
-export const useBoardStore = create<BoardStore>((set) => ({
+export const useBoardStore = create<BoardStore>((set, get) => ({
   // State
   dragState: { ...initialDragState },
   filters: { ...initialFilters },
   optimisticUpdates: new Map(),
+  focusedCardIndex: -1,
+  totalCardCount: 0,
 
   // Actions
   startDrag: (issueKey, sourceColumn) =>
@@ -117,4 +127,23 @@ export const useBoardStore = create<BoardStore>((set) => ({
       next.delete(issueKey);
       return { optimisticUpdates: next };
     }),
+
+  focusNextCard: () => {
+    const { focusedCardIndex, totalCardCount } = get();
+    if (totalCardCount === 0) return;
+    const next = focusedCardIndex < totalCardCount - 1
+      ? focusedCardIndex + 1
+      : focusedCardIndex;
+    set({ focusedCardIndex: next });
+  },
+
+  focusPrevCard: () => {
+    const { focusedCardIndex } = get();
+    const next = focusedCardIndex > 0 ? focusedCardIndex - 1 : 0;
+    set({ focusedCardIndex: next });
+  },
+
+  clearFocus: () => set({ focusedCardIndex: -1 }),
+
+  setTotalCardCount: (count) => set({ totalCardCount: count }),
 }));

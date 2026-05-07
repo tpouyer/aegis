@@ -12,12 +12,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Code, MessageSquare, GitCompareArrows, FileCode } from 'lucide-react'
+import { Code, MessageSquare, GitCompareArrows, FileCode, FolderOpen, Github } from 'lucide-react'
 import { FileExplorer } from './FileExplorer'
 import { EditorTabs } from './EditorTabs'
 import { MonacoEditor } from './MonacoEditor'
 import { MonacoDiffView } from './MonacoDiffView'
 import { SourceControl } from './SourceControl'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { useIDEStore } from '@/stores/ide'
 import { Button } from '@/components/ui/button'
 import type { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
@@ -221,10 +222,29 @@ export function IDELayout({
                   vfs={vfs}
                 />
               )
+            ) : tree.length === 0 ? (
+              <div className="flex h-full items-center justify-center p-8">
+                <EmptyState
+                  variant="auth-required"
+                  icon={Github}
+                  title="Connect to GitHub to open a repository"
+                  description="Link your GitHub account to browse repositories, edit files, and create pull requests from the IDE."
+                  action={{
+                    label: 'Connect to GitHub',
+                    onClick: () => {
+                      window.location.href = '/settings';
+                    },
+                  }}
+                />
+              </div>
             ) : (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-                <Code className="h-12 w-12" />
-                <p className="text-sm">Open a file from the explorer to begin editing</p>
+              <div className="flex h-full items-center justify-center p-8">
+                <EmptyState
+                  variant="info"
+                  icon={FolderOpen}
+                  title="Select a file to start editing"
+                  description="Browse the file tree on the left and click a file to open it in the editor."
+                />
               </div>
             )}
           </div>

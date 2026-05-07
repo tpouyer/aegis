@@ -1,13 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { JiraClient, JiraClientError } from '../client';
 import type { JiraConfig } from '../types';
 
 // ---------------------------------------------------------------------------
-// Mock fetch
+// Mock resilientFetch (clients now use this instead of bare fetch)
 // ---------------------------------------------------------------------------
 
-const mockFetch = vi.fn();
-globalThis.fetch = mockFetch;
+const mockFetch = vi.hoisted(() => vi.fn());
+vi.mock('../../fetch/resilient-fetch', () => ({
+  resilientFetch: (...args: unknown[]) => mockFetch(...args),
+}));
+
+import { JiraClient, JiraClientError } from '../client';
 
 function jsonResponse(data: unknown, status = 200) {
   return Promise.resolve({

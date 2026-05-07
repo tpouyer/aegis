@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { GitHubClient } from '../client';
 
-// Mock global fetch
-const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
+// Mock resilientFetch to behave like plain fetch for testing
+const mockFetch = vi.hoisted(() => vi.fn());
+vi.mock('../../fetch/resilient-fetch', () => ({
+  resilientFetch: (...args: unknown[]) => mockFetch(...args),
+}));
+
+import { GitHubClient } from '../client';
 
 function mockResponse(body: unknown, status = 200) {
   return {

@@ -1,11 +1,13 @@
 /**
  * Jira REST API v3 client.
  *
- * All requests are routed through regular fetch() — the Service Worker
- * intercepts them and injects the appropriate Authorization header.
- * See ADR-004 for the auth architecture.
+ * All requests are routed through resilientFetch() which adds automatic
+ * retry with exponential backoff, rate-limit awareness, and GET
+ * deduplication. The Service Worker still intercepts outbound requests
+ * and injects the appropriate Authorization header (see ADR-004).
  */
 
+import { resilientFetch } from '../fetch/resilient-fetch';
 import type {
   JiraBoard,
   JiraBoardConfig,
@@ -51,7 +53,7 @@ export class JiraClient {
   }
 
   private async request<T>(url: string, init?: RequestInit): Promise<T> {
-    const response = await fetch(url, {
+    const response = await resilientFetch(url, {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

@@ -1,9 +1,11 @@
 /**
  * GitHub REST API client.
  *
- * Uses fetch directly — the Service Worker intercepts requests to
- * api.github.com and injects the GitHub OAuth token automatically
- * (see ADR-004). No token handling is needed here.
+ * Uses resilientFetch() which adds automatic retry with exponential
+ * backoff, rate-limit awareness, and GET deduplication. The Service
+ * Worker still intercepts requests to api.github.com and injects the
+ * GitHub OAuth token automatically (see ADR-004). No token handling is
+ * needed here.
  *
  * Covers the subset of the API used by the VFS:
  *   - Tree/ref reads (file explorer)
@@ -13,6 +15,7 @@
  *   - Pull request creation
  */
 
+import { resilientFetch } from '../fetch/resilient-fetch';
 import type {
   TreeEntry,
   FileContent,
@@ -32,7 +35,7 @@ export class GitHubClient {
     options: RequestInit = {},
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
-    const response = await fetch(url, {
+    const response = await resilientFetch(url, {
       ...options,
       headers: {
         Accept: 'application/vnd.github+json',

@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bot, ChevronDown } from 'lucide-react'
+import { Bot, ChevronDown, MessageCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Loading } from '@/components/shared/Loading'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 import { ProviderPicker } from './ProviderPicker'
@@ -283,11 +284,15 @@ export function ChatView({
         )}
       </div>
 
-      {/* Messages */}
-      <MessageList
-        messages={session?.messages ?? []}
-        isStreaming={session?.isStreaming ?? false}
-      />
+      {/* Messages or empty state */}
+      {session && session.messages.length === 0 ? (
+        <ChatEmptyState issueKey={issueKey} onSend={handleSend} />
+      ) : (
+        <MessageList
+          messages={session?.messages ?? []}
+          isStreaming={session?.isStreaming ?? false}
+        />
+      )}
 
       {/* Input */}
       <MessageInput
@@ -303,6 +308,55 @@ export function ChatView({
         onOpenChange={setShowProviderPicker}
         onProviderSelected={handleProviderSelected}
       />
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Chat empty state with suggested prompts
+// ---------------------------------------------------------------------------
+
+const SUGGESTED_PROMPTS = [
+  'What are the acceptance criteria for this issue?',
+  'Suggest an implementation approach for this issue',
+  'What files in the codebase are most relevant?',
+  'Are there any potential edge cases I should consider?',
+]
+
+function ChatEmptyState({
+  issueKey,
+  onSend,
+}: {
+  issueKey: string
+  onSend: (content: string) => void
+}) {
+  return (
+    <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
+      <EmptyState
+        variant="info"
+        icon={MessageCircle}
+        title={`Start a conversation about ${issueKey}`}
+        description="Ask the AI assistant about implementation approaches, coding standards, or anything related to this issue."
+      >
+        <div className="mt-2 w-full space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Suggested prompts
+          </p>
+          <ul className="space-y-1.5" role="list" aria-label="Suggested prompts">
+            {SUGGESTED_PROMPTS.map((prompt) => (
+              <li key={prompt}>
+                <button
+                  type="button"
+                  className="w-full rounded-md border border-border px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-accent"
+                  onClick={() => onSend(prompt)}
+                >
+                  {prompt}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </EmptyState>
     </div>
   )
 }

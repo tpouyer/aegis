@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
-import { Settings, Moon, Sun, Link2, Link2Off, Bot, Palette, Info } from 'lucide-react'
+import { Settings, Moon, Sun, Link2, Link2Off, Bot, Palette, Info, Sparkles } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { authManager } from '@/lib/auth/manager'
 import { providerRegistry } from '@/lib/llm/provider-registry'
 import type { AuthProvider, AuthState } from '@/lib/auth/types'
@@ -203,9 +204,12 @@ function LLMProviderSection() {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            No LLM provider configured. Register a provider to enable AI chat.
-          </p>
+          <EmptyState
+            variant="info"
+            icon={Sparkles}
+            title="No AI provider configured"
+            description="Register an LLM provider to unlock AI-powered chat, code suggestions, and contextual assistance across Aegis."
+          />
         )}
 
         {providers.length > 1 && (

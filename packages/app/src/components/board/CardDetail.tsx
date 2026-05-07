@@ -35,6 +35,10 @@ export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg">
+        {/* Keyboard shortcut hint for close */}
+        <kbd className="absolute right-12 top-[18px] rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+          Esc
+        </kbd>
         {isLoading && (
           <div className="flex items-center justify-center py-12">
             <p className="text-sm text-muted-foreground">Loading issue...</p>

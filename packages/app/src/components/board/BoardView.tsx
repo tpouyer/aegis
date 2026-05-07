@@ -13,13 +13,15 @@
  *   4a. If transition requires fields, show TransitionModal
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { Loading } from '@/components/shared/Loading';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { Button } from '@/components/ui/button';
 import { useBoard, useIssues, useTransitionMutation } from '@/lib/jira/queries';
 import { getJiraClient } from '@/lib/jira/client';
+import { authManager } from '@/lib/auth/manager';
 import { useBoardStore } from '@/stores/board';
 import { toast } from '@/stores/toast';
 import type { BoardColumn, JiraIssue, JiraTransition } from '@/lib/jira/types';
@@ -254,6 +256,46 @@ export function BoardView({ boardId }: BoardViewProps) {
   }, []);
 
   // -----------------------------------------------------------------------
+  // Keyboard shortcut integration
+  // -----------------------------------------------------------------------
+
+  // Flatten all visible cards for keyboard navigation
+  const flatIssueKeys = useMemo(
+    () => columns.flatMap((col) => col.issues.map((i) => i.key)),
+    [columns],
+  );
+
+  // Keep totalCardCount in sync for bounds checking in the store
+  const setTotalCardCount = useBoardStore((s) => s.setTotalCardCount);
+  const focusedCardIndex = useBoardStore((s) => s.focusedCardIndex);
+
+  useEffect(() => {
+    setTotalCardCount(flatIssueKeys.length);
+  }, [flatIssueKeys.length, setTotalCardCount]);
+
+  // Listen for custom events dispatched by board keyboard shortcuts
+  useEffect(() => {
+    function handleOpenFocused() {
+      const idx = useBoardStore.getState().focusedCardIndex;
+      if (idx >= 0 && idx < flatIssueKeys.length) {
+        handleCardClick(flatIssueKeys[idx]);
+      }
+    }
+
+    function handleCloseDetail() {
+      setDetailOpen(false);
+    }
+
+    document.addEventListener('aegis:open-focused-card', handleOpenFocused);
+    document.addEventListener('aegis:close-card-detail', handleCloseDetail);
+
+    return () => {
+      document.removeEventListener('aegis:open-focused-card', handleOpenFocused);
+      document.removeEventListener('aegis:close-card-detail', handleCloseDetail);
+    };
+  }, [flatIssueKeys, handleCardClick]);
+
+  // -----------------------------------------------------------------------
   // Render
   // -----------------------------------------------------------------------
 
@@ -263,6 +305,27 @@ export function BoardView({ boardId }: BoardViewProps) {
 
   if (boardError || issuesError) {
     const error = boardError ?? issuesError;
+
+    // If not authenticated with Atlassian, show auth-required empty state
+    if (!authManager.isConnected('atlassian')) {
+      return (
+        <div className="flex h-full items-center justify-center p-8">
+          <EmptyState
+            variant="auth-required"
+            icon={LayoutDashboard}
+            title="Connect to Jira to see your boards"
+            description="Link your Atlassian account to load boards, view issues, and transition cards with drag-and-drop."
+            action={{
+              label: 'Connect to Jira',
+              onClick: () => {
+                window.location.href = '/settings';
+              },
+            }}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 p-8">
         <AlertTriangle className="h-10 w-10 text-destructive" />
@@ -270,6 +333,31 @@ export function BoardView({ boardId }: BoardViewProps) {
           Failed to load board:{' '}
           {error instanceof Error ? error.message : 'Unknown error'}
         </p>
+      </div>
+    );
+  }
+
+  // If board loaded but no issues match the current filters
+  const hasNoIssues = issuesResponse && issuesResponse.issues.length === 0;
+  const hasActiveFilters =
+    filters.text || filters.assignee || filters.component || filters.priority || filters.issueType;
+
+  if (hasNoIssues && hasActiveFilters) {
+    return (
+      <div className="flex h-full flex-col">
+        <FilterBar issues={allIssues} />
+        <div className="flex flex-1 items-center justify-center p-8">
+          <EmptyState
+            variant="no-data"
+            title="No issues match your filters"
+            description="Try adjusting or clearing your filters to see more issues on this board."
+            action={{
+              label: 'Clear Filters',
+              onClick: () => useBoardStore.getState().clearFilters(),
+              variant: 'outline',
+            }}
+          />
+        </div>
       </div>
     );
   }

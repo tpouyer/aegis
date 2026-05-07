@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { FileText, Tag, User, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ChatView } from '@/components/chat/ChatView'
+import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
 
 export const Route = createFileRoute('/issue/$issueKey/chat')({
   component: ChatPage,
@@ -145,6 +146,26 @@ function IssueContextPanel({ issue }: { issue: MockIssue }) {
 function ChatPage() {
   const { issueKey } = Route.useParams()
   const [contextOpen, setContextOpen] = useState(true)
+
+  // Activate chat-scope keyboard shortcut handling
+  useShortcuts('chat')
+
+  // Register chat-scoped shortcuts
+  useEffect(() => {
+    const unregisterEscape = shortcutRegistry.register({
+      key: 'Escape',
+      scope: 'chat',
+      description: 'Stop streaming',
+      action: () => {
+        // Dispatch event for ChatView to handle stream cancellation
+        document.dispatchEvent(new CustomEvent('aegis:stop-streaming'))
+      },
+    })
+
+    return () => {
+      unregisterEscape()
+    }
+  }, [])
 
   // Mock issue data — will be replaced by Jira client in Phase 2
   const issue = getMockIssue(issueKey)
