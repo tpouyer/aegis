@@ -7,13 +7,15 @@ interface ThemeState {
 
 function getInitialTheme(): boolean {
   if (typeof document === 'undefined') return false
+  let isDark = false
   try {
     const stored = localStorage.getItem('aegis_theme')
-    if (stored) return stored === 'dark'
+    if (stored) isDark = stored === 'dark'
   } catch {
     /* localStorage may not be available in test/SSR */
   }
-  return document.documentElement.classList.contains('dark')
+  document.documentElement.classList.toggle('dark', isDark)
+  return isDark
 }
 
 export const useThemeStore = create<ThemeState>((set) => ({
