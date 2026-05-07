@@ -24,7 +24,8 @@ const queryClient = new QueryClient({
 
 ;(window as any).__aegis_queryClient = queryClient
 
-const router = createRouter({ routeTree })
+const basepath = import.meta.env.BASE_URL?.replace(/\/$/, '') || ''
+const router = createRouter({ routeTree, basepath })
 
 declare module '@tanstack/react-router' {
   interface Register {
