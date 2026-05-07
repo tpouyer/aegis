@@ -115,6 +115,7 @@ export function SourceControl({
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="flex w-full items-center justify-between px-3 py-2 hover:bg-accent"
+        aria-expanded={isExpanded}
       >
         <div className="flex items-center gap-2">
           <GitBranch className="h-4 w-4 text-muted-foreground" />
@@ -211,6 +212,7 @@ export function SourceControl({
                       value={commitMessage}
                       onChange={(e) => setCommitMessage(e.target.value)}
                       placeholder="Commit message..."
+                      aria-label="Commit message"
                       className="h-7 text-xs"
                       disabled={isBusy}
                     />

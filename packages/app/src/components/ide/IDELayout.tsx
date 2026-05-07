@@ -109,7 +109,7 @@ export function IDELayout({
   // Handle create PR
   const handleCreatePR = useCallback(async (commitRepoKey: string) => {
     const pr = await vfs.createPR(commitRepoKey, {
-      title: `${issueKey}: ${issueKey}`,
+      title: `${issueKey}: Implementation`,
       body: `Addresses ${issueKey}`,
     })
     return pr.htmlUrl
