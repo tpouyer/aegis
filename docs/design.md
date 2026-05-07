@@ -666,7 +666,7 @@ GitHub Actions (on push to content repos + scheduled daily)
 | Component | Library | Rationale |
 |---|---|---|
 | **UI framework** | React 18 | Largest ecosystem, proven patterns from vibe-kanban |
-| **Build tool** | Vite 7 | Fast builds, native code-splitting |
+| **Build tool** | Vite 6 | Fast builds, native code-splitting |
 | **State** | Zustand + TanStack Query | Zustand for UI state, Query for server data + caching |
 | **Routing** | TanStack Router | Type-safe, route-level code splitting |
 | **Styling** | Tailwind CSS | Utility-first, matches vibe-kanban patterns |
@@ -675,8 +675,8 @@ GitHub Actions (on push to content repos + scheduled daily)
 | **Code editor** | @monaco-editor/react | Zero-config Monaco wrapper |
 | **Markdown** | react-markdown + rehype | AI response rendering, issue descriptions |
 | **Chat streaming** | fetch + ReadableStream | SSE parsing for all LLM providers |
-| **GitHub API** | octokit/rest | Official SDK, tree-shakeable |
-| **Jira API** | fetch (via Service Worker) | Direct REST calls, no SDK needed |
+| **GitHub API** | Custom GitHubClient + resilientFetch | Direct REST calls with retry, backoff, GET deduplication |
+| **Jira API** | Custom JiraClient + resilientFetch | Direct REST calls with retry, backoff, rate-limit awareness |
 | **Icons** | Lucide React | Tree-shakeable, consistent |
 | **WASM engine** | Rust + wasm-pack + wasm-bindgen | Compiles hierarchy engine + QuickJS sandbox |
 | **JS sandbox** | rquickjs (in WASM) | Agent TypeScript execution for search/execute |
@@ -827,45 +827,55 @@ Board tools (new):
 aegis/
   docs/
     design.md              ← this document
+  arch/
+    001-monorepo-structure.md  ← ADRs
+    ...
+    reviews/               ← adversarial review findings
+    enhancements/          ← PM proposals, votes, cycle summaries
   packages/
     app/                   ← React SPA
       src/
-        routes/
-          board.tsx        ← kanban board route
-          chat.tsx         ← AI chat route
-          ide.tsx          ← web IDE route
-          settings.tsx     ← auth + LLM config
+        routes/            ← TanStack Router file-based routes
+          __root.tsx       ← root layout (sidebar, header, toaster, command palette)
+          index.tsx        ← landing page
+          board.$boardId.tsx    ← kanban board
+          issue.$issueKey.chat.tsx  ← AI chat
+          issue.$issueKey.ide.tsx   ← web IDE
+          settings.tsx     ← auth connections, LLM config, theme
         components/
-          board/           ← kanban board components
-          chat/            ← AI chat components
-          ide/             ← IDE components (editor, explorer, source control)
-          shared/          ← common UI components
+          board/           ← BoardView, Column, Card, CardDetail, FilterBar, TransitionModal
+          chat/            ← ChatView, MessageList, MessageInput, ToolResult, ProviderPicker
+          ide/             ← IDELayout, MonacoEditor, MonacoDiffView, FileExplorer, EditorTabs, SourceControl, ApplyBlock, DiffView
+          shared/          ← Header, Sidebar, Toaster, ErrorBoundary, Loading, EmptyState, CommandPalette, ShortcutHelp, OnboardingWizard
+          ui/              ← Shadcn UI components (button, card, dialog, etc.)
         lib/
-          auth/            ← OAuth flows (SSO, GitHub, Atlassian, Google)
-          jira/            ← Jira API client + cache
-          github/          ← GitHub API client (octokit wrapper)
-          llm/             ← LLM provider abstraction
-          vfs/             ← Virtual filesystem
-          mcp/             ← MCP client for WASM engine
-        stores/            ← Zustand stores
+          auth/            ← OAuth flows (GitHub, Atlassian, RH SSO, Google), PKCE, AuthManager, SW bridge
+          cache/           ← IndexedDB cache with TTL support
+          commands/        ← Command palette registry + default commands
+          fetch/           ← resilientFetch (backoff, dedup, Retry-After)
+          github/          ← GitHubClient REST client, git-ops (atomic commits)
+          jira/            ← JiraClient REST client, cache, TanStack Query hooks
+          llm/             ← LLMProvider interface, 5 providers, stream parsers, system prompt, tool router
+          shortcuts/       ← Keyboard shortcut registry + React hook
+          vfs/             ← VirtualFileSystem, content-addressed cache
+        stores/            ← Zustand stores (board, chat, ide, toast)
       public/
-        sw.js              ← Service Worker
+        sw.js              ← Service Worker (caching, auth injection, LLM relay)
       index.html
       vite.config.ts
+      vitest.config.ts
     engine/                ← Rust WASM module
       src/
         lib.rs             ← wasm-bindgen entry, ProxyEngine
-        hierarchy.rs       ← scope resolution + merge (from sdlc-mcp)
-        config.rs          ← YAML config parsing (from sdlc-mcp)
-        catalog.rs         ← tool aggregation (from cmcp)
-        sandbox.rs         ← QuickJS sandbox (from cmcp)
+        types.rs           ← AuthLevel, Scope, Content, Tool, Manifest, ResolvedContent
+        hierarchy.rs       ← scope resolution + merge (most-specific-wins, deterministic tie-break)
+        config.rs          ← YAML config parsing (scopes, components)
+        catalog.rs         ← tool catalog (search, lookup)
+        sandbox.rs         ← QuickJS sandbox (stub)
         auth_filter.rs     ← visibility tier filtering
-        mcp.rs             ← MCP protocol handler
+        mcp.rs             ← MCP protocol handler (tools/list, tools/call)
       Cargo.toml
   config/
     scopes.yml             ← scope definitions with visibility tiers
     components.yml         ← component → repo mapping
-  .github/
-    workflows/
-      build.yml            ← CI: build WASM + SPA + manifests, deploy to Pages
 ```

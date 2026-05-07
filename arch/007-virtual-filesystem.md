@@ -47,12 +47,15 @@ A typical session (open IDE, browse 20 files, commit 3 file changes) consumes ro
 
 ### 4. Atomic commits via Git Data API
 
-The commit flow follows GitHub's Git Data API, implementing the same four-step process described in the GitHub documentation:
+The commit flow follows GitHub's Git Data API, implementing a five-step process:
 
 1. **Create blobs**: `POST /repos/{owner}/{repo}/git/blobs` for each changed file (content uploaded as UTF-8 or base64)
-2. **Create tree**: `POST /repos/{owner}/{repo}/git/trees` with the base tree SHA and all new blob entries (deletions use `sha: null`)
+2. **Create tree**: `POST /repos/{owner}/{repo}/git/trees` with the base **tree SHA** (not commit SHA) and all new blob entries (deletions use `sha: null`)
 3. **Create commit**: `POST /repos/{owner}/{repo}/git/commits` referencing the new tree and the parent commit
 4. **Update ref**: `PATCH /repos/{owner}/{repo}/git/refs/heads/{branch}` to fast-forward the branch
+5. **Refresh state**: `GET /repos/{owner}/{repo}/git/commits/{sha}` to extract the new commit's `tree.sha`, then re-fetch the tree
+
+**Important**: GitHub's ref API returns the commit SHA, not the tree SHA. The VFS must call `getCommit()` to resolve `commit.tree.sha` before using it as `base_tree` in subsequent tree creation calls. This distinction was a source of bugs during development — using a commit SHA where a tree SHA is expected causes GitHub to create a tree with no base, losing unmodified files.
 
 This is atomic from GitHub's perspective — if any step fails, the branch ref is not updated and no partial commit is visible.
 

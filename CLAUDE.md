@@ -21,29 +21,36 @@ This is a monorepo with two packages:
 ```bash
 # WASM engine (from packages/engine/)
 cargo build --target wasm32-unknown-unknown
-wasm-pack build
+wasm-pack build --target web --out-dir ../app/src/wasm
 
 # React SPA (from packages/app/)
 npm run dev          # dev server
-npm run build        # production build (vite build)
+npm run build        # tsc --noEmit + vite build
+npm run test         # vitest run (305 tests)
+npm run lint         # tsc --noEmit
 
-# Full build (CI)
-# See .github/workflows/build.yml — builds WASM, then SPA, then deploys to GitHub Pages
+# Rust tests (from packages/engine/)
+cargo test           # 37 tests
+
+# Full build from root
+npm run build        # engine then app
+npm run test         # engine then app
 ```
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| UI | React 18, Vite 7, TanStack Router, Tailwind CSS, Radix UI / Shadcn |
+| UI | React 18, Vite 6, TanStack Router (file-based), Tailwind CSS v4, Radix UI / Shadcn |
 | State | Zustand (UI state), TanStack Query (server data + caching) |
 | Drag-and-drop | @hello-pangea/dnd |
 | Code editor | @monaco-editor/react (lazy-loaded on IDE route only) |
-| GitHub API | octokit/rest |
-| Jira API | fetch via Service Worker (no SDK) |
+| GitHub API | Custom `GitHubClient` REST client (`src/lib/github/client.ts`) with `resilientFetch` |
+| Jira API | Custom `JiraClient` REST client (`src/lib/jira/client.ts`) with `resilientFetch` |
+| HTTP resilience | `resilientFetch` wrapper — exponential backoff, Retry-After, GET deduplication (`src/lib/fetch/`) |
 | WASM engine | Rust + wasm-pack + wasm-bindgen |
-| JS sandbox | rquickjs (compiled into WASM) |
-| TS transpile | oxc (compiled into WASM) |
+| JS sandbox | rquickjs (compiled into WASM) — stub, not yet integrated |
+| TS transpile | oxc (compiled into WASM) — stub, not yet integrated |
 
 ## Architecture
 
@@ -71,7 +78,9 @@ Content visibility is tiered (`public` / `github` / `redhat-sso`) and filtered b
 
 ### LLM Provider Abstraction
 
-All providers implement a common `LLMProvider` interface. When a provider lacks tool use support, sdlc-mcp content is inlined in the system prompt and tool-dependent features degrade gracefully.
+All providers implement a common `LLMProvider` interface with `AsyncIterable<ChatChunk>` streaming. Five providers: Vertex AI (Claude), Anthropic direct, OpenAI, Ollama, and custom endpoints.
+
+API keys are stored in the Service Worker's memory (not page JS). Provider `fetch()` calls route through `/_aegis/llm/{provider}/...` — the SW rewrites URLs and injects auth headers. When a provider lacks tool use support, org context is inlined in the system prompt and tool-dependent features degrade gracefully.
 
 ### WASM Engine Modules
 
@@ -80,9 +89,34 @@ The Rust engine (`packages/engine/src/`) contains modules ported from two existi
 - From **cmcp**: `catalog.rs` (tool aggregation), `sandbox.rs` (QuickJS sandbox)
 - New: `mcp.rs` (protocol handler), `auth_filter.rs` (visibility filtering)
 
-## Implementation Phases
+## Current Implementation Status
 
-The project follows six phases: Foundation (SPA scaffold + auth + WASM) → Kanban Board → AI Chat → IDE Editor + VFS → IDE AI + Git → Tool Aggregation. See `docs/design.md` §14 for details.
+Phases 1–5 of the design are implemented. Phase 6 (Tool Aggregation with QuickJS sandbox) is not yet built.
+
+| Feature | Status | Key Files |
+|---|---|---|
+| React SPA + routing | Done | `src/routes/`, `src/components/shared/` |
+| WASM engine | Done | `packages/engine/src/` (hierarchy, auth filter, MCP, catalog) |
+| Auth (4 OAuth flows) | Done | `src/lib/auth/` (GitHub, Atlassian, RH SSO, Google + PKCE) |
+| Service Worker | Done | `public/sw.js` (caching, auth injection, LLM relay) |
+| Kanban Board | Done | `src/components/board/`, `src/lib/jira/`, `src/stores/board.ts` |
+| AI Chat (5 providers) | Done | `src/components/chat/`, `src/lib/llm/`, `src/stores/chat.ts` |
+| Web IDE + Monaco | Done | `src/components/ide/`, `src/lib/vfs/`, `src/lib/github/` |
+| Settings + Landing | Done | `src/routes/settings.tsx`, `src/routes/index.tsx` |
+| Keyboard shortcuts | Done | `src/lib/shortcuts/` |
+| Command palette | Done | `src/lib/commands/`, `src/components/shared/CommandPalette.tsx` |
+| Resilient fetch | Done | `src/lib/fetch/resilient-fetch.ts` |
+| Empty states | Done | `src/components/shared/EmptyState.tsx` |
+
+## Testing
+
+```bash
+# JS tests (from packages/app/)
+npm run test           # 305 tests across 25 suites
+
+# Rust tests (from packages/engine/)
+cargo test             # 37 tests across 6 modules
+```
 
 ## Key Constraints
 

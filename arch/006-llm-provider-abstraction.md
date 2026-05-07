@@ -74,16 +74,19 @@ Outside contributors see a `ProviderPicker` dialog on first AI use:
 
 Red Hat employees skip this flow entirely — Vertex AI is configured automatically via Google OAuth.
 
-### 5. API key security
+### 5. Service Worker LLM relay and API key security
 
-API keys are stored in the Service Worker's memory scope, not in localStorage or any page-accessible storage:
+Provider classes do **not** hold API keys or call provider endpoints directly. Instead, all LLM requests route through the Service Worker's relay:
 
-- Keys are sent to the SW via `postMessage` and held in a `Map`.
-- The SW's `fetch` event handler injects authorization headers into outbound requests.
-- Page JavaScript never sees the actual key value after initial configuration.
-- CSP headers restrict `connect-src` to known provider endpoints.
+1. Provider classes `fetch()` to `/_aegis/llm/{provider}/{path}` (e.g., `/_aegis/llm/anthropic/v1/messages`).
+2. The SW's `handleLLMRelay()` rewrites the URL to the actual provider endpoint (e.g., `https://api.anthropic.com/v1/messages`).
+3. The SW injects the correct auth header from its in-memory token `Map`:
+   - Anthropic: `x-api-key: {token}`
+   - OpenAI/Custom: `Authorization: Bearer {token}`
+   - Vertex AI: `Authorization: Bearer {google_oauth_token}`
+4. API keys are sent to the SW via `sendTokenToSW()` at provider registration time and held only in SW memory.
 
-This is consistent with ADR-004 (Auth Architecture) which established the SW as the secure token store.
+This ensures page JavaScript **never** holds API keys after initial setup. An XSS attack cannot exfiltrate keys because they exist only in the SW's isolated scope. This is consistent with ADR-004 (Auth Architecture) which established the SW as the secure token store.
 
 ## Consequences
 
