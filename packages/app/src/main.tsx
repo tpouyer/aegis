@@ -12,7 +12,6 @@ import './app.css'
 authManager.clearExpiredTokens()
 new CacheStore('aegis-chat', 'sessions').evictExpired().catch(() => {})
 new CacheStore('aegis-jira', 'cache').evictExpired().catch(() => {})
-initTelemetry()
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,11 +22,9 @@ const queryClient = new QueryClient({
   },
 })
 
-// Expose QueryClient for ErrorBoundary retry (cache clearing)
 ;(window as any).__aegis_queryClient = queryClient
 
 const router = createRouter({ routeTree })
-instrumentNavigation(router)
 
 declare module '@tanstack/react-router' {
   interface Register {
@@ -37,10 +34,17 @@ declare module '@tanstack/react-router' {
 
 const rootElement = document.getElementById('root')!
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-)
+async function bootstrap() {
+  await initTelemetry()
+  instrumentNavigation(router)
+
+  createRoot(rootElement).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </StrictMode>,
+  )
+}
+
+bootstrap()

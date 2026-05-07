@@ -1,0 +1,14 @@
+{
+  "telemetry": {
+    "otlpEndpoint": null,
+    "exportIntervalMs": 60000,
+    "enabled": true
+  },
+  "auth": {
+    "githubClientId": null,
+    "atlassianClientId": null,
+    "rhSsoIssuerUrl": null,
+    "rhSsoClientId": null,
+    "googleClientId": null
+  }
+}
