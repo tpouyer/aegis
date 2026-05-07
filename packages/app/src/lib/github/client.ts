@@ -16,6 +16,7 @@
 import type {
   TreeEntry,
   FileContent,
+  GitCommit,
   GitRef,
   PullRequest,
   RepoInfo,
@@ -70,6 +71,17 @@ export class GitHubClient {
       `/repos/${owner}/${repo}/git/ref/${ref}`,
     );
     return { ref: data.ref, sha: data.object.sha };
+  }
+
+  async getCommit(owner: string, repo: string, sha: string): Promise<GitCommit> {
+    const data = await this.request<{
+      sha: string;
+      message: string;
+      author: { name: string; email: string; date: string };
+      tree: { sha: string };
+      parents: Array<{ sha: string }>;
+    }>(`/repos/${owner}/${repo}/git/commits/${sha}`);
+    return data;
   }
 
   // ── File operations ──────────────────────────────────────────────

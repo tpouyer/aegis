@@ -47,19 +47,18 @@ export class VirtualFileSystem {
     // Get the ref for the branch
     const ref = await this.github.getRef(owner, repo, `heads/${branch}`);
 
-    // Get the full recursive tree
-    const tree = await this.github.getTree(owner, repo, ref.sha, true);
+    // Fetch the commit object to get the actual tree SHA
+    const commit = await this.github.getCommit(owner, repo, ref.sha);
 
-    // We need the commit to get the tree SHA
-    // The ref.sha IS the commit SHA; we need the tree SHA from it
-    // For simplicity, use the ref SHA as both — the tree call above
-    // already used it correctly.
+    // Get the full recursive tree using the tree SHA (not commit SHA)
+    const tree = await this.github.getTree(owner, repo, commit.tree.sha, true);
+
     const state: VFSRepoState = {
       owner,
       repo,
       branch,
       baseBranch: repoInfo.defaultBranch,
-      treeSha: ref.sha, // will be updated on commit
+      treeSha: commit.tree.sha,
       headCommitSha: ref.sha,
       tree,
       openFiles: new Map(),

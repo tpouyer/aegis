@@ -287,25 +287,29 @@ export function useUpdateIssueMutation(boardId: number) {
  * Build a JQL clause string from board filters.
  * Returns undefined if no filters are active.
  */
+function escapeJql(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
 function buildFilterJql(filters?: BoardFilters): string | undefined {
   if (!filters) return undefined;
 
   const clauses: string[] = [];
 
   if (filters.assignee) {
-    clauses.push(`assignee = "${filters.assignee}"`);
+    clauses.push(`assignee = "${escapeJql(filters.assignee)}"`);
   }
   if (filters.component) {
-    clauses.push(`component = "${filters.component}"`);
+    clauses.push(`component = "${escapeJql(filters.component)}"`);
   }
   if (filters.priority) {
-    clauses.push(`priority = "${filters.priority}"`);
+    clauses.push(`priority = "${escapeJql(filters.priority)}"`);
   }
   if (filters.issueType) {
-    clauses.push(`issuetype = "${filters.issueType}"`);
+    clauses.push(`issuetype = "${escapeJql(filters.issueType)}"`);
   }
   if (filters.text) {
-    clauses.push(`text ~ "${filters.text}"`);
+    clauses.push(`text ~ "${escapeJql(filters.text)}"`);
   }
 
   return clauses.length > 0 ? clauses.join(' AND ') : undefined;

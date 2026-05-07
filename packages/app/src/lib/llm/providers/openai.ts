@@ -88,12 +88,10 @@ export class OpenAIProvider implements LLMProvider {
   readonly supportsStreaming = true;
   readonly maxContextWindow = 128_000;
 
-  private apiKey: string;
-  private baseUrl: string;
+  private relayUrl: string;
 
-  constructor(config: { apiKey: string; baseUrl?: string }) {
-    this.apiKey = config.apiKey;
-    this.baseUrl = config.baseUrl ?? 'https://api.openai.com';
+  constructor(config: { apiKey?: string; baseUrl?: string }) {
+    this.relayUrl = '/_aegis/llm/openai';
   }
 
   async *chat(params: ChatParams): AsyncIterable<ChatChunk> {
@@ -119,11 +117,10 @@ export class OpenAIProvider implements LLMProvider {
       }));
     }
 
-    const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+    const response = await fetch(`${this.relayUrl}/v1/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify(body),
     });

@@ -25,6 +25,13 @@ function createMockGithub(): GitHubClient {
       ref: 'refs/heads/feature/TEST-1-impl',
       sha: 'abc123',
     }),
+    getCommit: vi.fn().mockResolvedValue({
+      sha: 'abc123',
+      message: 'initial',
+      author: { name: 'test', email: 'test@test.com', date: '2024-01-01' },
+      tree: { sha: 'tree-root-sha' },
+      parents: [],
+    }),
     getTree: vi.fn().mockResolvedValue([
       { path: 'src', mode: '040000', type: 'tree', sha: 'tree-sha-1' },
       { path: 'src/index.ts', mode: '100644', type: 'blob', sha: 'blob-sha-1', size: 100 },

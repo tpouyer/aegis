@@ -2,6 +2,7 @@ import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { Sidebar } from '@/components/shared/Sidebar'
 import { Header } from '@/components/shared/Header'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+import { Toaster } from '@/components/shared/Toaster'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -19,6 +20,7 @@ function RootLayout() {
           </main>
         </div>
       </div>
+      <Toaster />
     </ErrorBoundary>
   )
 }

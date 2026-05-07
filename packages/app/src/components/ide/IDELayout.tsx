@@ -3,24 +3,35 @@
  *
  * Layout:
  *   - Left panel:   FileExplorer (resizable, ~250px default)
- *   - Center panel:  EditorTabs + editor area
+ *   - Center panel:  EditorTabs + editor area (MonacoEditor / MonacoDiffView)
  *   - Right panel:  AI chat sidebar (placeholder for Wave 3)
  *   - Bottom panel: SourceControl (collapsible)
  *
- * Uses CSS flexbox for the panel layout.
+ * Uses CSS flexbox for the panel layout. Monaco is lazy-loaded so the
+ * initial bundle stays small.
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Code, MessageSquare } from 'lucide-react'
+import { Code, MessageSquare, GitCompareArrows, FileCode } from 'lucide-react'
 import { FileExplorer } from './FileExplorer'
 import { EditorTabs } from './EditorTabs'
-import { EditorPlaceholder } from './EditorPlaceholder'
+import { MonacoEditor } from './MonacoEditor'
+import { MonacoDiffView } from './MonacoDiffView'
 import { SourceControl } from './SourceControl'
-import { DiffView } from './DiffView'
 import { useIDEStore } from '@/stores/ide'
+import { Button } from '@/components/ui/button'
 import type { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
 import type { TreeEntry } from '@/lib/github/types'
-import type { FileChange, DiffResult } from '@/lib/vfs/types'
+import type { FileChange } from '@/lib/vfs/types'
+import { cn } from '@/lib/utils'
+
+/** Tracks which file+repo the diff view is showing. */
+interface DiffTarget {
+  repoKey: string
+  path: string
+  original: string
+  modified: string
+}
 
 interface IDELayoutProps {
   vfs: VirtualFileSystem
@@ -49,7 +60,7 @@ export function IDELayout({
 
   const [fileContent, setFileContent] = useState<string>('')
   const [changes, setChanges] = useState<FileChange[]>([])
-  const [diffResult, setDiffResult] = useState<DiffResult | null>(null)
+  const [diffTarget, setDiffTarget] = useState<DiffTarget | null>(null)
   const [isLoadingFile, setIsLoadingFile] = useState(false)
 
   // Current active tab info
@@ -89,46 +100,47 @@ export function IDELayout({
 
   // Handle commit
   const handleCommit = useCallback(async (commitRepoKey: string, message: string) => {
-    try {
-      await vfs.commit(commitRepoKey, message)
-      refreshChanges()
-    } catch (err) {
-      console.error('Commit failed:', err)
-    }
+    const sha = await vfs.commit(commitRepoKey, message)
+    refreshChanges()
+    return sha
   }, [vfs, refreshChanges])
 
   // Handle create PR
   const handleCreatePR = useCallback(async (commitRepoKey: string) => {
-    try {
-      const pr = await vfs.createPR(commitRepoKey, {
-        title: `${issueKey}: ${issueKey}`,
-        body: `Addresses ${issueKey}`,
-      })
-      window.open(pr.htmlUrl, '_blank')
-    } catch (err) {
-      console.error('PR creation failed:', err)
-    }
+    const pr = await vfs.createPR(commitRepoKey, {
+      title: `${issueKey}: ${issueKey}`,
+      body: `Addresses ${issueKey}`,
+    })
+    return pr.htmlUrl
   }, [vfs, issueKey])
 
-  // Handle file click from source control (show diff)
+  // Handle file click from source control (show Monaco diff)
   const handleSourceControlFileClick = useCallback((clickedRepo: string, path: string) => {
     const diff = vfs.getDiff(clickedRepo, path)
-    setDiffResult(diff)
+    if (diff.hunks.length === 0) return
+
+    // Extract original and modified content from the diff's underlying change
+    const change = vfs.getChanges(clickedRepo).find((c) => c.path === path)
+    setDiffTarget({
+      repoKey: clickedRepo,
+      path,
+      original: change?.originalContent ?? '',
+      modified: change?.currentContent ?? '',
+    })
+
     if (!showDiff) {
       toggleDiffView()
     }
   }, [vfs, showDiff, toggleDiffView])
 
-  // Handle file click from explorer
-  const handleExplorerFileClick = useCallback((_repoKey: string, _path: string) => {
-    // openFile is called directly by FileExplorer via the store
-    // This handler is for any side effects
+  // Handle file content changes from Monaco
+  const handleContentChange = useCallback(() => {
     refreshChanges()
   }, [refreshChanges])
 
-  // Suppress unused var warning
-  void handleExplorerFileClick
+  // Suppress unused var warnings
   void openFile
+  void handleContentChange
 
   return (
     <div className="flex h-full flex-col">
@@ -144,6 +156,35 @@ export function IDELayout({
           </span>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {/* Code/Diff toggle */}
+          {currentTab && (
+            <div className="mr-2 flex items-center gap-1 rounded-md border border-border p-0.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'h-6 gap-1 px-2 text-xs',
+                  !showDiff && 'bg-accent',
+                )}
+                onClick={() => { if (showDiff) toggleDiffView() }}
+              >
+                <FileCode className="h-3 w-3" />
+                Code
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'h-6 gap-1 px-2 text-xs',
+                  showDiff && 'bg-accent',
+                )}
+                onClick={() => { if (!showDiff) toggleDiffView() }}
+              >
+                <GitCompareArrows className="h-3 w-3" />
+                Diff
+              </Button>
+            </div>
+          )}
           <span>Branch: <code className="rounded bg-muted px-1.5 py-0.5">{branch}</code></span>
           <span>Base: <code className="rounded bg-muted px-1.5 py-0.5">{baseBranch}</code></span>
         </div>
@@ -151,28 +192,33 @@ export function IDELayout({
 
       {/* Main panels */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left panel — File Explorer */}
+        {/* Left panel -- File Explorer */}
         <div className="w-60 shrink-0 border-r border-border bg-muted/10">
           <FileExplorer repoKey={repoKey} tree={tree} />
         </div>
 
-        {/* Center panel — Editor */}
+        {/* Center panel -- Editor */}
         <div className="flex flex-1 flex-col overflow-hidden">
           <EditorTabs />
 
           <div className="flex-1 overflow-hidden">
-            {showDiff && diffResult ? (
-              <DiffView diff={diffResult} />
+            {showDiff && diffTarget ? (
+              <MonacoDiffView
+                originalContent={diffTarget.original}
+                modifiedContent={diffTarget.modified}
+                path={diffTarget.path}
+              />
             ) : currentTab ? (
               isLoadingFile ? (
                 <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                   Loading...
                 </div>
               ) : (
-                <EditorPlaceholder
+                <MonacoEditor
                   path={currentTab.path}
                   content={fileContent}
                   repoKey={currentTab.repoKey}
+                  vfs={vfs}
                 />
               )
             ) : (
@@ -184,7 +230,7 @@ export function IDELayout({
           </div>
         </div>
 
-        {/* Right panel — AI Chat placeholder */}
+        {/* Right panel -- AI Chat placeholder */}
         <div className="w-72 shrink-0 border-l border-border bg-muted/10">
           <div className="flex items-center gap-2 border-b border-border px-3 py-2">
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -200,9 +246,10 @@ export function IDELayout({
         </div>
       </div>
 
-      {/* Bottom panel — Source Control */}
+      {/* Bottom panel -- Source Control */}
       <SourceControl
         changes={changes}
+        repoKey={repoKey}
         onCommit={handleCommit}
         onCreatePR={handleCreatePR}
         onFileClick={handleSourceControlFileClick}

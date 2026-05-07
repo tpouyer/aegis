@@ -8,7 +8,7 @@
  */
 
 import { create } from 'zustand';
-import type { ChatMessage } from '@/lib/llm/types';
+import type { ChatMessage, ToolCall, ToolResult } from '@/lib/llm/types';
 import { CacheStore } from '@/lib/cache/indexeddb';
 
 // ---------------------------------------------------------------------------
@@ -235,3 +235,89 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 }));
+
+// ---------------------------------------------------------------------------
+// Chat export
+// ---------------------------------------------------------------------------
+
+/**
+ * Format a tool call as a markdown code block.
+ */
+function formatToolCall(tc: ToolCall): string {
+  const parts: string[] = [];
+  parts.push(`**Tool Call:** \`${tc.name}\``);
+  parts.push('```json');
+  parts.push(JSON.stringify(tc.arguments, null, 2));
+  parts.push('```');
+  return parts.join('\n');
+}
+
+/**
+ * Format a tool result as a markdown code block.
+ */
+function formatToolResult(tr: ToolResult): string {
+  const parts: string[] = [];
+  const label = tr.isError ? 'Tool Error' : 'Tool Result';
+  parts.push(`**${label}:** (${tr.toolCallId})`);
+  parts.push('```');
+  parts.push(tr.content);
+  parts.push('```');
+  return parts.join('\n');
+}
+
+/**
+ * Export a chat session as markdown.
+ *
+ * Format:
+ *   - Metadata header (issue key, model, export date)
+ *   - Messages with role headers
+ *   - Tool call/result blocks as code blocks
+ */
+export function exportChatAsMarkdown(session: ChatSession): string {
+  const parts: string[] = [];
+
+  // Metadata header
+  parts.push(`# Chat: ${session.issueKey}`);
+  parts.push('');
+  parts.push(`- **Model:** ${session.currentModel}`);
+  parts.push(`- **Provider:** ${session.providerId}`);
+  parts.push(`- **Exported:** ${new Date().toISOString()}`);
+  parts.push('');
+  parts.push('---');
+  parts.push('');
+
+  // Messages
+  for (const msg of session.messages) {
+    const roleLabel = msg.role === 'user' ? 'User' : msg.role === 'assistant' ? 'Assistant' : 'System';
+    const timestamp = new Date(msg.timestamp).toLocaleString();
+
+    parts.push(`### ${roleLabel}`);
+    parts.push(`_${timestamp}_`);
+    parts.push('');
+
+    if (msg.content) {
+      parts.push(msg.content);
+      parts.push('');
+    }
+
+    // Tool calls
+    if (msg.toolCalls && msg.toolCalls.length > 0) {
+      for (const tc of msg.toolCalls) {
+        parts.push(formatToolCall(tc));
+        parts.push('');
+
+        // Find matching result
+        const tr = msg.toolResults?.find((r) => r.toolCallId === tc.id);
+        if (tr) {
+          parts.push(formatToolResult(tr));
+          parts.push('');
+        }
+      }
+    }
+
+    parts.push('---');
+    parts.push('');
+  }
+
+  return parts.join('\n').trimEnd();
+}

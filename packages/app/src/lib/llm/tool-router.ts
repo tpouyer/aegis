@@ -4,15 +4,47 @@
  *
  * Tool categories:
  *   - Content tools (coding_standards, testing_guidelines, architecture, etc.)
- *     → Resolved from the WASM engine's manifest cache (instant, no network).
- *     → Currently stubbed; will be wired to the ProxyEngine when available.
+ *     -> Resolved from the WASM engine's manifest cache (instant, no network).
+ *     -> Currently stubbed; will be wired to the ProxyEngine when available.
+ *
+ *   - org_context — returns sample organizational context for the current issue.
+ *     -> Mock implementation for development and testing.
  *
  *   - Search / execute tools
- *     → Routed through the Service Worker to upstream MCP servers.
- *     → Currently stubbed; will be implemented in the Tool Aggregation phase.
+ *     -> Routed through the Service Worker to upstream MCP servers.
+ *     -> Currently stubbed; will be implemented in the Tool Aggregation phase.
  */
 
 import type { ToolCall, ToolResult } from './types';
+
+// ---------------------------------------------------------------------------
+// Debug logging
+// ---------------------------------------------------------------------------
+
+const DEBUG = typeof process !== 'undefined'
+  ? process.env.NODE_ENV !== 'production'
+  : true;
+
+function logToolCall(toolCall: ToolCall): void {
+  if (!DEBUG) return;
+  console.debug(
+    `[tool-router] call: ${toolCall.name} (${toolCall.id})`,
+    toolCall.arguments,
+  );
+}
+
+function logToolResult(result: ToolResult): void {
+  if (!DEBUG) return;
+  const status = result.isError ? 'ERROR' : 'OK';
+  console.debug(
+    `[tool-router] result [${status}]: ${result.toolCallId}`,
+    result.content.slice(0, 200),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tool sets
+// ---------------------------------------------------------------------------
 
 /** Content tool names that resolve from the WASM engine. */
 const CONTENT_TOOLS = new Set([
@@ -23,22 +55,124 @@ const CONTENT_TOOLS = new Set([
   'onboarding',
 ]);
 
+// ---------------------------------------------------------------------------
+// Mock org context data
+// ---------------------------------------------------------------------------
+
+const MOCK_ORG_CONTEXT: Record<string, string> = {
+  coding_standards: [
+    '# Coding Standards',
+    '',
+    '- Use TypeScript strict mode for all source files.',
+    '- Prefer functional components with hooks over class components.',
+    '- Use named exports; avoid default exports except for route components.',
+    '- Maximum line length: 100 characters.',
+    '- All public functions must have JSDoc comments.',
+  ].join('\n'),
+  testing_guidelines: [
+    '# Testing Guidelines',
+    '',
+    '- Write unit tests for all exported functions.',
+    '- Use Vitest as the test runner; RTL for component tests.',
+    '- Aim for 80% branch coverage on business logic.',
+    '- Integration tests should mock network boundaries only.',
+  ].join('\n'),
+  architecture: [
+    '# Architecture Overview',
+    '',
+    '- Monorepo with packages/app (React SPA) and packages/engine (Rust/WASM).',
+    '- State management: Zustand stores scoped by feature.',
+    '- LLM integration via provider abstraction (Anthropic, OpenAI, Ollama, custom).',
+    '- Caching: IndexedDB with TTL-based expiration.',
+    '- Routing: TanStack Router with file-based route definitions.',
+  ].join('\n'),
+  team_practices: [
+    '# Team Practices',
+    '',
+    '- PRs require at least one approval before merge.',
+    '- Commit messages follow Conventional Commits format.',
+    '- Feature branches are prefixed with feat/, bugfix/, or chore/.',
+    '- Sprint cadence: 2-week sprints with planning on Mondays.',
+  ].join('\n'),
+};
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
 /**
  * Route a tool call to its handler and return the result.
+ *
+ * Errors during tool execution are caught and returned as error results
+ * rather than propagated, keeping the streaming loop intact.
  */
 export async function routeToolCall(toolCall: ToolCall): Promise<ToolResult> {
-  if (CONTENT_TOOLS.has(toolCall.name)) {
-    return resolveContentTool(toolCall);
+  logToolCall(toolCall);
+
+  let result: ToolResult;
+
+  try {
+    if (toolCall.name === 'org_context') {
+      result = await resolveOrgContext(toolCall);
+    } else if (CONTENT_TOOLS.has(toolCall.name)) {
+      result = await resolveContentTool(toolCall);
+    } else if (toolCall.name === 'search' || toolCall.name === 'execute') {
+      result = await routeToMCP(toolCall);
+    } else {
+      result = {
+        toolCallId: toolCall.id,
+        content: `Unknown tool: ${toolCall.name}`,
+        isError: true,
+      };
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    result = {
+      toolCallId: toolCall.id,
+      content: `Tool execution failed: ${message}`,
+      isError: true,
+    };
   }
 
-  if (toolCall.name === 'search' || toolCall.name === 'execute') {
-    return routeToMCP(toolCall);
+  logToolResult(result);
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Tool handlers
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve mock organizational context.
+ *
+ * Accepts an optional `topic` argument to return a specific section,
+ * or returns all available context when no topic is specified.
+ */
+async function resolveOrgContext(toolCall: ToolCall): Promise<ToolResult> {
+  const topic = (toolCall.arguments.topic as string | undefined)?.toLowerCase();
+
+  if (topic && MOCK_ORG_CONTEXT[topic]) {
+    return {
+      toolCallId: toolCall.id,
+      content: MOCK_ORG_CONTEXT[topic],
+    };
   }
 
+  if (topic) {
+    // Unknown topic — list available topics
+    const available = Object.keys(MOCK_ORG_CONTEXT).join(', ');
+    return {
+      toolCallId: toolCall.id,
+      content: `Topic "${topic}" not found. Available topics: ${available}`,
+      isError: true,
+    };
+  }
+
+  // No topic — return all context
+  const allContext = Object.values(MOCK_ORG_CONTEXT).join('\n\n');
   return {
     toolCallId: toolCall.id,
-    content: `Unknown tool: ${toolCall.name}`,
-    isError: true,
+    content: allContext,
   };
 }
 

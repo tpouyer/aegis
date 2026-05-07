@@ -10,19 +10,23 @@
  *   2. Fetch available transitions
  *   3. Find transition matching target status
  *   4. Execute transition (or rollback on failure)
+ *   4a. If transition requires fields, show TransitionModal
  */
 
 import { useState, useCallback, useMemo } from 'react';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Loading } from '@/components/shared/Loading';
+import { Button } from '@/components/ui/button';
 import { useBoard, useIssues, useTransitionMutation } from '@/lib/jira/queries';
 import { getJiraClient } from '@/lib/jira/client';
 import { useBoardStore } from '@/stores/board';
-import type { BoardColumn, JiraIssue } from '@/lib/jira/types';
+import { toast } from '@/stores/toast';
+import type { BoardColumn, JiraIssue, JiraTransition } from '@/lib/jira/types';
 import { FilterBar } from './FilterBar';
 import { Column } from './Column';
 import { CardDetail } from './CardDetail';
+import { TransitionModal } from './TransitionModal';
 
 interface BoardViewProps {
   boardId: number;
@@ -41,6 +45,13 @@ export function BoardView({ boardId }: BoardViewProps) {
   const [selectedIssueKey, setSelectedIssueKey] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
+  // TransitionModal state
+  const [transitionModalOpen, setTransitionModalOpen] = useState(false);
+  const [pendingTransition, setPendingTransition] = useState<{
+    issueKey: string;
+    transition: JiraTransition;
+  } | null>(null);
+
   const {
     data: boardConfig,
     isLoading: boardLoading,
@@ -51,6 +62,9 @@ export function BoardView({ boardId }: BoardViewProps) {
     data: issuesResponse,
     isLoading: issuesLoading,
     error: issuesError,
+    dataUpdatedAt,
+    refetch: refetchIssues,
+    isFetching: issuesFetching,
   } = useIssues(boardId, filters);
 
   const transitionMutation = useTransitionMutation(boardId);
@@ -148,20 +162,19 @@ export function BoardView({ boardId }: BoardViewProps) {
         if (!matchingTransition) {
           // No valid transition — rollback
           rollbackOptimisticUpdate(issueKey);
-          console.warn(
-            `No transition available from ${issue.fields.status.name} to column "${targetColumnName}"`,
+          toast.error(
+            'Transition unavailable',
+            `No transition available from "${issue.fields.status.name}" to column "${targetColumnName}".`,
           );
           return;
         }
 
         // 4. Check if transition requires fields
         if (matchingTransition.hasScreen) {
-          // For now, rollback transitions that require a screen.
-          // A modal for field entry would be added here in the future.
-          rollbackOptimisticUpdate(issueKey);
-          console.warn(
-            `Transition "${matchingTransition.name}" requires additional fields.`,
-          );
+          // Show the transition modal so the user can fill in required fields.
+          // The optimistic update stays in place until submit or cancel.
+          setPendingTransition({ issueKey, transition: matchingTransition });
+          setTransitionModalOpen(true);
           return;
         }
 
@@ -173,10 +186,17 @@ export function BoardView({ boardId }: BoardViewProps) {
 
         // Success — remove optimistic update (real data will be fetched)
         rollbackOptimisticUpdate(issueKey);
+        toast.success(
+          'Issue transitioned',
+          `${issueKey} moved to "${matchingTransition.to.name}".`,
+        );
       } catch (error) {
         // Rollback on any failure
         rollbackOptimisticUpdate(issueKey);
-        console.error('Transition failed:', error);
+        toast.error(
+          'Transition failed',
+          error instanceof Error ? error.message : 'An unexpected error occurred.',
+        );
       }
     },
     [
@@ -188,6 +208,41 @@ export function BoardView({ boardId }: BoardViewProps) {
       transitionMutation,
     ],
   );
+
+  // -----------------------------------------------------------------------
+  // Transition modal handlers
+  // -----------------------------------------------------------------------
+
+  const handleTransitionSubmit = useCallback(
+    async (fields: Record<string, unknown>) => {
+      if (!pendingTransition) return;
+
+      const { issueKey, transition } = pendingTransition;
+
+      await transitionMutation.mutateAsync({
+        issueKey,
+        transitionId: transition.id,
+        fields,
+      });
+
+      rollbackOptimisticUpdate(issueKey);
+      setTransitionModalOpen(false);
+      setPendingTransition(null);
+      toast.success(
+        'Issue transitioned',
+        `${issueKey} moved to "${transition.to.name}".`,
+      );
+    },
+    [pendingTransition, transitionMutation, rollbackOptimisticUpdate],
+  );
+
+  const handleTransitionCancel = useCallback(() => {
+    if (pendingTransition) {
+      rollbackOptimisticUpdate(pendingTransition.issueKey);
+    }
+    setTransitionModalOpen(false);
+    setPendingTransition(null);
+  }, [pendingTransition, rollbackOptimisticUpdate]);
 
   // -----------------------------------------------------------------------
   // Card click handler — opens detail panel
@@ -219,10 +274,36 @@ export function BoardView({ boardId }: BoardViewProps) {
     );
   }
 
+  // Format "last updated" timestamp
+  const lastUpdated = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString()
+    : null;
+
   return (
     <div className="flex h-full flex-col">
-      {/* Filter bar */}
+      {/* Filter bar with refresh controls */}
       <FilterBar issues={allIssues} />
+
+      {/* Board header with refresh button and timestamp */}
+      <div className="flex items-center justify-end gap-3 border-b border-border bg-card px-4 py-1.5">
+        {lastUpdated && (
+          <span className="text-xs text-muted-foreground">
+            Last updated: {lastUpdated}
+          </span>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 text-xs"
+          onClick={() => refetchIssues()}
+          disabled={issuesFetching}
+        >
+          <RefreshCw
+            className={`h-3.5 w-3.5 ${issuesFetching ? 'animate-spin' : ''}`}
+          />
+          Refresh
+        </Button>
+      </div>
 
       {/* Board columns */}
       <DragDropContext
@@ -248,6 +329,17 @@ export function BoardView({ boardId }: BoardViewProps) {
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />
+
+      {/* Transition modal for fields-required transitions */}
+      {pendingTransition && (
+        <TransitionModal
+          open={transitionModalOpen}
+          issueKey={pendingTransition.issueKey}
+          transition={pendingTransition.transition}
+          onSubmit={handleTransitionSubmit}
+          onCancel={handleTransitionCancel}
+        />
+      )}
     </div>
   );
 }

@@ -33,6 +33,7 @@ import { AnthropicProvider } from '@/lib/llm/providers/anthropic'
 import { OpenAIProvider } from '@/lib/llm/providers/openai'
 import { OllamaProvider } from '@/lib/llm/providers/ollama'
 import { CustomProvider } from '@/lib/llm/providers/custom'
+import { sendTokenToSW } from '@/lib/auth/sw-bridge'
 
 // ---------------------------------------------------------------------------
 // Provider descriptors
@@ -193,15 +194,24 @@ export function ProviderPicker({
     }
   }, [selected, apiKey, endpoint, model])
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!selected) return
+
+    // Send API key to Service Worker for secure storage (not held in page JS)
+    if (apiKey && (selected.id === 'anthropic' || selected.id === 'openai' || selected.id === 'custom')) {
+      await sendTokenToSW(selected.id as 'github', {
+        accessToken: apiKey,
+        expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+        provider: selected.id as 'github',
+      });
+    }
 
     switch (selected.id) {
       case 'anthropic':
-        providerRegistry.register(new AnthropicProvider({ apiKey }))
+        providerRegistry.register(new AnthropicProvider({}))
         break
       case 'openai':
-        providerRegistry.register(new OpenAIProvider({ apiKey }))
+        providerRegistry.register(new OpenAIProvider({}))
         break
       case 'ollama':
         providerRegistry.register(new OllamaProvider({ endpoint }))
@@ -210,7 +220,6 @@ export function ProviderPicker({
         providerRegistry.register(
           new CustomProvider({
             endpoint,
-            apiKey: apiKey || undefined,
             model: model || 'default',
           }),
         )
