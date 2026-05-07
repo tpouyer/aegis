@@ -47,4 +47,8 @@ async function bootstrap() {
   )
 }
 
-bootstrap()
+bootstrap().catch((err) => {
+  console.error('[Aegis] Bootstrap failed:', err)
+  const root = document.getElementById('root')
+  if (root) root.textContent = `Failed to start: ${err.message}`
+})

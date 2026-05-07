@@ -1,6 +1,6 @@
 import { metrics } from '@opentelemetry/api'
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http'
-import { Resource } from '@opentelemetry/resources'
+import { resourceFromAttributes } from '@opentelemetry/resources'
 import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
 import { getTelemetryConfig, loadWellKnownConfig } from './config'
@@ -16,15 +16,15 @@ function createProvider(): () => void {
     return () => {}
   }
 
-  const resource = new Resource({
+  const resource = resourceFromAttributes({
     [ATTR_SERVICE_NAME]: 'aegis-app',
     [ATTR_SERVICE_VERSION]: '0.1.0',
   })
 
-  const provider = new MeterProvider({ resource })
+  const readers: PeriodicExportingMetricReader[] = []
 
   if (import.meta.env.DEV) {
-    provider.addMetricReader(
+    readers.push(
       new PeriodicExportingMetricReader({
         exporter: new ConsoleMetricExporter(),
         exportIntervalMillis: 15_000,
@@ -33,13 +33,15 @@ function createProvider(): () => void {
   }
 
   if (config.otlpEndpoint) {
-    provider.addMetricReader(
+    readers.push(
       new PeriodicExportingMetricReader({
         exporter: new OTLPMetricExporter({ url: config.otlpEndpoint }),
         exportIntervalMillis: config.exportIntervalMs,
       }),
     )
   }
+
+  const provider = new MeterProvider({ resource, readers })
 
   metrics.setGlobalMeterProvider(provider)
   _meterProvider = provider
