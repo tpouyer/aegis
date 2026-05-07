@@ -10,11 +10,12 @@
  * AI API requests.
  */
 
+import { getWellKnownConfig } from '@/lib/telemetry/config'
 import { generateCodeChallenge, generateCodeVerifier, generateState } from './pkce'
 import type { GoogleOAuthConfig, TokenSet } from './types'
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
-const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+const GOOGLE_TOKEN_URL_DIRECT = 'https://oauth2.googleapis.com/token'
 
 const SESSION_KEY_VERIFIER = 'aegis_google_pkce_verifier'
 const SESSION_KEY_STATE = 'aegis_google_oauth_state'
@@ -81,20 +82,31 @@ export async function handleGoogleCallback(params: URLSearchParams, config: Goog
   localStorage.removeItem(SESSION_KEY_STATE)
   localStorage.removeItem(SESSION_KEY_VERIFIER)
 
-  const body = new URLSearchParams({
-    grant_type: 'authorization_code',
-    client_id: config.clientId,
-    code,
-    redirect_uri: config.redirectUri,
-    code_verifier: verifier,
-  })
+  const proxyUrl = getWellKnownConfig().auth?.githubTokenProxyUrl
+  const tokenUrl = proxyUrl || GOOGLE_TOKEN_URL_DIRECT
 
-  const response = await fetch(GOOGLE_TOKEN_URL, {
+  const requestBody = proxyUrl
+    ? JSON.stringify({
+        provider: 'google',
+        client_id: config.clientId,
+        code,
+        redirect_uri: config.redirectUri,
+        code_verifier: verifier,
+      })
+    : new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: config.clientId,
+        code,
+        redirect_uri: config.redirectUri,
+        code_verifier: verifier,
+      }).toString()
+
+  const response = await fetch(tokenUrl, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': proxyUrl ? 'application/json' : 'application/x-www-form-urlencoded',
     },
-    body: body.toString(),
+    body: requestBody,
   })
 
   if (!response.ok) {
