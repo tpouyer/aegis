@@ -127,12 +127,16 @@ export class VertexProvider implements LLMProvider {
       }))
     }
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    if (this.accessToken) {
+      headers.Authorization = `Bearer ${this.accessToken}`
+    }
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.accessToken}`,
-      },
+      headers,
       body: JSON.stringify(body),
       signal: params.signal,
     })

@@ -264,33 +264,40 @@ export function ChatView({ issueKey, issueSummary, issueDescription, acceptanceC
           {issueSummary && <span className="text-sm text-muted-foreground">{issueSummary}</span>}
         </div>
 
-        {/* Model selector */}
-        {provider && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1">
-                {session?.currentModel ?? provider.models[0]?.name ?? 'Model'}
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{provider.name}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {provider.models.map((model) => (
-                <DropdownMenuItem key={model.id} onClick={() => handleModelSwitch(model.id)}>
-                  <span className="flex-1">{model.name}</span>
-                  {model.supportsToolUse && (
-                    <Badge variant="secondary" className="ml-2 text-[10px]">
-                      Tools
-                    </Badge>
-                  )}
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowProviderPicker(true)}>Change provider...</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        {/* Model selector / provider switch */}
+        <div className="flex items-center gap-2">
+          {!provider && (
+            <Button variant="outline" size="sm" onClick={() => setShowProviderPicker(true)}>
+              Configure AI Provider
+            </Button>
+          )}
+          {provider && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  {session?.currentModel ?? provider.models[0]?.name ?? 'Model'}
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{provider.name}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {provider.models.map((model) => (
+                  <DropdownMenuItem key={model.id} onClick={() => handleModelSwitch(model.id)}>
+                    <span className="flex-1">{model.name}</span>
+                    {model.supportsToolUse && (
+                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                        Tools
+                      </Badge>
+                    )}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowProviderPicker(true)}>Change provider...</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
       {/* Messages or empty state */}

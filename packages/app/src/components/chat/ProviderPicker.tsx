@@ -157,6 +157,15 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
           throw new Error('No models found. Is Ollama running with a model loaded?')
         }
         setTestResult('success')
+      } else if (selected.id === 'vertex') {
+        if (!gcpProject.trim()) {
+          throw new Error('GCP Project ID is required')
+        }
+        const { authManager } = await import('@/lib/auth/manager')
+        if (!authManager.isConnected('google')) {
+          throw new Error('Google auth required. Go to Settings > Integrations and connect Google first.')
+        }
+        setTestResult('success')
       } else if (selected.id === 'custom') {
         // Try a simple request to the endpoint
         const response = await fetch(endpoint, {
