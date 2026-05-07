@@ -45,7 +45,10 @@ jobs:
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - run: npm ci
-      - run: npm run build
+      - name: Build with GitHub Pages base path
+        run: npm run build
+        env:
+          VITE_BASE_PATH: /aegis/
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
