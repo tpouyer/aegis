@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Aegis is a zero-infrastructure development platform served as a single WASM binary from a static site (GitHub Pages). It combines organizational context delivery, MCP tool aggregation, and an AI-native development surface (kanban board, AI chat, browser IDE) — all running entirely in the browser with no backend.
 
-The design document lives at `docs/design.md`. The threat model is at `docs/security/threat-model.md`. User stories are at `docs/user-stories.md`. The UI/UX redesign record is at `docs/ui-ux-redesign-plan.md`. The OTEL implementation record is at `docs/otel-implementation-plan.md`.
+The design document lives at `docs/design.md`. The threat model is at `docs/security/threat-model.md`. User stories are at `docs/user-stories.md`.
 
 ## Repository Structure
 
@@ -43,7 +43,7 @@ npm run test         # engine then app
 | Layer | Technology |
 |---|---|
 | UI | React 18, Vite 6, TanStack Router (file-based), Tailwind CSS v4, Radix UI / Shadcn, Red Hat Display/Text/Mono fonts |
-| Design system | PatternFly 6 color palette, always-dark sidebar, Red Hat typography. See `docs/ui-ux-redesign-plan.md` |
+| Design system | PatternFly 6 color palette, always-dark sidebar, Red Hat Display/Text/Mono typography |
 | State | Zustand (board, chat, IDE, theme, sidebar, telemetry, recent), TanStack Query (server data + caching) |
 | Observability | OpenTelemetry SDK (metrics), console + OTLP/HTTP exporters (`src/lib/telemetry/`) |
 | Drag-and-drop | @hello-pangea/dnd |
