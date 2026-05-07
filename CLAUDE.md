@@ -137,3 +137,14 @@ cargo test             # 37 tests across 6 modules
 - GitHub API rate limit is 5,000 req/hr — rely on content-addressed caching and lazy file loading.
 - Bundle size target: ~5-6MB total (Monaco ~3MB lazy-loaded, WASM ~1-2MB, React app ~200KB), code-split by route.
 - Multi-repo issues get separate commits/PRs per repo — no cross-repo atomicity.
+
+## Security
+
+The threat model (`docs/security/threat-model.md`) documents 12 attack vectors analyzed via STRIDE. Three rounds of security audit (`docs/security/audit-{1,2,3}/`) resolved all critical and high-severity issues:
+
+- **LLM relay hardening**: Custom and Vertex AI relay endpoints restricted to configured/validated URLs only
+- **XSS prevention**: SafeLink component filters `javascript:`/`data:` URIs in all ReactMarkdown rendering; CSP meta tag restricts script sources
+- **Prompt injection defense**: User-controlled content in LLM system prompts wrapped in `<user_content>` boundary tags
+- **API security**: Error messages sanitized (no response body leakage); URL path parameters encoded
+- **Token management**: SW checks token expiry before injection; 401 responses trigger token cleanup; expired metadata evicted on startup
+- **Debug logging**: Guarded by `import.meta.env.DEV` — stripped in production builds
