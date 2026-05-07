@@ -1,0 +1,44 @@
+# ADR-002: Frontend Tooling
+
+## Status: Accepted
+
+## Context
+
+Aegis is a zero-infrastructure development platform served as a static SPA. The frontend must support code-splitting by route (board, chat, IDE are separate chunks), integrate with a WASM engine, and provide an accessible, consistent design system. We need a build tool, router, component library strategy, and state management approach that work together without imposing runtime infrastructure requirements.
+
+## Decision
+
+We selected the following stack:
+
+**Build tool: Vite** — Vite provides fast HMR via native ESM in development and optimized Rollup-based production builds. Its first-class WASM support is critical for loading the Rust engine. The Tailwind CSS v4 Vite plugin integrates directly into the build pipeline without PostCSS configuration.
+
+**Router: TanStack Router** — TanStack Router provides type-safe route definitions with compile-time parameter validation, file-based routing conventions that eliminate manual route registration, and built-in route-level code splitting via lazy loading. This is essential for keeping the initial bundle small (Monaco editor should only load on the IDE route).
+
+**Component library: Shadcn UI (copy-paste) over traditional component libraries** — Rather than depending on a versioned component library (MUI, Chakra, Mantine), we use Shadcn's approach of copying component source code into the project. Components are built on Radix UI primitives for accessibility. This gives full ownership of the code, eliminates version lock-in, and allows customization without fighting library abstractions. The trade-off is manual maintenance of updates, but for a focused application this is manageable.
+
+**State management: Zustand + TanStack Query** — These serve complementary roles. TanStack Query manages server state (Jira issues, GitHub data) with built-in caching, background refetching, and optimistic updates. Zustand manages client UI state (sidebar toggle, editor tab selection, drag-and-drop optimistic state). This separation avoids the common pattern of forcing server data through a client state manager.
+
+## Consequences
+
+**What becomes easier:**
+- Route-level code splitting is automatic via TanStack Router's file-based conventions
+- Component customization requires editing local files rather than fighting library overrides
+- Server state caching and invalidation are handled declaratively by TanStack Query
+- WASM loading integrates naturally through Vite's asset pipeline
+
+**What becomes harder:**
+- Shadcn components must be manually updated when upstream fixes bugs in Radix primitives
+- TanStack Router's file-based conventions require understanding its naming rules (e.g., `$param` for dynamic segments)
+- Two state management libraries (Zustand + Query) increase the surface area a new developer must learn
+
+## Alternatives Considered
+
+**Next.js / Remix** — Both impose server-side rendering assumptions and deployment requirements that conflict with the zero-infrastructure constraint. Aegis is a pure client-side SPA served from GitHub Pages.
+
+**React Router** — Mature and widely used, but lacks type-safe route parameters and requires manual code-splitting setup. TanStack Router provides these out of the box.
+
+**MUI / Chakra UI** — Full component libraries that provide more out of the box but come with version lock-in, bundle size overhead, and theming constraints that make deep customization difficult.
+
+**Redux / Recoil** — Redux adds boilerplate for simple UI state; Recoil is less maintained. Zustand provides equivalent capability with minimal API surface. Neither addresses server state caching, which TanStack Query handles natively.
+
+**Webpack** — Slower development feedback loop, more complex configuration, and no first-class Tailwind v4 or WASM support. Vite is the standard choice for new React projects.
