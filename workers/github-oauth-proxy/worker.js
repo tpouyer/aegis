@@ -1,13 +1,9 @@
 /**
  * Cloudflare Worker — GitHub OAuth CORS Proxy
  *
- * GitHub's token exchange endpoint (POST /login/oauth/access_token)
- * does not support CORS from browser origins. This worker proxies
- * the request and adds CORS headers so the Aegis SPA can complete
- * the OAuth flow.
- *
- * Deploy: wrangler deploy
- * URL: https://github-oauth-proxy.<your-subdomain>.workers.dev
+ * Proxies the token exchange request to GitHub and adds CORS headers.
+ * The client_secret is stored as a Cloudflare Worker secret (not in
+ * browser code) via: wrangler secret put GITHUB_CLIENT_SECRET
  */
 
 const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
@@ -19,7 +15,7 @@ const CORS_HEADERS = {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: CORS_HEADERS })
     }
@@ -39,8 +35,8 @@ export default {
         },
         body: JSON.stringify({
           client_id: body.client_id,
+          client_secret: env.GITHUB_CLIENT_SECRET,
           code: body.code,
-          code_verifier: body.code_verifier,
           redirect_uri: body.redirect_uri,
         }),
       })
