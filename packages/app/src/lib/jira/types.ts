@@ -201,6 +201,18 @@ export interface JiraTransitionField {
 }
 
 // ---------------------------------------------------------------------------
+// Projects
+// ---------------------------------------------------------------------------
+
+export interface JiraProject {
+  id: string
+  key: string
+  name: string
+  projectTypeKey?: string
+  avatarUrls?: Record<string, string>
+}
+
+// ---------------------------------------------------------------------------
 // API response wrappers
 // ---------------------------------------------------------------------------
 

@@ -16,6 +16,7 @@ import type {
   JiraConfig,
   JiraIssue,
   JiraPaginatedResponse,
+  JiraProject,
   JiraSearchResponse,
   JiraTransition,
   JiraTransitionsResponse,
@@ -231,6 +232,20 @@ export class JiraClient {
       method: 'POST',
       body: JSON.stringify({ body }),
     })
+  }
+
+  // -----------------------------------------------------------------------
+  // Projects
+  // -----------------------------------------------------------------------
+
+  /** Search projects by name or key. */
+  async searchProjects(query: string, maxResults = 10): Promise<JiraPaginatedResponse<JiraProject>> {
+    const params = new URLSearchParams({
+      query,
+      maxResults: String(maxResults),
+      orderBy: 'name',
+    })
+    return this.request<JiraPaginatedResponse<JiraProject>>(this.apiUrl(`/api/3/project/search?${params}`))
   }
 
   // -----------------------------------------------------------------------

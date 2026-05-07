@@ -15,6 +15,7 @@ import type {
   JiraBoard,
   JiraBoardConfig,
   JiraIssue,
+  JiraProject,
   JiraSearchResponse,
   JiraTransition,
   JiraUser,
@@ -33,6 +34,7 @@ export const jiraKeys = {
   transitions: (issueKey: string) => [...jiraKeys.all, 'transitions', issueKey] as const,
   currentUser: () => [...jiraKeys.all, 'currentUser'] as const,
   search: (jql: string) => [...jiraKeys.all, 'search', jql] as const,
+  projects: (query: string) => [...jiraKeys.all, 'projects', query] as const,
 }
 
 // ---------------------------------------------------------------------------
@@ -179,6 +181,23 @@ export function useBoards(options?: Partial<UseQueryOptions<JiraBoard[]>>) {
     },
     staleTime: 60 * 60 * 1000,
     ...options,
+  })
+}
+
+/**
+ * Search Jira projects by name or key.
+ * Stale time: 5 minutes. Only fires when query is 2+ characters.
+ */
+export function useProjectSearch(query: string) {
+  return useQuery<JiraProject[]>({
+    queryKey: jiraKeys.projects(query),
+    queryFn: async () => {
+      const client = getJiraClient()
+      const response = await client.searchProjects(query)
+      return response.values
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: query.length >= 2,
   })
 }
 

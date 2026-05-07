@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronDown, Filter, Kanban, LayoutDashboard, ListChecks, Search, Star, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronDown, Filter, Kanban, LayoutDashboard, ListChecks, Loader2, Search, Star, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
+import { useProjectSearch } from '@/lib/jira/queries'
 import type { JiraBoard } from '@/lib/jira/types'
 import { useBoardPrefsStore } from '@/stores/board-prefs'
 
@@ -41,6 +42,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
   const [showAll, setShowAll] = useState(false)
   const [textFilter, setTextFilter] = useState('')
   const [spaceFilter, setSpaceFilter] = useState<string | null>(null)
+  const [spaceFilterName, setSpaceFilterName] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
   const [projectTypeFilter, setProjectTypeFilter] = useState<string | null>(null)
 
@@ -48,19 +50,6 @@ export function BoardPicker({ boards }: BoardPickerProps) {
   const recentIdMap = useMemo(() => new Map(recentBoards.map((r) => [r.id, r.lastVisited])), [recentBoards])
 
   // Extract unique filter options from available boards
-  // "Space" = the Jira project where the board is located (matches Jira's projectLocation filter)
-  const spaces = useMemo(() => {
-    const seen = new Map<string, string>()
-    for (const b of boards) {
-      if (b.location?.projectKey && !seen.has(b.location.projectKey)) {
-        seen.set(b.location.projectKey, b.location.projectName)
-      }
-    }
-    return Array.from(seen.entries())
-      .map(([key, name]) => ({ key, name }))
-      .sort((a, b) => a.name.localeCompare(b.name))
-  }, [boards])
-
   const boardTypes = useMemo(() => {
     const types = new Set(boards.map((b) => b.type))
     return Array.from(types).sort()
@@ -125,6 +114,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
   const clearAllFilters = () => {
     setTextFilter('')
     setSpaceFilter(null)
+    setSpaceFilterName(null)
     setTypeFilter(null)
     setProjectTypeFilter(null)
   }
@@ -150,14 +140,14 @@ export function BoardPicker({ boards }: BoardPickerProps) {
           />
         </div>
 
-        {spaces.length > 1 && (
-          <SearchableFilter
-            label="Space"
-            value={spaceFilter}
-            options={spaces.map((s) => ({ id: s.key, label: s.name, detail: s.key }))}
-            onSelect={setSpaceFilter}
-          />
-        )}
+        <SearchableFilter
+          value={spaceFilter}
+          selectedName={spaceFilterName}
+          onSelect={(key, name) => {
+            setSpaceFilter(key)
+            setSpaceFilterName(name)
+          }}
+        />
 
         {boardTypes.length > 1 && (
           <FilterDropdown
@@ -283,32 +273,34 @@ function FilterDropdown({
 }
 
 // ---------------------------------------------------------------------------
-// Searchable filter (combobox-style)
+// Searchable space filter (debounced API search)
 // ---------------------------------------------------------------------------
 
+function useDebouncedValue(value: string, delayMs: number): string {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs)
+    return () => clearTimeout(timer)
+  }, [value, delayMs])
+  return debounced
+}
+
 function SearchableFilter({
-  label,
   value,
-  options,
+  selectedName,
   onSelect,
 }: {
-  label: string
   value: string | null
-  options: Array<{ id: string; label: string; detail?: string }>
-  onSelect: (value: string | null) => void
+  selectedName: string | null
+  onSelect: (projectKey: string | null, projectName: string | null) => void
 }) {
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const selectedLabel = value ? (options.find((o) => o.id === value)?.label ?? value) : null
-
-  const filtered = useMemo(() => {
-    if (!search) return options
-    const lower = search.toLowerCase()
-    return options.filter((o) => o.label.toLowerCase().includes(lower) || o.detail?.toLowerCase().includes(lower))
-  }, [options, search])
+  const debouncedSearch = useDebouncedValue(search, 400)
+  const { data: projects, isLoading } = useProjectSearch(debouncedSearch)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -320,26 +312,39 @@ function SearchableFilter({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const handleSelect = useCallback(
+    (key: string, name: string) => {
+      onSelect(key, name)
+      setSearch('')
+      setOpen(false)
+    },
+    [onSelect],
+  )
+
   if (value) {
     return (
-      <Button variant="secondary" size="sm" className="h-8 gap-1 text-xs" onClick={() => onSelect(null)}>
-        {selectedLabel}
+      <Button variant="secondary" size="sm" className="h-8 gap-1 text-xs" onClick={() => onSelect(null, null)}>
+        {selectedName ?? value}
         <X className="h-3 w-3" />
       </Button>
     )
   }
 
+  const showDropdown = open && debouncedSearch.length >= 2
+
   return (
     <div ref={containerRef} className="relative">
       <Input
         ref={inputRef}
-        placeholder={label}
+        placeholder="Space"
         value={search}
         onChange={(e) => {
           setSearch(e.target.value)
           setOpen(true)
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          if (search.length >= 2) setOpen(true)
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Escape') {
             setOpen(false)
@@ -347,30 +352,34 @@ function SearchableFilter({
           }
         }}
         className="h-8 w-36 text-xs"
-        aria-label={`Filter by ${label}`}
+        aria-label="Filter by space"
       />
-      {open && filtered.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-56 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
-          {filtered.map((o) => (
-            <button
-              type="button"
-              key={o.id}
-              className="flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent"
-              onClick={() => {
-                onSelect(o.id)
-                setSearch('')
-                setOpen(false)
-              }}
-            >
-              <span className="flex-1 truncate">{o.label}</span>
-              {o.detail && <span className="ml-2 text-[10px] text-muted-foreground">{o.detail}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-      {open && search && filtered.length === 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-md border border-border bg-card p-3 text-xs text-muted-foreground shadow-lg">
-          No spaces match "{search}"
+      {showDropdown && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-md border border-border bg-card shadow-lg">
+          {isLoading && (
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Searching...
+            </div>
+          )}
+          {!isLoading && projects && projects.length > 0 && (
+            <div className="max-h-48 overflow-y-auto">
+              {projects.map((p) => (
+                <button
+                  type="button"
+                  key={p.key}
+                  className="flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+                  onClick={() => handleSelect(p.key, p.name)}
+                >
+                  <span className="flex-1 truncate">{p.name}</span>
+                  <span className="ml-2 text-[10px] text-muted-foreground">{p.key}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {!isLoading && projects && projects.length === 0 && (
+            <div className="px-3 py-2 text-xs text-muted-foreground">No spaces found</div>
+          )}
         </div>
       )}
     </div>
