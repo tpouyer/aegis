@@ -81,7 +81,8 @@ export class AnthropicProvider implements LLMProvider {
   constructor(_config: { apiKey?: string; baseUrl?: string }) {
     // Route through Service Worker relay — SW injects the API key
     // The key is sent to SW via sendTokenToSW() at registration time
-    this.relayUrl = '/_aegis/llm/anthropic'
+    const base = import.meta.env.BASE_URL || '/'
+    this.relayUrl = `${base}_aegis/llm/anthropic`
   }
 
   async *chat(params: ChatParams): AsyncIterable<ChatChunk> {

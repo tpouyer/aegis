@@ -76,7 +76,8 @@ export class CustomProvider implements LLMProvider {
   constructor(config: CustomProviderConfig) {
     this.name = config.name ?? 'Custom Endpoint'
     // Route through SW relay — SW injects API key from secure storage
-    this.relayUrl = `/_aegis/llm/custom/${encodeURIComponent(config.endpoint)}`
+    const base = import.meta.env.BASE_URL || '/'
+    this.relayUrl = `${base}_aegis/llm/custom/${encodeURIComponent(config.endpoint)}`
     this.supportsToolUse = config.supportsToolUse ?? false
     this.models = [
       {

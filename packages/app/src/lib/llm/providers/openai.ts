@@ -82,7 +82,8 @@ export class OpenAIProvider implements LLMProvider {
   private relayUrl: string
 
   constructor(_config: { apiKey?: string; baseUrl?: string }) {
-    this.relayUrl = '/_aegis/llm/openai'
+    const base = import.meta.env.BASE_URL || '/'
+    this.relayUrl = `${base}_aegis/llm/openai`
   }
 
   async *chat(params: ChatParams): AsyncIterable<ChatChunk> {

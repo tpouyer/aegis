@@ -24,7 +24,7 @@ const API_PATTERNS = {
   jira: /\.atlassian\.net\/rest\/api/,
   github: /api\.github\.com/,
   vertex: /-aiplatform\.googleapis\.com/,
-  llmRelay: /\/_aegis\/llm\//,
+  llmRelay: /\/_aegis\/llm\//,  // matches both /_aegis/llm/ and /aegis/_aegis/llm/
 };
 
 /**
@@ -215,7 +215,9 @@ async function notifyClientsTokenExpired(provider) {
  * provider.
  */
 async function handleLLMRelay(request, url) {
-  const pathParts = url.pathname.replace('/_aegis/llm/', '').split('/');
+  const relayIndex = url.pathname.indexOf('/_aegis/llm/');
+  const pathAfterRelay = url.pathname.substring(relayIndex + '/_aegis/llm/'.length);
+  const pathParts = pathAfterRelay.split('/');
   const provider = pathParts[0];
   const remainingPath = pathParts.slice(1).join('/');
 
@@ -351,8 +353,8 @@ function respond(port, data) {
  */
 function isApiPath(pathname) {
   return (
-    pathname.startsWith('/api/') ||
-    pathname.startsWith('/_aegis/') ||
-    pathname.startsWith('/rest/')
+    pathname.includes('/api/') ||
+    pathname.includes('/_aegis/') ||
+    pathname.includes('/rest/')
   );
 }
