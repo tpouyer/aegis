@@ -42,7 +42,8 @@ npm run test         # engine then app
 | Layer | Technology |
 |---|---|
 | UI | React 18, Vite 6, TanStack Router (file-based), Tailwind CSS v4, Radix UI / Shadcn |
-| State | Zustand (board, chat, IDE, theme, sidebar), TanStack Query (server data + caching) |
+| State | Zustand (board, chat, IDE, theme, sidebar, telemetry), TanStack Query (server data + caching) |
+| Observability | OpenTelemetry SDK (metrics), console + OTLP/HTTP exporters (`src/lib/telemetry/`) |
 | Drag-and-drop | @hello-pangea/dnd |
 | Code editor | @monaco-editor/react (lazy-loaded on IDE route only) |
 | GitHub API | Custom `GitHubClient` REST client (`src/lib/github/client.ts`) with `resilientFetch` |
@@ -119,6 +120,7 @@ Phases 1–5 of the design are implemented. Phase 6 (Tool Aggregation with Quick
 | Theme management | Done | `src/stores/theme.ts` — single Zustand store, syncs Header/Settings/CmdK |
 | Onboarding wizard | Built | `src/components/shared/OnboardingWizard.tsx` — exists but not yet triggered on first visit |
 | User stories | Defined | `docs/user-stories.md` — 13 stories, 5 personas, 100 acceptance criteria |
+| OTEL metrics | Done | `src/lib/telemetry/` — HTTP, LLM, navigation, Web Vitals. Console + OTLP exporters. Settings UI |
 
 ## Testing
 
