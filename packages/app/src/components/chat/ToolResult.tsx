@@ -29,6 +29,10 @@ export function ToolResult({ toolCall, toolResult }: ToolResultProps) {
       <CardHeader
         className="cursor-pointer select-none p-3"
         onClick={toggle}
+        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}
+        role="button"
+        tabIndex={0}
+        aria-expanded={expanded}
       >
         <CardTitle className="flex items-center gap-2 text-sm font-medium">
           {expanded ? (

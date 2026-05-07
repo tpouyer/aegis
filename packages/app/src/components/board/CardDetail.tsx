@@ -8,7 +8,8 @@
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { ExternalLink, User, Tag, GitBranch, MessageCircle } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { ExternalLink, User, Tag, GitBranch, MessageCircle, MessageSquare, Code2 } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -17,6 +18,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useIssue } from '@/lib/jira/queries';
@@ -66,6 +68,22 @@ export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
                 <Badge variant="outline">{issue.fields.issuetype.name}</Badge>
               </SheetDescription>
             </SheetHeader>
+
+            {/* Quick actions */}
+            <div className="mb-4 flex gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/issue/$issueKey/chat" params={{ issueKey: issue.key }}>
+                  <MessageSquare className="mr-1 h-3.5 w-3.5" />
+                  AI Chat
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/issue/$issueKey/ide" params={{ issueKey: issue.key }}>
+                  <Code2 className="mr-1 h-3.5 w-3.5" />
+                  Open IDE
+                </Link>
+              </Button>
+            </div>
 
             {/* Assignee and reporter */}
             <div className="mb-4 flex gap-4">

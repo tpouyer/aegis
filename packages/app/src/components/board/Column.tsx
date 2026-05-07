@@ -26,7 +26,7 @@ export function Column({ columnId, name, issues, onCardClick, focusedGlobalIndex
     <div className="flex h-full w-72 flex-shrink-0 flex-col rounded-lg border border-border bg-muted/30">
       {/* Column header */}
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
-        <h3 className="text-sm font-semibold text-foreground">{name}</h3>
+        <h2 className="text-sm font-semibold text-foreground">{name}</h2>
         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
           {issues.length}
         </Badge>

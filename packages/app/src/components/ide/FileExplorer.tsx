@@ -101,7 +101,7 @@ function TreeItem({ node, repoKey, depth }: TreeItemProps) {
     : getFileIcon(node.name)
 
   return (
-    <div>
+    <div role="treeitem" aria-expanded={isDirectory ? isExpanded : undefined}>
       <button
         onClick={handleClick}
         className={cn(
@@ -127,7 +127,7 @@ function TreeItem({ node, repoKey, depth }: TreeItemProps) {
       </button>
 
       {isDirectory && isExpanded && (
-        <div>
+        <div role="group">
           {node.children.map((child) => (
             <TreeItem
               key={child.path}
@@ -156,7 +156,7 @@ export function FileExplorer({ repoKey, tree }: FileExplorerProps) {
         </span>
       </div>
       <ScrollArea className="flex-1">
-        <div className="p-1">
+        <div className="p-1" role="tree" aria-label="File explorer">
           <div className="mb-1 flex items-center gap-1 px-1 py-0.5">
             <FolderOpen className="h-4 w-4 text-blue-400" />
             <span className="text-sm font-medium text-foreground">{repoName}</span>
