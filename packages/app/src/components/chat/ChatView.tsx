@@ -184,12 +184,19 @@ export function ChatView({
               }
               break
 
-            case 'error':
-              appendStreamChunk(
-                issueKey,
-                `\n\n**Error:** ${chunk.error ?? 'Unknown error'}`,
-              )
+            case 'error': {
+              const errMsg = chunk.error ?? 'Unknown error'
+              const sess = useChatStore.getState().sessions.get(issueKey)
+              if (sess) {
+                const msgs = [...sess.messages]
+                const lastMsg = msgs[msgs.length - 1]
+                msgs[msgs.length - 1] = { ...lastMsg, error: errMsg }
+                const next = new Map(useChatStore.getState().sessions)
+                next.set(issueKey, { ...sess, messages: msgs })
+                useChatStore.setState({ sessions: next })
+              }
               break
+            }
 
             case 'done':
               break
@@ -199,7 +206,15 @@ export function ChatView({
         if (!controller.signal.aborted) {
           const errorMessage =
             err instanceof Error ? err.message : 'An error occurred'
-          appendStreamChunk(issueKey, `\n\n**Error:** ${errorMessage}`)
+          const sess = useChatStore.getState().sessions.get(issueKey)
+          if (sess) {
+            const msgs = [...sess.messages]
+            const lastMsg = msgs[msgs.length - 1]
+            msgs[msgs.length - 1] = { ...lastMsg, error: errorMessage }
+            const next = new Map(useChatStore.getState().sessions)
+            next.set(issueKey, { ...sess, messages: msgs })
+            useChatStore.setState({ sessions: next })
+          }
         }
       } finally {
         setStreaming(issueKey, false)
@@ -302,6 +317,7 @@ export function ChatView({
         <MessageList
           messages={session?.messages ?? []}
           isStreaming={session?.isStreaming ?? false}
+          onRetry={handleSend}
         />
       )}
 

@@ -14,6 +14,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
 import { AlertTriangle, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { Loading } from '@/components/shared/Loading';
@@ -35,6 +36,7 @@ interface BoardViewProps {
 }
 
 export function BoardView({ boardId }: BoardViewProps) {
+  const navigate = useNavigate();
   const filters = useBoardStore((s) => s.filters);
   const optimisticUpdates = useBoardStore((s) => s.optimisticUpdates);
   const startDrag = useBoardStore((s) => s.startDrag);
@@ -318,7 +320,7 @@ export function BoardView({ boardId }: BoardViewProps) {
             action={{
               label: 'Connect to Jira',
               onClick: () => {
-                window.location.href = '/settings';
+                navigate({ to: '/settings' });
               },
             }}
           />
@@ -398,7 +400,7 @@ export function BoardView({ boardId }: BoardViewProps) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex flex-1 gap-3 overflow-x-auto p-4">
+        <div className="flex flex-1 flex-col gap-3 overflow-x-auto p-4 md:flex-row">
           {(() => {
             let runningIndex = 0;
             return columns.map((column) => {

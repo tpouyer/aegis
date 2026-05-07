@@ -10,7 +10,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { ToolResult } from './ToolResult'
@@ -19,16 +19,30 @@ import type { ChatMessage } from '@/lib/llm/types'
 interface MessageListProps {
   messages: ChatMessage[]
   isStreaming: boolean
+  onRetry?: (content: string) => void
   className?: string
 }
 
-export function MessageList({ messages, isStreaming, className }: MessageListProps) {
+export function MessageList({ messages, isStreaming, onRetry, className }: MessageListProps) {
   const endRef = useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, messages.length > 0 ? messages[messages.length - 1]?.content : undefined])
+
+  // Find the last user message content for retry
+  const lastUserContent = useCallback(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === 'user') return messages[i].content
+    }
+    return null
+  }, [messages])
+
+  const handleRetry = useCallback(() => {
+    const content = lastUserContent()
+    if (content && onRetry) onRetry(content)
+  }, [lastUserContent, onRetry])
 
   if (messages.length === 0) {
     return (
@@ -44,7 +58,11 @@ export function MessageList({ messages, isStreaming, className }: MessageListPro
     <ScrollArea className={`flex-1 ${className ?? ''}`}>
       <div className="space-y-4 p-4">
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble
+            key={message.id}
+            message={message}
+            onRetry={message.error && onRetry ? handleRetry : undefined}
+          />
         ))}
         {isStreaming && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -62,7 +80,13 @@ export function MessageList({ messages, isStreaming, className }: MessageListPro
 // Message bubble
 // ---------------------------------------------------------------------------
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({
+  message,
+  onRetry,
+}: {
+  message: ChatMessage
+  onRetry?: () => void
+}) {
   const isUser = message.role === 'user'
 
   return (
@@ -96,6 +120,24 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           )
           return <ToolResult key={tc.id} toolCall={tc} toolResult={result} />
         })}
+
+        {/* Error banner */}
+        {message.error && (
+          <div className="mt-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            {message.error}
+            {onRetry && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-2 h-6 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                onClick={onRetry}
+              >
+                <RefreshCw className="h-3 w-3" />
+                Retry
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

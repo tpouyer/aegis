@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BoardBoardIdRouteImport } from './routes/board.$boardId'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as IssueIssueKeyIdeRouteImport } from './routes/issue.$issueKey.ide'
 import { Route as IssueIssueKeyChatRouteImport } from './routes/issue.$issueKey.chat'
 
@@ -30,6 +31,11 @@ const BoardBoardIdRoute = BoardBoardIdRouteImport.update({
   path: '/board/$boardId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IssueIssueKeyIdeRoute = IssueIssueKeyIdeRouteImport.update({
   id: '/issue/$issueKey/ide',
   path: '/issue/$issueKey/ide',
@@ -44,6 +50,7 @@ const IssueIssueKeyChatRoute = IssueIssueKeyChatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/board/$boardId': typeof BoardBoardIdRoute
   '/issue/$issueKey/chat': typeof IssueIssueKeyChatRoute
   '/issue/$issueKey/ide': typeof IssueIssueKeyIdeRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/board/$boardId': typeof BoardBoardIdRoute
   '/issue/$issueKey/chat': typeof IssueIssueKeyChatRoute
   '/issue/$issueKey/ide': typeof IssueIssueKeyIdeRoute
@@ -59,6 +67,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/board/$boardId': typeof BoardBoardIdRoute
   '/issue/$issueKey/chat': typeof IssueIssueKeyChatRoute
   '/issue/$issueKey/ide': typeof IssueIssueKeyIdeRoute
@@ -68,6 +77,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/settings'
+    | '/auth/callback'
     | '/board/$boardId'
     | '/issue/$issueKey/chat'
     | '/issue/$issueKey/ide'
@@ -75,6 +85,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/settings'
+    | '/auth/callback'
     | '/board/$boardId'
     | '/issue/$issueKey/chat'
     | '/issue/$issueKey/ide'
@@ -82,6 +93,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/settings'
+    | '/auth/callback'
     | '/board/$boardId'
     | '/issue/$issueKey/chat'
     | '/issue/$issueKey/ide'
@@ -90,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SettingsRoute: typeof SettingsRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   BoardBoardIdRoute: typeof BoardBoardIdRoute
   IssueIssueKeyChatRoute: typeof IssueIssueKeyChatRoute
   IssueIssueKeyIdeRoute: typeof IssueIssueKeyIdeRoute
@@ -118,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardBoardIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/issue/$issueKey/ide': {
       id: '/issue/$issueKey/ide'
       path: '/issue/$issueKey/ide'
@@ -138,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SettingsRoute: SettingsRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   BoardBoardIdRoute: BoardBoardIdRoute,
   IssueIssueKeyChatRoute: IssueIssueKeyChatRoute,
   IssueIssueKeyIdeRoute: IssueIssueKeyIdeRoute,

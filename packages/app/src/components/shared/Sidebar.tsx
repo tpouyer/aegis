@@ -1,37 +1,65 @@
 import { Link } from '@tanstack/react-router'
 import { Home, Kanban, Settings } from 'lucide-react'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { useSidebarStore } from '@/stores/sidebar'
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
+
+function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Main navigation">
+      <Link
+        to="/"
+        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-accent"
+        activeProps={{ className: 'bg-accent text-accent-foreground', 'aria-current': 'page' as const }}
+        activeOptions={{ exact: true }}
+        onClick={onNavigate}
+      >
+        <Home className="h-4 w-4" />
+        Home
+      </Link>
+      <Link
+        to="/board/$boardId"
+        params={{ boardId: '1' }}
+        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-accent"
+        activeProps={{ className: 'bg-accent text-accent-foreground', 'aria-current': 'page' as const }}
+        onClick={onNavigate}
+      >
+        <Kanban className="h-4 w-4" />
+        Board
+      </Link>
+      <Link
+        to="/settings"
+        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-accent"
+        activeProps={{ className: 'bg-accent text-accent-foreground', 'aria-current': 'page' as const }}
+        onClick={onNavigate}
+      >
+        <Settings className="h-4 w-4" />
+        Settings
+      </Link>
+    </nav>
+  )
+}
 
 export function Sidebar() {
+  const sidebarOpen = useSidebarStore((s) => s.sidebarOpen)
+  const closeSidebar = useSidebarStore((s) => s.closeSidebar)
+
   return (
-    <aside className="flex h-full w-56 flex-col border-r border-sidebar-border bg-sidebar">
-      <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Main navigation">
-        <Link
-          to="/"
-          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-accent"
-          activeProps={{ className: 'bg-accent text-accent-foreground', 'aria-current': 'page' as const }}
-          activeOptions={{ exact: true }}
-        >
-          <Home className="h-4 w-4" />
-          Home
-        </Link>
-        <Link
-          to="/board/$boardId"
-          params={{ boardId: '1' }}
-          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-accent"
-          activeProps={{ className: 'bg-accent text-accent-foreground', 'aria-current': 'page' as const }}
-        >
-          <Kanban className="h-4 w-4" />
-          Board
-        </Link>
-        <Link
-          to="/settings"
-          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-accent"
-          activeProps={{ className: 'bg-accent text-accent-foreground', 'aria-current': 'page' as const }}
-        >
-          <Settings className="h-4 w-4" />
-          Settings
-        </Link>
-      </nav>
-    </aside>
+    <>
+      {/* Desktop sidebar - always visible on md+ */}
+      <aside className="hidden h-full w-56 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+        <SidebarNav />
+      </aside>
+
+      {/* Mobile sidebar - slide-over sheet */}
+      <Sheet open={sidebarOpen} onOpenChange={(open) => { if (!open) closeSidebar() }}>
+        <SheetContent side="left" className="w-56 bg-sidebar p-0">
+          <VisuallyHidden>
+            <SheetTitle>Navigation</SheetTitle>
+          </VisuallyHidden>
+          <SidebarNav onNavigate={closeSidebar} />
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }

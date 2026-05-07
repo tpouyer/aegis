@@ -221,9 +221,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const session = get().sessions.get(issueKey);
     if (!session) return;
 
+    // Strip transient `error` field from messages before persisting
+    const cleanMessages = session.messages.map(({ error: _error, ...msg }) => msg);
+
     const persisted: PersistedSession = {
       issueKey: session.issueKey,
-      messages: session.messages,
+      messages: cleanMessages,
       currentModel: session.currentModel,
       providerId: session.providerId,
     };

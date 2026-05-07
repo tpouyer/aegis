@@ -8,6 +8,7 @@ import { CommandPalette } from '@/components/shared/CommandPalette'
 import { ShortcutHelp } from '@/components/shared/ShortcutHelp'
 import { registerDefaultCommands } from '@/lib/commands/default-commands'
 import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
+import { authManager } from '@/lib/auth/manager'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -19,6 +20,11 @@ function RootLayout() {
 
   // Activate global-scope keyboard shortcut handling
   useShortcuts('global')
+
+  // Clear any expired tokens from previous sessions on app startup
+  useEffect(() => {
+    authManager.clearExpiredTokens()
+  }, [])
 
   // Register default commands on mount
   useEffect(() => {

@@ -148,8 +148,19 @@ self.addEventListener('message', (event) => {
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
+ * Check if a token has expired. Adds a 60-second buffer to account
+ * for clock skew and network latency — mirrors AuthManager.isTokenExpired().
+ */
+function isTokenExpired(token) {
+  const BUFFER_MS = 60_000;
+  return Date.now() >= token.expiresAt - BUFFER_MS;
+}
+
+/**
  * Handle an API request by injecting the appropriate auth token.
- * Falls through to network if no token is available.
+ * Falls through to network if no token is available or if the token
+ * has expired. On expiry the token is removed from the SW map and
+ * the main thread is notified so it can update UI auth state.
  */
 async function handleApiRequest(request, provider) {
   const token = tokens.get(provider);
@@ -159,11 +170,34 @@ async function handleApiRequest(request, provider) {
     return fetch(request);
   }
 
+  if (isTokenExpired(token)) {
+    // Token has expired — remove it and notify all clients
+    tokens.delete(provider);
+    notifyClientsTokenExpired(provider);
+    // Let the request go through unauthenticated so the caller
+    // receives a 401 it can handle (e.g. show re-auth UI)
+    return fetch(request);
+  }
+
   const headers = new Headers(request.headers);
   headers.set('Authorization', `Bearer ${token.accessToken}`);
 
   const authedRequest = new Request(request, { headers });
   return fetch(authedRequest);
+}
+
+/**
+ * Notify all controlled clients that a token has expired.
+ * The main thread can listen for this to update auth state.
+ */
+async function notifyClientsTokenExpired(provider) {
+  const clientList = await self.clients.matchAll({ type: 'window' });
+  for (const client of clientList) {
+    client.postMessage({
+      type: 'TOKEN_EXPIRED',
+      provider,
+    });
+  }
 }
 
 /**

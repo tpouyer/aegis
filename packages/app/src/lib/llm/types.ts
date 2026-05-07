@@ -41,6 +41,8 @@ export interface ChatMessage {
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
   timestamp: number;
+  /** Transient error — not persisted to IndexedDB. */
+  error?: string;
 }
 
 export interface ChatChunk {

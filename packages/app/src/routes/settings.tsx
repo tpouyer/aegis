@@ -11,6 +11,11 @@ import { authManager } from '@/lib/auth/manager'
 import { providerRegistry } from '@/lib/llm/provider-registry'
 import type { AuthProvider, AuthState } from '@/lib/auth/types'
 import type { LLMProvider } from '@/lib/llm/types'
+import { initiateGitHubAuth } from '@/lib/auth/github'
+import { initiateAtlassianAuth } from '@/lib/auth/atlassian'
+import { initiateRedHatAuth } from '@/lib/auth/redhat-sso'
+import { initiateGoogleAuth } from '@/lib/auth/google'
+import { getGitHubConfig, getAtlassianConfig, getRedHatConfig, getGoogleConfig } from '@/lib/auth/config'
 
 export const Route = createFileRoute('/settings')({
   component: SettingsPage,
@@ -58,10 +63,21 @@ function useTheme() {
 function AuthConnectionsSection() {
   const authState = useAuthState()
 
-  const handleConnect = useCallback((_provider: AuthProvider) => {
-    // OAuth flow would be initiated here.
-    // For now this is a placeholder — the actual flow is provider-specific.
-    console.info(`[Settings] Connect flow for ${_provider} not yet wired`)
+  const handleConnect = useCallback((provider: AuthProvider) => {
+    switch (provider) {
+      case 'github':
+        initiateGitHubAuth(getGitHubConfig())
+        break
+      case 'atlassian':
+        initiateAtlassianAuth(getAtlassianConfig())
+        break
+      case 'redhat-sso':
+        initiateRedHatAuth(getRedHatConfig())
+        break
+      case 'google':
+        initiateGoogleAuth(getGoogleConfig())
+        break
+    }
   }, [])
 
   const handleDisconnect = useCallback(async (provider: AuthProvider) => {

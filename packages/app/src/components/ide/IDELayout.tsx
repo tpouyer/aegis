@@ -12,7 +12,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { Code, MessageSquare, GitCompareArrows, FileCode, FolderOpen, Github } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { Code, MessageSquare, GitCompareArrows, FileCode, FolderOpen, Github, PanelLeft, PanelRight } from 'lucide-react'
 import { FileExplorer } from './FileExplorer'
 import { EditorTabs } from './EditorTabs'
 import { MonacoEditor } from './MonacoEditor'
@@ -51,6 +52,7 @@ export function IDELayout({
   branch,
   baseBranch,
 }: IDELayoutProps) {
+  const navigate = useNavigate()
   const {
     openTabs,
     activeTab,
@@ -63,6 +65,8 @@ export function IDELayout({
   const [changes, setChanges] = useState<FileChange[]>([])
   const [diffTarget, setDiffTarget] = useState<DiffTarget | null>(null)
   const [isLoadingFile, setIsLoadingFile] = useState(false)
+  const [explorerVisible, setExplorerVisible] = useState(false)
+  const [aiSidebarVisible, setAiSidebarVisible] = useState(false)
 
   // Current active tab info
   const currentTab = activeTab >= 0 && activeTab < openTabs.length
@@ -232,7 +236,7 @@ export function IDELayout({
                   action={{
                     label: 'Connect to GitHub',
                     onClick: () => {
-                      window.location.href = '/settings';
+                      navigate({ to: '/settings' });
                     },
                   }}
                 />

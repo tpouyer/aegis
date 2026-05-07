@@ -185,6 +185,40 @@ export class AuthManager {
   }
 
   /**
+   * Proactively clean up expired token metadata from localStorage
+   * and in-memory state. Call this on app startup to remove stale
+   * entries from previous sessions so isConnected() immediately
+   * reflects the correct state and the UI shows re-auth prompts.
+   */
+  async clearExpiredTokens(): Promise<void> {
+    const providers = Object.keys(this.state.tokens) as AuthProvider[];
+    let changed = false;
+
+    for (const provider of providers) {
+      const token = this.state.tokens[provider];
+      if (token && this.isTokenExpired(token)) {
+        delete this.state.tokens[provider];
+        changed = true;
+
+        // Also clear from SW in case it still has the token
+        try {
+          await clearTokenInSW(provider);
+        } catch {
+          // SW may not be active yet — safe to ignore
+        }
+      }
+    }
+
+    if (changed) {
+      this.state.level = this.computeAuthLevel();
+      this.state.isAuthenticated = this.state.level !== AuthLevel.Guest;
+      this.updateUserProviders();
+      this.persistTokenMetadata();
+      this.notifyListeners();
+    }
+  }
+
+  /**
    * Clear all auth state and return to Guest level.
    */
   async logout(): Promise<void> {
@@ -228,6 +262,26 @@ export class AuthManager {
    * GitHub connected → GitHub
    * Otherwise → Guest
    */
+
+  clearExpiredTokens(): void {
+    const providers = Object.keys(this.state.tokens) as AuthProvider[];
+    let changed = false;
+    for (const provider of providers) {
+      const token = this.state.tokens[provider];
+      if (token && this.isTokenExpired(token)) {
+        delete this.state.tokens[provider];
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.state.level = this.computeAuthLevel();
+      this.state.isAuthenticated = this.state.level !== AuthLevel.Guest;
+      this.updateUserProviders();
+      this.persistTokenMetadata();
+      this.notifyListeners();
+    }
+  }
+
   private computeAuthLevel(): AuthLevel {
     const rhToken = this.state.tokens['redhat-sso'];
     if (rhToken && !this.isTokenExpired(rhToken)) {

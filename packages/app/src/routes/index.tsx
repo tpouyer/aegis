@@ -16,6 +16,9 @@ import { Separator } from '@/components/ui/separator'
 import { authManager } from '@/lib/auth/manager'
 import type { AuthState } from '@/lib/auth/types'
 import { AuthLevel } from '@/lib/auth/types'
+import { initiateGitHubAuth } from '@/lib/auth/github'
+import { initiateRedHatAuth } from '@/lib/auth/redhat-sso'
+import { getGitHubConfig, getRedHatConfig } from '@/lib/auth/config'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -107,11 +110,11 @@ function FeatureCards() {
 
 function QuickStartSection() {
   const handleConnectGitHub = useCallback(() => {
-    console.info('[Landing] GitHub connect flow not yet wired')
+    initiateGitHubAuth(getGitHubConfig())
   }, [])
 
   const handleConnectSSO = useCallback(() => {
-    console.info('[Landing] Red Hat SSO connect flow not yet wired')
+    initiateRedHatAuth(getRedHatConfig())
   }, [])
 
   return (

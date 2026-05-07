@@ -7,6 +7,7 @@
  * and injects the appropriate Authorization header (see ADR-004).
  */
 
+import { authManager } from '../auth/manager';
 import { resilientFetch } from '../fetch/resilient-fetch';
 import type {
   JiraBoard,
@@ -63,6 +64,11 @@ export class JiraClient {
     });
 
     if (!response.ok) {
+      // On 401, clear the Atlassian token so the UI shows re-auth state
+      if (response.status === 401) {
+        authManager.disconnect('atlassian').catch(() => {});
+      }
+
       const text = await response.text().catch(() => '');
       throw new JiraClientError(
         `Jira API error: ${response.status} ${response.statusText} — ${text}`,

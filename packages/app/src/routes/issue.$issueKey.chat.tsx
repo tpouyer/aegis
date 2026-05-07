@@ -1,84 +1,87 @@
 import { useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { FileText, Tag, User, Calendar, ChevronLeft, ChevronRight } from 'lucide-react'
+import { FileText, Tag, User, Calendar, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ChatView } from '@/components/chat/ChatView'
+import { Loading } from '@/components/shared/Loading'
 import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
+import { useIssue } from '@/lib/jira/queries'
+import { authManager } from '@/lib/auth/manager'
+import type { JiraIssue } from '@/lib/jira/types'
 
 export const Route = createFileRoute('/issue/$issueKey/chat')({
   component: ChatPage,
 })
 
 // ---------------------------------------------------------------------------
-// Mock issue data — replaced by Jira client in Phase 2
+// ADF text extraction (mirrors CardDetail's extractText helper)
 // ---------------------------------------------------------------------------
 
-interface MockIssue {
-  key: string
-  summary: string
-  description: string
-  status: string
-  priority: string
-  assignee: string
-  issueType: string
-  created: string
-  acceptanceCriteria: string
-  labels: string[]
-  components: string[]
-}
+function extractText(content: unknown): string {
+  if (typeof content === 'string') return content
 
-function getMockIssue(issueKey: string): MockIssue {
-  return {
-    key: issueKey,
-    summary: `Implement feature for ${issueKey}`,
-    description:
-      `This issue tracks the implementation of the feature described in ${issueKey}. ` +
-      'The goal is to deliver the functionality outlined in the acceptance criteria below, ' +
-      'following the team coding standards and architecture guidelines.',
-    status: 'In Progress',
-    priority: 'Medium',
-    assignee: 'dev-user',
-    issueType: 'Story',
-    created: new Date().toISOString().split('T')[0],
-    acceptanceCriteria:
-      '- Feature works as described in the requirements\n' +
-      '- Unit tests cover all new exports\n' +
-      '- No regressions in existing tests\n' +
-      '- Code reviewed and approved',
-    labels: ['ai-chat', 'wave-3'],
-    components: ['app-frontend'],
+  if (content && typeof content === 'object' && 'type' in content) {
+    const adf = content as { type: string; content?: unknown[]; text?: string }
+    if (adf.text) return adf.text
+    if (adf.content) {
+      return adf.content.map(extractText).join('\n')
+    }
   }
+
+  return ''
 }
 
 // ---------------------------------------------------------------------------
 // Context sidebar
 // ---------------------------------------------------------------------------
 
-function IssueContextPanel({ issue }: { issue: MockIssue }) {
+function IssueContextPanel({ issue }: { issue: JiraIssue | null }) {
+  if (!issue) {
+    return (
+      <div className="absolute inset-0 z-20 flex h-full w-full flex-col border-l border-border bg-card md:static md:z-auto md:w-72">
+        <div className="border-b border-border px-4 py-3">
+          <h3 className="text-sm font-semibold text-foreground">Issue Context</h3>
+        </div>
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center">
+          <AlertCircle className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
+            Connect to Jira to see issue details
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const description = issue.fields.description
+    ? extractText(issue.fields.description)
+    : null
+
   return (
-    <div className="flex h-full w-72 flex-col border-l border-border bg-card">
+    <div className="absolute inset-0 z-20 flex h-full w-full flex-col border-l border-border bg-card md:static md:z-auto md:w-72">
       <div className="border-b border-border px-4 py-3">
         <h3 className="text-sm font-semibold text-foreground">Issue Context</h3>
       </div>
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
         {/* Status + Priority */}
         <div className="flex items-center gap-2">
-          <Badge variant="secondary">{issue.status}</Badge>
-          <Badge variant="outline">{issue.priority}</Badge>
-          <Badge variant="outline">{issue.issueType}</Badge>
+          <Badge variant="secondary">{issue.fields.status.name}</Badge>
+          <Badge variant="outline">{issue.fields.priority.name}</Badge>
+          <Badge variant="outline">{issue.fields.issuetype.name}</Badge>
         </div>
 
         {/* Assignee */}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <User className="h-4 w-4" />
-          <span>{issue.assignee}</span>
-        </div>
+        {issue.fields.assignee && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <User className="h-4 w-4" />
+            <span>{issue.fields.assignee.displayName}</span>
+          </div>
+        )}
 
         {/* Created */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Calendar className="h-4 w-4" />
-          <span>Created {issue.created}</span>
+          <span>Created {new Date(issue.fields.created).toLocaleDateString()}</span>
         </div>
 
         {/* Description */}
@@ -87,30 +90,22 @@ function IssueContextPanel({ issue }: { issue: MockIssue }) {
             <FileText className="h-3 w-3" />
             Description
           </div>
-          <p className="text-sm text-foreground">{issue.description}</p>
+          {description ? (
+            <p className="text-sm text-foreground">{description}</p>
+          ) : (
+            <p className="text-sm italic text-muted-foreground">No description provided.</p>
+          )}
         </div>
 
-        {/* Acceptance Criteria */}
-        {issue.acceptanceCriteria && (
-          <div>
-            <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">
-              Acceptance Criteria
-            </div>
-            <pre className="whitespace-pre-wrap text-sm text-foreground">
-              {issue.acceptanceCriteria}
-            </pre>
-          </div>
-        )}
-
         {/* Labels */}
-        {issue.labels.length > 0 && (
+        {issue.fields.labels.length > 0 && (
           <div>
             <div className="mb-1 flex items-center gap-1 text-xs font-medium uppercase text-muted-foreground">
               <Tag className="h-3 w-3" />
               Labels
             </div>
             <div className="flex flex-wrap gap-1">
-              {issue.labels.map((label) => (
+              {issue.fields.labels.map((label) => (
                 <Badge key={label} variant="outline" className="text-xs">
                   {label}
                 </Badge>
@@ -120,15 +115,15 @@ function IssueContextPanel({ issue }: { issue: MockIssue }) {
         )}
 
         {/* Components */}
-        {issue.components.length > 0 && (
+        {issue.fields.components.length > 0 && (
           <div>
             <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">
               Components
             </div>
             <div className="flex flex-wrap gap-1">
-              {issue.components.map((comp) => (
-                <Badge key={comp} variant="secondary" className="text-xs">
-                  {comp}
+              {issue.fields.components.map((comp) => (
+                <Badge key={comp.id} variant="secondary" className="text-xs">
+                  {comp.name}
                 </Badge>
               ))}
             </div>
@@ -145,7 +140,7 @@ function IssueContextPanel({ issue }: { issue: MockIssue }) {
 
 function ChatPage() {
   const { issueKey } = Route.useParams()
-  const [contextOpen, setContextOpen] = useState(true)
+  const [contextOpen, setContextOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
 
   useEffect(() => { document.title = `${issueKey} Chat — Aegis` }, [issueKey])
 
@@ -169,8 +164,22 @@ function ChatPage() {
     }
   }, [])
 
-  // Mock issue data — will be replaced by Jira client in Phase 2
-  const issue = getMockIssue(issueKey)
+  // Fetch real issue data from Jira (only if connected)
+  const jiraConnected = authManager.isConnected('atlassian')
+  const { data: issue, isLoading: issueLoading } = useIssue(issueKey, {
+    enabled: jiraConnected,
+  })
+
+  // Show loading state while issue data is being fetched
+  if (jiraConnected && issueLoading) {
+    return <Loading className="h-full" message="Loading issue..." />
+  }
+
+  // Derive chat context from real issue data or fall back to issue key
+  const issueSummary = issue?.fields.summary ?? issueKey
+  const issueDescription = issue?.fields.description
+    ? extractText(issue.fields.description)
+    : undefined
 
   return (
     <div className="flex h-full">
@@ -178,9 +187,8 @@ function ChatPage() {
       <div className="flex flex-1 flex-col">
         <ChatView
           issueKey={issueKey}
-          issueSummary={issue.summary}
-          issueDescription={issue.description}
-          acceptanceCriteria={issue.acceptanceCriteria}
+          issueSummary={issueSummary}
+          issueDescription={issueDescription}
           className="h-full"
         />
       </div>
@@ -201,7 +209,7 @@ function ChatPage() {
       </Button>
 
       {/* Context sidebar */}
-      {contextOpen && <IssueContextPanel issue={issue} />}
+      {contextOpen && <IssueContextPanel issue={issue ?? null} />}
     </div>
   )
 }

@@ -26,6 +26,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   handleRetry = () => {
+    // Clear TanStack Query cache to prevent crash loops from stale data
+    const queryClient = (window as any).__aegis_queryClient
+    if (queryClient) queryClient.clear()
     this.setState({ hasError: false, error: null })
   }
 

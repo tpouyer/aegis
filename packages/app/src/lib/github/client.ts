@@ -15,6 +15,7 @@
  *   - Pull request creation
  */
 
+import { authManager } from '../auth/manager';
 import { resilientFetch } from '../fetch/resilient-fetch';
 import type {
   TreeEntry,
@@ -45,6 +46,11 @@ export class GitHubClient {
     });
 
     if (!response.ok) {
+      // On 401, clear the GitHub token so the UI shows re-auth state
+      if (response.status === 401) {
+        authManager.disconnect('github').catch(() => {});
+      }
+
       const body = await response.text().catch(() => '');
       throw new Error(
         `GitHub API ${response.status}: ${response.statusText} — ${path}\n${body}`,

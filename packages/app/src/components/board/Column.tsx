@@ -23,7 +23,7 @@ interface ColumnProps {
 
 export function Column({ columnId, name, issues, onCardClick, focusedGlobalIndex = -1, startIndex = 0 }: ColumnProps) {
   return (
-    <div className="flex h-full w-72 flex-shrink-0 flex-col rounded-lg border border-border bg-muted/30">
+    <div className="flex h-full w-full flex-shrink-0 flex-col rounded-lg border border-border bg-muted/30 md:w-72">
       {/* Column header */}
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
         <h2 className="text-sm font-semibold text-foreground">{name}</h2>
