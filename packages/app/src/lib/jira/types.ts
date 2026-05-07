@@ -159,6 +159,9 @@ export interface JiraBoard {
     projectId: number
     projectKey: string
     projectName: string
+    displayName?: string
+    projectTypeKey?: string
+    avatarURI?: string
   }
 }
 

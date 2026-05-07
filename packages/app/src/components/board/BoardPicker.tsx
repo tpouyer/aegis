@@ -26,6 +26,12 @@ const BOARD_TYPE_ICONS = {
   simple: LayoutDashboard,
 } as const
 
+const PROJECT_TYPE_LABELS: Record<string, string> = {
+  software: 'Software',
+  business: 'Business',
+  service_desk: 'Service Desk',
+}
+
 const INITIAL_LIMIT = 6
 
 export function BoardPicker({ boards }: BoardPickerProps) {
@@ -36,11 +42,12 @@ export function BoardPicker({ boards }: BoardPickerProps) {
   const [textFilter, setTextFilter] = useState('')
   const [projectFilter, setProjectFilter] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
+  const [projectTypeFilter, setProjectTypeFilter] = useState<string | null>(null)
 
   const starredSet = useMemo(() => new Set(starredIds), [starredIds])
   const recentIdMap = useMemo(() => new Map(recentBoards.map((r) => [r.id, r.lastVisited])), [recentBoards])
 
-  // Extract unique projects and types for filter dropdowns
+  // Extract unique filter options from available boards
   const projects = useMemo(() => {
     const seen = new Map<string, string>()
     for (const b of boards) {
@@ -58,6 +65,14 @@ export function BoardPicker({ boards }: BoardPickerProps) {
     return Array.from(types).sort()
   }, [boards])
 
+  const projectTypes = useMemo(() => {
+    const types = new Set<string>()
+    for (const b of boards) {
+      if (b.location?.projectTypeKey) types.add(b.location.projectTypeKey)
+    }
+    return Array.from(types).sort()
+  }, [boards])
+
   // Apply filters
   const filtered = useMemo(() => {
     let result = boards
@@ -67,7 +82,8 @@ export function BoardPicker({ boards }: BoardPickerProps) {
         (b) =>
           b.name.toLowerCase().includes(lower) ||
           b.location?.projectName.toLowerCase().includes(lower) ||
-          b.location?.projectKey.toLowerCase().includes(lower),
+          b.location?.projectKey.toLowerCase().includes(lower) ||
+          b.location?.displayName?.toLowerCase().includes(lower),
       )
     }
     if (projectFilter) {
@@ -76,10 +92,13 @@ export function BoardPicker({ boards }: BoardPickerProps) {
     if (typeFilter) {
       result = result.filter((b) => b.type === typeFilter)
     }
+    if (projectTypeFilter) {
+      result = result.filter((b) => b.location?.projectTypeKey === projectTypeFilter)
+    }
     return result
-  }, [boards, textFilter, projectFilter, typeFilter])
+  }, [boards, textFilter, projectFilter, typeFilter, projectTypeFilter])
 
-  const hasActiveFilters = textFilter || projectFilter || typeFilter
+  const hasActiveFilters = textFilter || projectFilter || typeFilter || projectTypeFilter
 
   // Split filtered boards into sections
   const starred = useMemo(() => filtered.filter((b) => starredSet.has(b.id)), [filtered, starredSet])
@@ -102,6 +121,13 @@ export function BoardPicker({ boards }: BoardPickerProps) {
   const limitedRemaining = showAll || hasActiveFilters ? remaining : remaining.slice(0, INITIAL_LIMIT)
   const hasMore = !hasActiveFilters && remaining.length > INITIAL_LIMIT
 
+  const clearAllFilters = () => {
+    setTextFilter('')
+    setProjectFilter(null)
+    setTypeFilter(null)
+    setProjectTypeFilter(null)
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <div>
@@ -122,69 +148,44 @@ export function BoardPicker({ boards }: BoardPickerProps) {
             aria-label="Filter boards by name"
           />
         </div>
+
         {projects.length > 1 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant={projectFilter ? 'secondary' : 'outline'} size="sm" className="h-8 gap-1 text-xs">
-                {projectFilter ? (projects.find((p) => p.key === projectFilter)?.name ?? projectFilter) : 'Project'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
-              <DropdownMenuLabel className="text-xs">Project</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {projectFilter && (
-                <>
-                  <DropdownMenuItem onClick={() => setProjectFilter(null)} className="text-xs text-muted-foreground">
-                    Clear selection
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              {projects.map((p) => (
-                <DropdownMenuItem key={p.key} onClick={() => setProjectFilter(p.key)} className="text-xs">
-                  {p.name}
-                  <span className="ml-auto text-[10px] text-muted-foreground">{p.key}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <FilterDropdown
+            label="Project"
+            value={projectFilter}
+            options={projects.map((p) => ({ id: p.key, label: p.name, detail: p.key }))}
+            onSelect={setProjectFilter}
+          />
         )}
+
         {boardTypes.length > 1 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant={typeFilter ? 'secondary' : 'outline'} size="sm" className="h-8 gap-1 text-xs capitalize">
-                {typeFilter ?? 'Type'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel className="text-xs">Board Type</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {typeFilter && (
-                <>
-                  <DropdownMenuItem onClick={() => setTypeFilter(null)} className="text-xs text-muted-foreground">
-                    Clear selection
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
-              {boardTypes.map((t) => (
-                <DropdownMenuItem key={t} onClick={() => setTypeFilter(t)} className="text-xs capitalize">
-                  {t}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <FilterDropdown
+            label="Board Type"
+            value={typeFilter}
+            options={boardTypes.map((t) => ({ id: t, label: t }))}
+            onSelect={setTypeFilter}
+            capitalize
+          />
         )}
+
+        {projectTypes.length > 1 && (
+          <FilterDropdown
+            label="Project Type"
+            value={projectTypeFilter}
+            options={projectTypes.map((t) => ({
+              id: t,
+              label: PROJECT_TYPE_LABELS[t] ?? t,
+            }))}
+            onSelect={setProjectTypeFilter}
+          />
+        )}
+
         {hasActiveFilters && (
           <Button
             variant="ghost"
             size="sm"
             className="h-8 gap-1 text-xs text-muted-foreground"
-            onClick={() => {
-              setTextFilter('')
-              setProjectFilter(null)
-              setTypeFilter(null)
-            }}
+            onClick={clearAllFilters}
           >
             <X className="h-3.5 w-3.5" />
             Clear
@@ -228,6 +229,61 @@ export function BoardPicker({ boards }: BoardPickerProps) {
     </div>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Filter dropdown (reusable)
+// ---------------------------------------------------------------------------
+
+function FilterDropdown({
+  label,
+  value,
+  options,
+  onSelect,
+  capitalize: cap,
+}: {
+  label: string
+  value: string | null
+  options: Array<{ id: string; label: string; detail?: string }>
+  onSelect: (value: string | null) => void
+  capitalize?: boolean
+}) {
+  const selectedLabel = value ? (options.find((o) => o.id === value)?.label ?? value) : null
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant={value ? 'secondary' : 'outline'}
+          size="sm"
+          className={`h-8 gap-1 text-xs ${cap ? 'capitalize' : ''}`}
+        >
+          {selectedLabel ?? label}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
+        <DropdownMenuLabel className="text-xs">{label}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {value && (
+          <>
+            <DropdownMenuItem onClick={() => onSelect(null)} className="text-xs text-muted-foreground">
+              Clear selection
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        {options.map((o) => (
+          <DropdownMenuItem key={o.id} onClick={() => onSelect(o.id)} className={`text-xs ${cap ? 'capitalize' : ''}`}>
+            {o.label}
+            {o.detail && <span className="ml-auto text-[10px] text-muted-foreground">{o.detail}</span>}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Board sections and cards
+// ---------------------------------------------------------------------------
 
 function BoardSection({
   title,
@@ -278,6 +334,11 @@ function BoardCard({
                 </Badge>
                 {board.location?.projectKey && (
                   <span className="text-[10px] text-muted-foreground">{board.location.projectKey}</span>
+                )}
+                {board.location?.projectTypeKey && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {PROJECT_TYPE_LABELS[board.location.projectTypeKey] ?? board.location.projectTypeKey}
+                  </span>
                 )}
               </div>
             </div>
