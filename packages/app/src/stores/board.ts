@@ -139,6 +139,7 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 
   focusPrevCard: () => {
     const { focusedCardIndex } = get();
+    if (focusedCardIndex < 0) return;
     const next = focusedCardIndex > 0 ? focusedCardIndex - 1 : 0;
     set({ focusedCardIndex: next });
   },

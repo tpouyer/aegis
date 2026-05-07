@@ -263,25 +263,6 @@ export class AuthManager {
    * Otherwise → Guest
    */
 
-  clearExpiredTokens(): void {
-    const providers = Object.keys(this.state.tokens) as AuthProvider[];
-    let changed = false;
-    for (const provider of providers) {
-      const token = this.state.tokens[provider];
-      if (token && this.isTokenExpired(token)) {
-        delete this.state.tokens[provider];
-        changed = true;
-      }
-    }
-    if (changed) {
-      this.state.level = this.computeAuthLevel();
-      this.state.isAuthenticated = this.state.level !== AuthLevel.Guest;
-      this.updateUserProviders();
-      this.persistTokenMetadata();
-      this.notifyListeners();
-    }
-  }
-
   private computeAuthLevel(): AuthLevel {
     const rhToken = this.state.tokens['redhat-sso'];
     if (rhToken && !this.isTokenExpired(rhToken)) {

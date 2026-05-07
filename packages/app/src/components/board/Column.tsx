@@ -39,6 +39,7 @@ export function Column({ columnId, name, issues, onCardClick, focusedGlobalIndex
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
+              aria-label={`${name} column, ${issues.length} issues`}
               className={`min-h-[120px] p-2 transition-colors ${
                 snapshot.isDraggingOver
                   ? 'bg-primary/5 ring-1 ring-inset ring-primary/20'

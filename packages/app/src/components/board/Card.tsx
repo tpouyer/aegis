@@ -40,6 +40,8 @@ export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) 
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           className="mb-2"
+          aria-roledescription="draggable card"
+          aria-label={`${key}: ${fields.summary}`}
         >
           <CardContainer
             className={`cursor-grab transition-shadow ${
@@ -111,7 +113,7 @@ export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) 
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 flex-1 gap-1 text-xs"
+                className="h-11 flex-1 gap-1 text-xs md:h-7"
                 asChild
                 onClick={(e) => e.stopPropagation()}
               >
@@ -123,7 +125,7 @@ export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) 
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 flex-1 gap-1 text-xs"
+                className="h-11 flex-1 gap-1 text-xs md:h-7"
                 asChild
                 onClick={(e) => e.stopPropagation()}
               >

@@ -128,7 +128,7 @@ export function FilterBar({ issues }: FilterBarProps) {
           className="h-8 gap-1 text-xs text-muted-foreground"
         >
           <X className="h-3.5 w-3.5" />
-          Clear
+          Clear Filters
         </Button>
       )}
     </div>

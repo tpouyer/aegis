@@ -53,7 +53,7 @@ export function EditorTabs() {
                 closeTab(index)
               }}
               className={cn(
-                'rounded p-0.5 hover:bg-accent',
+                'rounded p-2 hover:bg-accent md:p-0.5',
                 isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
               )}
               aria-label={`Close ${fileName}`}

@@ -2,7 +2,6 @@ import { Link } from '@tanstack/react-router'
 import { Home, Kanban, Settings } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useSidebarStore } from '@/stores/sidebar'
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
@@ -54,9 +53,7 @@ export function Sidebar() {
       {/* Mobile sidebar - slide-over sheet */}
       <Sheet open={sidebarOpen} onOpenChange={(open) => { if (!open) closeSidebar() }}>
         <SheetContent side="left" className="w-56 bg-sidebar p-0">
-          <VisuallyHidden>
-            <SheetTitle>Navigation</SheetTitle>
-          </VisuallyHidden>
+          <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SidebarNav onNavigate={closeSidebar} />
         </SheetContent>
       </Sheet>

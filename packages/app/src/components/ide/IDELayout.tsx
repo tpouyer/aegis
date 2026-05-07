@@ -195,10 +195,38 @@ export function IDELayout({
         </div>
       </div>
 
+      {/* Mobile panel toggle buttons */}
+      <div className="flex items-center gap-1 border-b border-border bg-muted/10 px-2 py-1 lg:hidden">
+        <Button
+          variant={explorerVisible ? 'secondary' : 'ghost'}
+          size="sm"
+          className="h-7 gap-1 text-xs"
+          onClick={() => setExplorerVisible((v) => !v)}
+          aria-label="Toggle file explorer"
+        >
+          <PanelLeft className="h-3.5 w-3.5" />
+          Files
+        </Button>
+        <Button
+          variant={aiSidebarVisible ? 'secondary' : 'ghost'}
+          size="sm"
+          className="h-7 gap-1 text-xs"
+          onClick={() => setAiSidebarVisible((v) => !v)}
+          aria-label="Toggle AI sidebar"
+        >
+          <PanelRight className="h-3.5 w-3.5" />
+          AI
+        </Button>
+      </div>
+
       {/* Main panels */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel -- File Explorer */}
-        <div className="w-60 shrink-0 border-r border-border bg-muted/10">
+        <div className={cn(
+          'w-60 shrink-0 border-r border-border bg-muted/10',
+          explorerVisible ? 'block' : 'hidden',
+          'lg:block',
+        )}>
           <FileExplorer repoKey={repoKey} tree={tree} />
         </div>
 
@@ -255,7 +283,11 @@ export function IDELayout({
         </div>
 
         {/* Right panel -- AI Chat placeholder */}
-        <div className="w-72 shrink-0 border-l border-border bg-muted/10">
+        <div className={cn(
+          'w-72 shrink-0 border-l border-border bg-muted/10',
+          aiSidebarVisible ? 'block' : 'hidden',
+          'lg:block',
+        )}>
           <div className="flex items-center gap-2 border-b border-border px-3 py-2">
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
