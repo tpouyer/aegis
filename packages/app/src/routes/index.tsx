@@ -331,9 +331,9 @@ const ROLE_WIDGETS: Record<
   support: {
     icon: Headphones,
     title: 'Customer Issues',
-    description: 'Search for issues related to customer reports',
-    linkTo: '/search',
-    linkLabel: 'Search Issues',
+    description: 'Browse the board for issues related to customer reports',
+    linkTo: '/board',
+    linkLabel: 'Open Board',
   },
 }
 

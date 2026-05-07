@@ -37,6 +37,7 @@ import { BoardTableView } from './BoardTableView'
 import { CardDetail } from './CardDetail'
 import { Column } from './Column'
 import { FilterBar } from './FilterBar'
+import { JiraSearch } from './JiraSearch'
 import { TransitionModal } from './TransitionModal'
 
 function BoardSwitcher({ currentBoardId }: { currentBoardId: number }) {
@@ -394,6 +395,7 @@ export function BoardView({ boardId }: BoardViewProps) {
       {/* Board header with board switcher, refresh button, and timestamp */}
       <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-1.5">
         <BoardSwitcher currentBoardId={boardId} />
+        <JiraSearch boardId={boardId} />
         <div className="flex-1" />
         {lastUpdated && <span className="text-xs text-muted-foreground">Last updated: {lastUpdated}</span>}
         <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">

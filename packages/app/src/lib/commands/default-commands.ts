@@ -61,14 +61,6 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
       action: () => navigate({ to: '/chat' }),
     },
     {
-      id: 'nav.go-to-search',
-      label: 'Search Issues',
-      description: 'Navigate to issue search',
-      category: 'navigation',
-      keywords: ['search', 'find', 'jira', 'issues', 'query'],
-      action: () => navigate({ to: '/search' }),
-    },
-    {
       id: 'nav.go-to-settings',
       label: 'Go to Settings',
       description: 'Navigate to settings',

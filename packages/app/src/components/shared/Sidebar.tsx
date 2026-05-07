@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Home, Kanban, MessageSquare, Search, Settings } from 'lucide-react'
+import { Home, Kanban, MessageSquare, Settings } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useSidebarStore } from '@/stores/sidebar'
 
@@ -33,15 +33,6 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       >
         <MessageSquare className="h-4 w-4" />
         Chat
-      </Link>
-      <Link
-        to="/search"
-        className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-accent"
-        activeProps={{ className: 'bg-accent text-accent-foreground', 'aria-current': 'page' as const }}
-        onClick={onNavigate}
-      >
-        <Search className="h-4 w-4" />
-        Search
       </Link>
       <Link
         to="/settings"
