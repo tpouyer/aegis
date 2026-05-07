@@ -40,16 +40,15 @@ declare module '@tanstack/react-router' {
 const rootElement = document.getElementById('root')!
 
 async function bootstrap() {
-  // Register Service Worker and wait for it to be ready before syncing tokens
+  // Register Service Worker and sync persisted tokens to it
   if ('serviceWorker' in navigator) {
     const swUrl = `${import.meta.env.BASE_URL || '/'}sw.js`
-    try {
-      await navigator.serviceWorker.register(swUrl, { scope: import.meta.env.BASE_URL || '/' })
-      await navigator.serviceWorker.ready
-      await authManager.syncAllTokensToSW()
-    } catch {
-      // SW registration failed — tokens won't be injected but app still works
-    }
+    navigator.serviceWorker.register(swUrl, { scope: import.meta.env.BASE_URL || '/' }).catch(() => {})
+
+    // Sync tokens once SW is ready (with timeout so the app isn't blocked)
+    Promise.race([navigator.serviceWorker.ready, new Promise((r) => setTimeout(r, 3000))]).then(() =>
+      authManager.syncAllTokensToSW().catch(() => {}),
+    )
   }
 
   // Load .well-known config before Jira client init — the client reads
