@@ -41,4 +41,13 @@ We selected the following stack:
 
 **Redux / Recoil** — Redux adds boilerplate for simple UI state; Recoil is less maintained. Zustand provides equivalent capability with minimal API surface. Neither addresses server state caching, which TanStack Query handles natively.
 
+## Implementation Notes (added post-redesign)
+
+**Design system**: The visual design now follows Red Hat's PatternFly 6 design language:
+- **Colors**: PatternFly 6 palette (`#0066CC` primary blue, PF gray scale, `#B1380B` destructive). Red Hat Red (`#EE0000`) used only for brand identity, not interactive elements.
+- **Typography**: Red Hat Display (headings), Red Hat Text (body), Red Hat Mono (code) loaded via Google Fonts with `preconnect` hints.
+- **Sidebar**: Always-dark (`#151515`) matching PatternFly's masthead/navigation convention (console.redhat.com pattern).
+- **Border radii**: Slightly rounder than defaults (md: 0.5rem, lg: 0.75rem, xl: 1rem) per PF6.
+- **Zustand stores**: Now 7 stores — board, chat, IDE, theme, sidebar, telemetry, recent (recent issues for launchpad).
+
 **Webpack** — Slower development feedback loop, more complex configuration, and no first-class Tailwind v4 or WASM support. Vite is the standard choice for new React projects.

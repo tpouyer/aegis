@@ -23,16 +23,17 @@ Frequently reviews and triages issues on a phone or tablet while away from their
 
 ### US-1: First-Time Landing & Onboarding
 **As** Ana (Outside Contributor)  
-**I want to** visit the Aegis landing page and understand what the tool does  
-**So that** I can decide whether to connect my accounts and start using it.
+**I want to** visit the Aegis landing page and either start working immediately or understand what the tool does  
+**So that** I can get to my work or decide to connect my accounts.
 
 **Acceptance Criteria:**
-1. Landing page loads at `/` and displays a clear value proposition
-2. Three feature cards (Kanban Board, AI Chat, Web IDE) are visible
-3. "Browse" button navigates to the board (as Guest)
+1. Landing page loads at `/`
+2. **Authenticated users** see: greeting with name, recent issues grid (last 8 visited), quick actions (Open Board, Configure AI, Settings), collapsible About section
+3. **Unauthenticated users** see: hero section with branding, auth CTA (Guest/Contributor/Employee options), expanded feature cards
 4. "Connect GitHub" button initiates the GitHub OAuth flow
 5. "Connect SSO" button initiates the Red Hat SSO flow
-6. If already authenticated, shows auth status instead of connect prompts
+6. Recent issue cards link to the last-visited view (Chat or IDE) for that issue
+7. About Aegis section is collapsed by default for returning users with recent issues
 
 ---
 
@@ -146,11 +147,11 @@ Frequently reviews and triages issues on a phone or tablet while away from their
 **So that** I can connect/disconnect accounts and configure AI models.
 
 **Acceptance Criteria:**
-1. Settings page loads at `/settings` with tabs: Connections, LLM, Appearance, About
-2. Each auth provider shows connected/disconnected status with connect/disconnect buttons
-3. Connect buttons initiate the correct OAuth flow
-4. Disconnect buttons clear the token
-5. LLM section shows the configured provider and available models
+1. Settings page loads at `/settings` with 3 tabs: Integrations, Preferences, About
+2. Integrations tab shows auth providers (connected/disconnected) and LLM provider config
+3. Connect buttons initiate the correct OAuth flow; disconnect buttons clear the token
+4. LLM section shows the configured provider and available models
+5. Preferences tab contains theme toggle and telemetry config (OTLP endpoint, export interval)
 6. Theme toggle switches between light and dark mode consistently across all UI surfaces
 7. About section shows version and link to design document
 

@@ -75,7 +75,7 @@ Three-tier resolution (first non-null wins):
 2. **`.well-known/aegis-configuration`** — deployer sets OTLP endpoint without rebuilding
 3. **`VITE_OTEL_ENDPOINT`** — build-time developer default
 
-Settings UI (Settings > Telemetry tab) provides:
+Settings UI (Settings > Preferences tab, telemetry section) provides:
 - Enable/disable toggle
 - OTLP endpoint URL input
 - Export interval selector (15s / 30s / 1m / 5m)

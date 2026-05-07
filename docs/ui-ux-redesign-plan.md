@@ -1,7 +1,9 @@
-# Plan: Aegis UI/UX Redesign with Red Hat Design Language
+# Aegis UI/UX Redesign — Implementation Record
+
+## Status: Implemented (commit 272b2c6)
 
 ## Context
-The Aegis UI is functionally complete but feels like an engineering demo — feature-arranged layouts rather than workflow-aware surfaces. The visual design uses generic Tailwind defaults. This redesign applies Red Hat's PatternFly 6 design language (colors, typography, spacing) and restructures the UX around the user's actual workflow: **see issue → discuss → code → ship**.
+The Aegis UI was functionally complete but felt like an engineering demo — feature-arranged layouts rather than workflow-aware surfaces. The visual design used generic Tailwind defaults. This redesign applied Red Hat's PatternFly 6 design language (colors, typography, spacing) and restructured the UX around the user's actual workflow: **see issue → discuss → code → ship**.
 
 ## Five Workstreams
 

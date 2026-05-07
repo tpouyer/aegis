@@ -57,7 +57,7 @@ Each transition loses context. The AI has no awareness of team standards. The ID
 │  │  /board/:id     — Kanban board (Jira-backed)                       │ │
 │  │  /issue/:key/chat — AI chat session                                │ │
 │  │  /issue/:key/ide  — Web IDE (Monaco + AI + Git)                    │ │
-│  │  /settings        — Auth, LLM, telemetry, appearance config        │ │
+│  │  /settings        — Integrations, Preferences, About                │ │
 │  │  /auth/callback   — OAuth code exchange handler                    │ │
 │  └──────────────────────────┬─────────────────────────────────────────┘ │
 │                             │                                           │

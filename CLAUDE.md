@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Aegis is a zero-infrastructure development platform served as a single WASM binary from a static site (GitHub Pages). It combines organizational context delivery, MCP tool aggregation, and an AI-native development surface (kanban board, AI chat, browser IDE) — all running entirely in the browser with no backend.
 
-The design document lives at `docs/design.md`. The threat model is at `docs/security/threat-model.md`. User stories are at `docs/user-stories.md`.
+The design document lives at `docs/design.md`. The threat model is at `docs/security/threat-model.md`. User stories are at `docs/user-stories.md`. The UI/UX redesign record is at `docs/ui-ux-redesign-plan.md`. The OTEL implementation record is at `docs/otel-implementation-plan.md`.
 
 ## Repository Structure
 
@@ -27,7 +27,7 @@ wasm-pack build --target web --out-dir ../app/src/wasm
 # React SPA (from packages/app/)
 npm run dev          # dev server
 npm run build        # tsc --noEmit + vite build
-npm run test         # vitest run (305 tests)
+npm run test         # vitest run (313 tests)
 npm run lint         # tsc --noEmit
 
 # Rust tests (from packages/engine/)
@@ -42,8 +42,9 @@ npm run test         # engine then app
 
 | Layer | Technology |
 |---|---|
-| UI | React 18, Vite 6, TanStack Router (file-based), Tailwind CSS v4, Radix UI / Shadcn |
-| State | Zustand (board, chat, IDE, theme, sidebar, telemetry), TanStack Query (server data + caching) |
+| UI | React 18, Vite 6, TanStack Router (file-based), Tailwind CSS v4, Radix UI / Shadcn, Red Hat Display/Text/Mono fonts |
+| Design system | PatternFly 6 color palette, always-dark sidebar, Red Hat typography. See `docs/ui-ux-redesign-plan.md` |
+| State | Zustand (board, chat, IDE, theme, sidebar, telemetry, recent), TanStack Query (server data + caching) |
 | Observability | OpenTelemetry SDK (metrics), console + OTLP/HTTP exporters (`src/lib/telemetry/`) |
 | Drag-and-drop | @hello-pangea/dnd |
 | Code editor | @monaco-editor/react (lazy-loaded on IDE route only) |
@@ -144,7 +145,10 @@ Phases 1–5 of the design are implemented. Phase 6 (Tool Aggregation with Quick
 | AI Chat (5 providers) | Done | `src/components/chat/`, `src/lib/llm/`, `src/stores/chat.ts` |
 | Chat error recovery | Done | Error banners with Retry button, structured error display (not inline markdown) |
 | Web IDE + Monaco | Done | `src/components/ide/`, `src/lib/vfs/`, `src/lib/github/` |
-| Settings + Landing | Done | `src/routes/settings.tsx`, `src/routes/index.tsx` |
+| Landing (launchpad) | Done | `src/routes/index.tsx` — context-aware: recent issues grid + quick actions for auth users, auth CTA for guests |
+| Settings (3 tabs) | Done | `src/routes/settings.tsx` — Integrations (auth + LLM), Preferences (theme + telemetry), About |
+| Issue context bar | Done | `src/components/shared/IssueContextBar.tsx` — breadcrumbs + Chat/IDE view switcher on issue routes |
+| Recent issues | Done | `src/stores/recent.ts` — tracks last 8 visited issues for launchpad |
 | Keyboard shortcuts | Done | `src/lib/shortcuts/`, scoped (global/board/chat/ide), chord support |
 | Command palette | Done | `src/lib/commands/`, `src/components/shared/CommandPalette.tsx` |
 | Resilient fetch | Done | `src/lib/fetch/resilient-fetch.ts` |
@@ -152,15 +156,16 @@ Phases 1–5 of the design are implemented. Phase 6 (Tool Aggregation with Quick
 | Responsive layout | Done | Collapsible sidebar (hamburger on mobile), stacking board columns, responsive IDE panels |
 | Accessibility (WCAG) | Done | Skip nav, page titles, ARIA roles/labels on all widgets, keyboard focus indicators |
 | Theme management | Done | `src/stores/theme.ts` — single Zustand store, syncs Header/Settings/CmdK |
+| Board skeleton loading | Done | `src/components/board/BoardSkeleton.tsx` — animated placeholder columns while data loads |
 | Onboarding wizard | Built | `src/components/shared/OnboardingWizard.tsx` — exists but not yet triggered on first visit |
-| User stories | Defined | `docs/user-stories.md` — 13 stories, 5 personas, 100 acceptance criteria |
+| User stories | Defined | `docs/user-stories.md` — 15 stories, 5 personas |
 | OTEL metrics | Done | `src/lib/telemetry/` — HTTP, LLM, navigation, Web Vitals. Console + OTLP exporters. Settings UI |
 
 ## Testing
 
 ```bash
 # JS tests (from packages/app/)
-npm run test           # 305 tests across 25 suites
+npm run test           # 313 tests across 25 suites
 
 # Rust tests (from packages/engine/)
 cargo test             # 37 tests across 6 modules
