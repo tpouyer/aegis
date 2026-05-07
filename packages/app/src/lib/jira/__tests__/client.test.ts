@@ -47,7 +47,7 @@ describe('JiraClient', () => {
   // getBoards
   // -----------------------------------------------------------------------
 
-  it('getBoards paginates through all results', async () => {
+  it('getBoards builds correct URL with pagination params', async () => {
     mockFetch.mockReturnValue(
       jsonResponse({
         startAt: 0,
@@ -57,14 +57,12 @@ describe('JiraClient', () => {
       }),
     )
 
-    const result = await client.getBoards()
+    await client.getBoards(0, 25)
 
     const calledUrl = mockFetch.mock.calls[0][0] as string
     expect(calledUrl).toBe(
-      'https://test.atlassian.net/ex/jira/test-cloud-id/rest/agile/1.0/board?startAt=0&maxResults=50',
+      'https://test.atlassian.net/ex/jira/test-cloud-id/rest/agile/1.0/board?startAt=0&maxResults=25',
     )
-    expect(result.values).toHaveLength(1)
-    expect(result.total).toBe(1)
   })
 
   // -----------------------------------------------------------------------

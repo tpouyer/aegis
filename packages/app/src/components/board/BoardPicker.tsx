@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { ChevronDown, Filter, Kanban, LayoutDashboard, ListChecks, Search, Star, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -151,7 +151,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
         </div>
 
         {spaces.length > 1 && (
-          <FilterDropdown
+          <SearchableFilter
             label="Space"
             value={spaceFilter}
             options={spaces.map((s) => ({ id: s.key, label: s.name, detail: s.key }))}
@@ -279,6 +279,101 @@ function FilterDropdown({
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Searchable filter (combobox-style)
+// ---------------------------------------------------------------------------
+
+function SearchableFilter({
+  label,
+  value,
+  options,
+  onSelect,
+}: {
+  label: string
+  value: string | null
+  options: Array<{ id: string; label: string; detail?: string }>
+  onSelect: (value: string | null) => void
+}) {
+  const [search, setSearch] = useState('')
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const selectedLabel = value ? (options.find((o) => o.id === value)?.label ?? value) : null
+
+  const filtered = useMemo(() => {
+    if (!search) return options
+    const lower = search.toLowerCase()
+    return options.filter((o) => o.label.toLowerCase().includes(lower) || o.detail?.toLowerCase().includes(lower))
+  }, [options, search])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  if (value) {
+    return (
+      <Button variant="secondary" size="sm" className="h-8 gap-1 text-xs" onClick={() => onSelect(null)}>
+        {selectedLabel}
+        <X className="h-3 w-3" />
+      </Button>
+    )
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <Input
+        ref={inputRef}
+        placeholder={label}
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            setOpen(false)
+            inputRef.current?.blur()
+          }
+        }}
+        className="h-8 w-36 text-xs"
+        aria-label={`Filter by ${label}`}
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-48 w-56 overflow-y-auto rounded-md border border-border bg-card shadow-lg">
+          {filtered.map((o) => (
+            <button
+              type="button"
+              key={o.id}
+              className="flex w-full items-center px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+              onClick={() => {
+                onSelect(o.id)
+                setSearch('')
+                setOpen(false)
+              }}
+            >
+              <span className="flex-1 truncate">{o.label}</span>
+              {o.detail && <span className="ml-2 text-[10px] text-muted-foreground">{o.detail}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+      {open && search && filtered.length === 0 && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-md border border-border bg-card p-3 text-xs text-muted-foreground shadow-lg">
+          No spaces match "{search}"
+        </div>
+      )}
+    </div>
   )
 }
 

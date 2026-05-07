@@ -118,25 +118,13 @@ export class JiraClient {
   // Boards
   // -----------------------------------------------------------------------
 
-  /** List all boards visible to the authenticated user, paginating through all results. */
-  async getBoards(): Promise<JiraPaginatedResponse<JiraBoard>> {
-    const pageSize = 50
-    let startAt = 0
-    const allBoards: JiraBoard[] = []
-
-    for (;;) {
-      const params = new URLSearchParams({
-        startAt: String(startAt),
-        maxResults: String(pageSize),
-      })
-      const page = await this.request<JiraPaginatedResponse<JiraBoard>>(this.agileUrl(`/board?${params}`))
-      allBoards.push(...page.values)
-
-      if (startAt + page.values.length >= page.total || page.values.length === 0) {
-        return { startAt: 0, maxResults: allBoards.length, total: page.total, values: allBoards }
-      }
-      startAt += page.values.length
-    }
+  /** List boards visible to the authenticated user. */
+  async getBoards(startAt = 0, maxResults = 50): Promise<JiraPaginatedResponse<JiraBoard>> {
+    const params = new URLSearchParams({
+      startAt: String(startAt),
+      maxResults: String(maxResults),
+    })
+    return this.request<JiraPaginatedResponse<JiraBoard>>(this.agileUrl(`/board?${params}`))
   }
 
   /** Get board column configuration with status mappings. */
