@@ -24,6 +24,18 @@ export default defineConfig(({ command }) => ({
         return html.replace('<!--CSP_PLACEHOLDER-->', '')
       },
     },
+    {
+      name: 'spa-fallback-404',
+      closeBundle() {
+        const fs = require('node:fs')
+        const distPath = require('node:path').resolve(__dirname, 'dist')
+        const index = require('node:path').join(distPath, 'index.html')
+        const fallback = require('node:path').join(distPath, '404.html')
+        if (fs.existsSync(index)) {
+          fs.copyFileSync(index, fallback)
+        }
+      },
+    },
   ],
   resolve: {
     alias: {
