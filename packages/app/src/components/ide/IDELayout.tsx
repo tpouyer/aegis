@@ -4,7 +4,7 @@
  * Layout:
  *   - Left panel:   FileExplorer (resizable, ~250px default)
  *   - Center panel:  EditorTabs + editor area (MonacoEditor / MonacoDiffView)
- *   - Right panel:  AI chat sidebar (placeholder for Wave 3)
+ *   - Right panel:  AI chat sidebar (not yet integrated into IDE layout)
  *   - Bottom panel: SourceControl (collapsible)
  *
  * Uses CSS flexbox for the panel layout. Monaco is lazy-loaded so the
@@ -296,7 +296,7 @@ export function IDELayout({
           </div>
           <div className="flex h-full items-center justify-center p-4">
             <p className="text-center text-xs text-muted-foreground">
-              AI chat will be available in Wave 3
+              Use the AI Chat route for this issue to get coding assistance
             </p>
           </div>
         </div>

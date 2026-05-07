@@ -13,6 +13,10 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { authManager } from '@/lib/auth/manager'
 import { AuthLevel } from '@/lib/auth/types'
+import { initiateGitHubAuth } from '@/lib/auth/github'
+import { initiateAtlassianAuth } from '@/lib/auth/atlassian'
+import { initiateGoogleAuth } from '@/lib/auth/google'
+import { getGitHubConfig, getAtlassianConfig, getGoogleConfig } from '@/lib/auth/config'
 
 interface OnboardingWizardProps {
   open: boolean
@@ -90,9 +94,20 @@ export function OnboardingWizard({ open, onOpenChange }: OnboardingWizardProps) 
 
   const handleConnect = useCallback(() => {
     if (!currentStep) return
-    // Placeholder for the actual OAuth flow initiation.
-    console.info(`[Onboarding] Connect flow for ${currentStep.id} not yet wired`)
-    setCompletedSteps((prev) => new Set([...prev, currentStep.id]))
+    switch (currentStep.id) {
+      case 'github':
+        initiateGitHubAuth(getGitHubConfig())
+        break
+      case 'atlassian':
+        initiateAtlassianAuth(getAtlassianConfig())
+        break
+      case 'google':
+        initiateGoogleAuth(getGoogleConfig())
+        break
+      case 'llm':
+        setCompletedSteps((prev) => new Set([...prev, currentStep.id]))
+        break
+    }
   }, [currentStep])
 
   const handleNext = useCallback(() => {

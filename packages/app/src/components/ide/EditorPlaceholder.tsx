@@ -1,7 +1,7 @@
 /**
  * EditorPlaceholder — read-only file content viewer.
  *
- * Placeholder for Monaco Editor (will be replaced in Wave 3).
+ * Fallback viewer when Monaco is not loaded.
  * Shows file content as preformatted text with line numbers
  * and the file path in a header bar.
  */

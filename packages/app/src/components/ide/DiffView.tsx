@@ -3,7 +3,7 @@
  *
  * Simple line-by-line diff: added lines in green, removed lines in
  * red, context lines in default color. Shows line numbers and the
- * file path in a header. Will be enhanced with Monaco diff in Wave 3.
+ * file path in a header. MonacoDiffView is the primary diff viewer; this is the fallback.
  */
 
 import { ScrollArea } from '@/components/ui/scroll-area'

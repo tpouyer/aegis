@@ -112,3 +112,13 @@ This ensures page JavaScript **never** holds API keys after initial setup. An XS
 - **Single "OpenAI-compatible" provider for everything**: Some providers (Anthropic, Ollama) have subtle API differences that an OpenAI shim would paper over, losing features like native tool use format. Rejected in favor of purpose-built providers with shared parsing infrastructure.
 - **Observable/RxJS for streaming**: Adds a dependency and learning curve. `AsyncIterable` is a language primitive that achieves the same result. Rejected for simplicity.
 - **Storing API keys in encrypted localStorage**: Encryption key would also be in page JS, so an XSS attacker could decrypt. This is security theater. Rejected in favor of SW-scoped storage (consistent with ADR-004).
+
+## Implementation Notes (added post-UAT)
+
+1. **AbortSignal support**: All five providers (Anthropic, OpenAI, Vertex AI, Ollama, Custom) now pass `params.signal` to their `fetch()` calls. Pressing Escape or clicking the Stop button in the chat UI triggers `AbortController.abort()`, which cancels the in-flight HTTP connection for all providers.
+
+2. **Error recovery UX**: Chat streaming errors are no longer appended inline as markdown text. Instead, the `ChatMessage` type has an `error?: string` field. Errors render as a distinct banner below the message with a "Retry" button. The `error` field is transient — stripped before persisting to IndexedDB.
+
+3. **Provider switching mid-session**: The `ChatView.handleProviderSelected` callback now correctly uses `switchProvider()` and `switchModel()` when a session already exists, rather than silently failing via `createSession()`'s early return.
+
+4. **Custom provider error fix**: The `CustomProvider` error message was referencing `this.endpoint` (undefined) — corrected to `this.relayUrl`.

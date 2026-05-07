@@ -116,8 +116,22 @@ The SW intercepts API requests and can enforce rate discipline:
 - SW eviction loses tokens — user must re-authenticate (mitigated by refresh tokens and progressive re-auth)
 - GitHub token exchange requires a thin CORS proxy (Cloudflare Worker or similar)
 - Four separate OAuth flows means four separate configurations to maintain
-- Token refresh is provider-specific — each provider has different refresh mechanics
+- Token refresh is provider-specific — each provider has different refresh mechanics (token refresh is currently stubbed; the `refreshToken()` method throws "not yet implemented")
 - The placeholder tokens (metadata-only) restored from localStorage cannot be used for API calls until the SW has actual tokens
+
+## Implementation Notes (added post-UAT)
+
+The following enhancements were made to the original architecture during UAT refinement:
+
+1. **Auth callback route** (`/auth/callback`): Handles OAuth code exchange for all four providers. Reads `provider` from query params, dispatches to the appropriate `handle*Callback()` function, stores tokens via `authManager.setToken()`, and navigates home on success.
+
+2. **Auth config centralization** (`src/lib/auth/config.ts`): OAuth configs (client IDs, redirect URIs, scopes) are centralized with `VITE_*` environment variable support and sensible defaults for development.
+
+3. **Service Worker token expiry**: The SW now checks `token.expiresAt` (with 60s buffer) before injecting auth headers. Expired tokens are removed from the SW's memory map.
+
+4. **401 detection in API clients**: Both `JiraClient` and `GitHubClient` detect 401 responses and call `authManager.disconnect()` to clear stale tokens, ensuring the UI shows the auth-required empty state instead of a raw error.
+
+5. **Startup cleanup**: `authManager.clearExpiredTokens()` runs on app mount to proactively clean expired metadata from localStorage.
 
 ## Alternatives Considered
 

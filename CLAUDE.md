@@ -42,7 +42,7 @@ npm run test         # engine then app
 | Layer | Technology |
 |---|---|
 | UI | React 18, Vite 6, TanStack Router (file-based), Tailwind CSS v4, Radix UI / Shadcn |
-| State | Zustand (UI state), TanStack Query (server data + caching) |
+| State | Zustand (board, chat, IDE, theme, sidebar), TanStack Query (server data + caching) |
 | Drag-and-drop | @hello-pangea/dnd |
 | Code editor | @monaco-editor/react (lazy-loaded on IDE route only) |
 | GitHub API | Custom `GitHubClient` REST client (`src/lib/github/client.ts`) with `resilientFetch` |
@@ -56,8 +56,8 @@ npm run test         # engine then app
 
 ### Three-Layer Browser Architecture
 
-1. **React SPA** — routes: `/board/:id` (kanban), `/issue/:key/chat` (AI chat), `/issue/:key/ide` (web IDE), `/settings`
-2. **Service Worker** (`public/sw.js`) — handles auth token management, Jira/GitHub API proxying with IndexedDB caching, MCP protocol, and LLM API relay
+1. **React SPA** — routes: `/board/:id` (kanban), `/issue/:key/chat` (AI chat), `/issue/:key/ide` (web IDE), `/settings`, `/auth/callback` (OAuth)
+2. **Service Worker** (`public/sw.js`) — handles auth token management (with expiry checking), Jira/GitHub API proxying with IndexedDB caching, MCP protocol, and LLM API relay
 3. **WASM Engine** — hierarchy resolution, config parsing, tool aggregation, QuickJS sandbox, MCP protocol handler, and auth-based content filtering
 
 ### Data Flow
@@ -76,11 +76,15 @@ Three user classes with progressive auth (acquired lazily on first feature use):
 
 Content visibility is tiered (`public` / `github` / `redhat-sso`) and filtered by the WASM engine at resolution time. Build pipeline generates layered manifests (`manifest-public.json`, `manifest-github.json`, `manifest-internal.json`).
 
+OAuth connect buttons on the landing page and settings page are fully wired to the PKCE initiation functions. The `/auth/callback` route handles code exchange for all four providers. Provider configs are centralized in `src/lib/auth/config.ts` using `VITE_*` environment variables with sensible defaults. The Service Worker checks token expiry before injection (with 60s buffer), and API clients (Jira, GitHub) detect 401 responses and clear stale tokens to trigger re-auth UI. On app startup, `authManager.clearExpiredTokens()` proactively cleans expired metadata.
+
 ### LLM Provider Abstraction
 
 All providers implement a common `LLMProvider` interface with `AsyncIterable<ChatChunk>` streaming. Five providers: Vertex AI (Claude), Anthropic direct, OpenAI, Ollama, and custom endpoints.
 
 API keys are stored in the Service Worker's memory (not page JS). Provider `fetch()` calls route through `/_aegis/llm/{provider}/...` — the SW rewrites URLs and injects auth headers. When a provider lacks tool use support, org context is inlined in the system prompt and tool-dependent features degrade gracefully.
+
+All five providers pass `AbortSignal` to `fetch()` for stream cancellation (Escape key or Stop button). Chat errors are displayed as distinct UI banners (not inline markdown) with a Retry button. Provider switching mid-session uses the store's `switchProvider` action to preserve chat history.
 
 ### WASM Engine Modules
 
@@ -98,15 +102,23 @@ Phases 1–5 of the design are implemented. Phase 6 (Tool Aggregation with Quick
 | React SPA + routing | Done | `src/routes/`, `src/components/shared/` |
 | WASM engine | Done | `packages/engine/src/` (hierarchy, auth filter, MCP, catalog) |
 | Auth (4 OAuth flows) | Done | `src/lib/auth/` (GitHub, Atlassian, RH SSO, Google + PKCE) |
-| Service Worker | Done | `public/sw.js` (caching, auth injection, LLM relay) |
+| Auth wiring (UI → OAuth) | Done | `src/routes/index.tsx`, `src/routes/settings.tsx`, `src/routes/auth.callback.tsx`, `src/lib/auth/config.ts` |
+| Token expiry handling | Done | `public/sw.js` (expiry check), `src/lib/auth/manager.ts` (clearExpiredTokens), 401 detection in Jira/GitHub clients |
+| Service Worker | Done | `public/sw.js` (caching, auth injection, token expiry, LLM relay) |
 | Kanban Board | Done | `src/components/board/`, `src/lib/jira/`, `src/stores/board.ts` |
 | AI Chat (5 providers) | Done | `src/components/chat/`, `src/lib/llm/`, `src/stores/chat.ts` |
+| Chat error recovery | Done | Error banners with Retry button, structured error display (not inline markdown) |
 | Web IDE + Monaco | Done | `src/components/ide/`, `src/lib/vfs/`, `src/lib/github/` |
 | Settings + Landing | Done | `src/routes/settings.tsx`, `src/routes/index.tsx` |
-| Keyboard shortcuts | Done | `src/lib/shortcuts/` |
+| Keyboard shortcuts | Done | `src/lib/shortcuts/`, scoped (global/board/chat/ide), chord support |
 | Command palette | Done | `src/lib/commands/`, `src/components/shared/CommandPalette.tsx` |
 | Resilient fetch | Done | `src/lib/fetch/resilient-fetch.ts` |
 | Empty states | Done | `src/components/shared/EmptyState.tsx` |
+| Responsive layout | Done | Collapsible sidebar (hamburger on mobile), stacking board columns, responsive IDE panels |
+| Accessibility (WCAG) | Done | Skip nav, page titles, ARIA roles/labels on all widgets, keyboard focus indicators |
+| Theme management | Done | `src/stores/theme.ts` — single Zustand store, syncs Header/Settings/CmdK |
+| Onboarding wizard | Built | `src/components/shared/OnboardingWizard.tsx` — exists but not yet triggered on first visit |
+| User stories | Defined | `docs/user-stories.md` — 13 stories, 5 personas, 100 acceptance criteria |
 
 ## Testing
 
