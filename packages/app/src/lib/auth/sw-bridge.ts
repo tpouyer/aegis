@@ -48,7 +48,7 @@ export async function getTokenStatusFromSW(): Promise<Record<AuthProvider, boole
   const response = await postMessageToSW({ type: 'GET_TOKEN_STATUS' })
 
   return (
-    response ?? {
+    (response as Record<AuthProvider, boolean>) ?? {
       github: false,
       atlassian: false,
       'redhat-sso': false,
