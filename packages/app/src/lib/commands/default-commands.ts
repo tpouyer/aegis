@@ -9,6 +9,7 @@
 import { commandRegistry } from './registry';
 import type { Command } from './types';
 import { useThemeStore } from '@/stores/theme';
+import { useSidebarStore } from '@/stores/sidebar';
 
 // ---------------------------------------------------------------------------
 // Types for the navigate callback
@@ -84,10 +85,7 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
       keywords: ['sidebar', 'panel', 'navigation', 'collapse', 'expand'],
       shortcut: '⌘B',
       action: () => {
-        const sidebar = document.querySelector('aside');
-        if (sidebar) {
-          sidebar.classList.toggle('hidden');
-        }
+        useSidebarStore.getState().toggleSidebar();
       },
     },
   ];
