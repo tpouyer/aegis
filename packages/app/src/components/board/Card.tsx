@@ -8,29 +8,25 @@
  * See design doc section 5.3 for the card layout specification.
  */
 
-import { Draggable } from '@hello-pangea/dnd';
-import { Link } from '@tanstack/react-router';
-import { MessageSquare, Code2 } from 'lucide-react';
-import {
-  Card as CardContainer,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import type { JiraIssue } from '@/lib/jira/types';
+import { Draggable } from '@hello-pangea/dnd'
+import { Link } from '@tanstack/react-router'
+import { Code2, MessageSquare } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card as CardContainer, CardContent, CardFooter } from '@/components/ui/card'
+import type { JiraIssue } from '@/lib/jira/types'
 
 interface IssueCardProps {
-  issue: JiraIssue;
-  index: number;
-  onClick?: (issueKey: string) => void;
-  isFocused?: boolean;
+  issue: JiraIssue
+  index: number
+  onClick?: (issueKey: string) => void
+  isFocused?: boolean
 }
 
 export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) {
-  const { key, fields } = issue;
-  const storyPoints = getStoryPoints(fields);
-  const priorityColor = getPriorityColor(fields.priority.name);
+  const { key, fields } = issue
+  const storyPoints = getStoryPoints(fields)
+  const priorityColor = getPriorityColor(fields.priority.name)
 
   return (
     <Draggable draggableId={key} index={index}>
@@ -58,14 +54,9 @@ export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) 
             <CardContent className="p-3">
               {/* Header: issue key + priority indicator */}
               <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">
-                  {key}
-                </span>
+                <span className="text-xs font-medium text-muted-foreground">{key}</span>
                 <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <span
-                    className={`inline-block h-2 w-2 rounded-full ${priorityColor}`}
-                    aria-hidden="true"
-                  />
+                  <span className={`inline-block h-2 w-2 rounded-full ${priorityColor}`} aria-hidden="true" />
                   {fields.priority.name}
                 </span>
               </div>
@@ -86,11 +77,7 @@ export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) 
 
                 {/* Components */}
                 {fields.components.slice(0, 2).map((component) => (
-                  <Badge
-                    key={component.id}
-                    variant="secondary"
-                    className="text-[10px] px-1.5 py-0"
-                  >
+                  <Badge key={component.id} variant="secondary" className="text-[10px] px-1.5 py-0">
                     {component.name}
                   </Badge>
                 ))}
@@ -110,24 +97,12 @@ export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) 
 
             {/* Action buttons */}
             <CardFooter className="flex items-center justify-center gap-1 border-t border-border px-3 py-1.5">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                asChild
-                onClick={(e) => e.stopPropagation()}
-              >
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild onClick={(e) => e.stopPropagation()}>
                 <Link to="/issue/$issueKey/chat" params={{ issueKey: key }} title="AI Chat">
                   <MessageSquare className="h-4 w-4" />
                 </Link>
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                asChild
-                onClick={(e) => e.stopPropagation()}
-              >
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild onClick={(e) => e.stopPropagation()}>
                 <Link to="/issue/$issueKey/ide" params={{ issueKey: key }} title="Open IDE">
                   <Code2 className="h-4 w-4" />
                 </Link>
@@ -137,7 +112,7 @@ export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) 
         </div>
       )}
     </Draggable>
-  );
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -145,36 +120,29 @@ export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) 
 // ---------------------------------------------------------------------------
 
 /** Extract story points from the issue fields (custom field varies by instance). */
-function getStoryPoints(
-  fields: JiraIssue['fields'],
-): number | null {
+function getStoryPoints(fields: JiraIssue['fields']): number | null {
   // Common custom field IDs for story points
   const candidates = [
     'customfield_10016', // Jira Cloud default
     'customfield_10028',
     'customfield_10004',
-  ];
+  ]
 
   for (const field of candidates) {
-    const value = fields[field as keyof typeof fields];
-    if (typeof value === 'number') return value;
+    const value = fields[field as keyof typeof fields]
+    if (typeof value === 'number') return value
   }
 
-  return null;
+  return null
 }
 
 /** Map priority name to a Tailwind background color class. */
 function getPriorityColor(priorityName: string): string {
-  const name = priorityName.toLowerCase();
-  if (name.includes('highest') || name.includes('blocker'))
-    return 'bg-red-500';
-  if (name.includes('high') || name.includes('critical'))
-    return 'bg-orange-500';
-  if (name.includes('medium'))
-    return 'bg-yellow-500';
-  if (name.includes('low'))
-    return 'bg-blue-400';
-  if (name.includes('lowest'))
-    return 'bg-slate-400';
-  return 'bg-slate-400';
+  const name = priorityName.toLowerCase()
+  if (name.includes('highest') || name.includes('blocker')) return 'bg-red-500'
+  if (name.includes('high') || name.includes('critical')) return 'bg-orange-500'
+  if (name.includes('medium')) return 'bg-yellow-500'
+  if (name.includes('low')) return 'bg-blue-400'
+  if (name.includes('lowest')) return 'bg-slate-400'
+  return 'bg-slate-400'
 }

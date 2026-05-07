@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { useToastStore, toast } from '@/stores/toast';
-import { Toaster } from '@/components/shared/Toaster';
-import { FilterBar } from '../FilterBar';
-import { useBoardStore } from '@/stores/board';
-import type { JiraIssue } from '@/lib/jira/types';
+import { act, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { Toaster } from '@/components/shared/Toaster'
+import type { JiraIssue } from '@/lib/jira/types'
+import { useBoardStore } from '@/stores/board'
+import { toast, useToastStore } from '@/stores/toast'
+import { FilterBar } from '../FilterBar'
 
 // ---------------------------------------------------------------------------
 // Mock data
@@ -34,7 +34,7 @@ function makeIssue(overrides: Partial<JiraIssue> & { key: string }): JiraIssue {
       updated: '2025-01-01T00:00:00.000Z',
       ...(overrides.fields as Partial<JiraIssue['fields']>),
     },
-  };
+  }
 }
 
 const mockIssues: JiraIssue[] = [
@@ -50,7 +50,7 @@ const mockIssues: JiraIssue[] = [
     key: 'AEGIS-3',
     fields: { summary: 'Add unit tests' } as JiraIssue['fields'],
   }),
-];
+]
 
 // ---------------------------------------------------------------------------
 // Toast tests
@@ -58,76 +58,76 @@ const mockIssues: JiraIssue[] = [
 
 describe('Toaster', () => {
   beforeEach(() => {
-    useToastStore.getState().clearToasts();
-  });
+    useToastStore.getState().clearToasts()
+  })
 
   it('renders a toast notification when added', () => {
-    render(<Toaster />);
+    render(<Toaster />)
 
     act(() => {
-      toast.success('Operation succeeded', 'All good');
-    });
+      toast.success('Operation succeeded', 'All good')
+    })
 
-    expect(screen.getByText('Operation succeeded')).toBeInTheDocument();
-    expect(screen.getByText('All good')).toBeInTheDocument();
-  });
+    expect(screen.getByText('Operation succeeded')).toBeInTheDocument()
+    expect(screen.getByText('All good')).toBeInTheDocument()
+  })
 
   it('renders multiple toasts stacked', () => {
-    render(<Toaster />);
+    render(<Toaster />)
 
     act(() => {
-      toast.success('First toast');
-      toast.error('Second toast');
-      toast.info('Third toast');
-    });
+      toast.success('First toast')
+      toast.error('Second toast')
+      toast.info('Third toast')
+    })
 
-    expect(screen.getByText('First toast')).toBeInTheDocument();
-    expect(screen.getByText('Second toast')).toBeInTheDocument();
-    expect(screen.getByText('Third toast')).toBeInTheDocument();
-  });
+    expect(screen.getByText('First toast')).toBeInTheDocument()
+    expect(screen.getByText('Second toast')).toBeInTheDocument()
+    expect(screen.getByText('Third toast')).toBeInTheDocument()
+  })
 
   it('auto-dismisses after the specified duration', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers()
 
-    render(<Toaster />);
+    render(<Toaster />)
 
     act(() => {
-      toast.success('Vanishing toast', undefined);
-    });
+      toast.success('Vanishing toast', undefined)
+    })
 
-    expect(screen.getByText('Vanishing toast')).toBeInTheDocument();
+    expect(screen.getByText('Vanishing toast')).toBeInTheDocument()
 
     // Advance past the default 5-second auto-dismiss
     act(() => {
-      vi.advanceTimersByTime(5100);
-    });
+      vi.advanceTimersByTime(5100)
+    })
 
-    expect(screen.queryByText('Vanishing toast')).not.toBeInTheDocument();
+    expect(screen.queryByText('Vanishing toast')).not.toBeInTheDocument()
 
-    vi.useRealTimers();
-  });
+    vi.useRealTimers()
+  })
 
   it('dismisses on manual close button click', async () => {
-    const user = userEvent.setup();
-    render(<Toaster />);
+    const user = userEvent.setup()
+    render(<Toaster />)
 
     act(() => {
-      toast.error('Dismiss me');
-    });
+      toast.error('Dismiss me')
+    })
 
-    expect(screen.getByText('Dismiss me')).toBeInTheDocument();
+    expect(screen.getByText('Dismiss me')).toBeInTheDocument()
 
-    const dismissButton = screen.getByLabelText('Dismiss notification');
-    await user.click(dismissButton);
+    const dismissButton = screen.getByLabelText('Dismiss notification')
+    await user.click(dismissButton)
 
-    expect(screen.queryByText('Dismiss me')).not.toBeInTheDocument();
-  });
+    expect(screen.queryByText('Dismiss me')).not.toBeInTheDocument()
+  })
 
   it('does not render when there are no toasts', () => {
-    const { container } = render(<Toaster />);
-    expect(container.innerHTML).toBe('');
-  });
-});
+    const { container } = render(<Toaster />)
+    expect(container.innerHTML).toBe('')
+  })
+})
 
 // ---------------------------------------------------------------------------
 // Card display tests (via Column rendering would require DnD context;
@@ -139,14 +139,14 @@ describe('Card data', () => {
     // The FilterBar receives all issues and renders filter controls.
     // We verify the issues data shape is correct by checking that the
     // mock issues are constructed properly (tested via FilterBar rendering).
-    expect(mockIssues[0].key).toBe('AEGIS-1');
-    expect(mockIssues[0].fields.summary).toBe('Implement login flow');
-    expect(mockIssues[1].key).toBe('AEGIS-2');
-    expect(mockIssues[1].fields.summary).toBe('Fix dashboard rendering');
-    expect(mockIssues[2].key).toBe('AEGIS-3');
-    expect(mockIssues[2].fields.summary).toBe('Add unit tests');
-  });
-});
+    expect(mockIssues[0].key).toBe('AEGIS-1')
+    expect(mockIssues[0].fields.summary).toBe('Implement login flow')
+    expect(mockIssues[1].key).toBe('AEGIS-2')
+    expect(mockIssues[1].fields.summary).toBe('Fix dashboard rendering')
+    expect(mockIssues[2].key).toBe('AEGIS-3')
+    expect(mockIssues[2].fields.summary).toBe('Add unit tests')
+  })
+})
 
 // ---------------------------------------------------------------------------
 // FilterBar tests
@@ -154,48 +154,48 @@ describe('Card data', () => {
 
 describe('FilterBar', () => {
   beforeEach(() => {
-    useBoardStore.getState().clearFilters();
-  });
+    useBoardStore.getState().clearFilters()
+  })
 
   it('renders the search input', () => {
-    render(<FilterBar issues={mockIssues} />);
-    const searchInput = screen.getByPlaceholderText('Search issues...');
-    expect(searchInput).toBeInTheDocument();
-  });
+    render(<FilterBar issues={mockIssues} />)
+    const searchInput = screen.getByPlaceholderText('Search issues...')
+    expect(searchInput).toBeInTheDocument()
+  })
 
   it('text filter updates the board store', async () => {
-    const user = userEvent.setup();
-    render(<FilterBar issues={mockIssues} />);
+    const user = userEvent.setup()
+    render(<FilterBar issues={mockIssues} />)
 
-    const searchInput = screen.getByPlaceholderText('Search issues...');
-    await user.type(searchInput, 'login');
+    const searchInput = screen.getByPlaceholderText('Search issues...')
+    await user.type(searchInput, 'login')
 
-    const filters = useBoardStore.getState().filters;
-    expect(filters.text).toBe('login');
-  });
+    const filters = useBoardStore.getState().filters
+    expect(filters.text).toBe('login')
+  })
 
   it('clearing text filter sets it back to null', async () => {
-    const user = userEvent.setup();
-    render(<FilterBar issues={mockIssues} />);
+    const user = userEvent.setup()
+    render(<FilterBar issues={mockIssues} />)
 
-    const searchInput = screen.getByPlaceholderText('Search issues...');
-    await user.type(searchInput, 'test');
+    const searchInput = screen.getByPlaceholderText('Search issues...')
+    await user.type(searchInput, 'test')
 
-    expect(useBoardStore.getState().filters.text).toBe('test');
+    expect(useBoardStore.getState().filters.text).toBe('test')
 
-    await user.clear(searchInput);
+    await user.clear(searchInput)
 
-    expect(useBoardStore.getState().filters.text).toBeNull();
-  });
+    expect(useBoardStore.getState().filters.text).toBeNull()
+  })
 
   it('renders filter dropdown buttons', () => {
-    render(<FilterBar issues={mockIssues} />);
-    expect(screen.getByText('Assignee')).toBeInTheDocument();
-    expect(screen.getByText('Component')).toBeInTheDocument();
-    expect(screen.getByText('Priority')).toBeInTheDocument();
-    expect(screen.getByText('Type')).toBeInTheDocument();
-  });
-});
+    render(<FilterBar issues={mockIssues} />)
+    expect(screen.getByText('Assignee')).toBeInTheDocument()
+    expect(screen.getByText('Component')).toBeInTheDocument()
+    expect(screen.getByText('Priority')).toBeInTheDocument()
+    expect(screen.getByText('Type')).toBeInTheDocument()
+  })
+})
 
 // ---------------------------------------------------------------------------
 // Board columns rendering (unit test on column data derivation)
@@ -208,7 +208,7 @@ describe('Board column derivation', () => {
       { name: 'To Do', statuses: [{ id: '1', self: '' }] },
       { name: 'In Progress', statuses: [{ id: '2', self: '' }] },
       { name: 'Done', statuses: [{ id: '3', self: '' }] },
-    ];
+    ]
 
     const issues: JiraIssue[] = [
       makeIssue({
@@ -244,41 +244,39 @@ describe('Board column derivation', () => {
           },
         } as JiraIssue['fields'],
       }),
-    ];
+    ]
 
-    const optimisticUpdates = new Map();
+    const optimisticUpdates = new Map()
 
     const columns = columnConfig.map((col) => {
-      const statusIds = new Set(col.statuses.map((s) => s.id));
+      const statusIds = new Set(col.statuses.map((s) => s.id))
 
       const columnIssues = issues.filter((issue) => {
-        const optimistic = optimisticUpdates.get(issue.key);
-        const effectiveStatusId = optimistic
-          ? optimistic.targetStatusId
-          : issue.fields.status.id;
-        return statusIds.has(effectiveStatusId);
-      });
+        const optimistic = optimisticUpdates.get(issue.key)
+        const effectiveStatusId = optimistic ? optimistic.targetStatusId : issue.fields.status.id
+        return statusIds.has(effectiveStatusId)
+      })
 
       return {
         name: col.name,
         statusIds: Array.from(statusIds),
         issues: columnIssues,
-      };
-    });
+      }
+    })
 
-    expect(columns).toHaveLength(3);
-    expect(columns[0].name).toBe('To Do');
-    expect(columns[0].issues).toHaveLength(1);
-    expect(columns[0].issues[0].key).toBe('PROJ-1');
+    expect(columns).toHaveLength(3)
+    expect(columns[0].name).toBe('To Do')
+    expect(columns[0].issues).toHaveLength(1)
+    expect(columns[0].issues[0].key).toBe('PROJ-1')
 
-    expect(columns[1].name).toBe('In Progress');
-    expect(columns[1].issues).toHaveLength(1);
-    expect(columns[1].issues[0].key).toBe('PROJ-2');
+    expect(columns[1].name).toBe('In Progress')
+    expect(columns[1].issues).toHaveLength(1)
+    expect(columns[1].issues[0].key).toBe('PROJ-2')
 
-    expect(columns[2].name).toBe('Done');
-    expect(columns[2].issues).toHaveLength(1);
-    expect(columns[2].issues[0].key).toBe('PROJ-3');
-  });
+    expect(columns[2].name).toBe('Done')
+    expect(columns[2].issues).toHaveLength(1)
+    expect(columns[2].issues[0].key).toBe('PROJ-3')
+  })
 
   it('applies text filter to issues within columns', () => {
     const issues: JiraIssue[] = [
@@ -294,35 +292,35 @@ describe('Board column derivation', () => {
         key: 'AEGIS-12',
         fields: { summary: 'Auth token refresh' } as JiraIssue['fields'],
       }),
-    ];
+    ]
 
-    const filterText = 'auth';
+    const filterText = 'auth'
 
     const filtered = issues.filter(
       (issue) =>
         issue.key.toLowerCase().includes(filterText.toLowerCase()) ||
         issue.fields.summary.toLowerCase().includes(filterText.toLowerCase()),
-    );
+    )
 
-    expect(filtered).toHaveLength(2);
-    expect(filtered.map((i) => i.key)).toEqual(['AEGIS-10', 'AEGIS-12']);
-  });
+    expect(filtered).toHaveLength(2)
+    expect(filtered.map((i) => i.key)).toEqual(['AEGIS-10', 'AEGIS-12'])
+  })
 
   it('filters by issue key match', () => {
     const issues: JiraIssue[] = [
       makeIssue({ key: 'AEGIS-100', fields: { summary: 'Some task' } as JiraIssue['fields'] }),
       makeIssue({ key: 'AEGIS-200', fields: { summary: 'Other task' } as JiraIssue['fields'] }),
-    ];
+    ]
 
-    const filterText = 'aegis-100';
+    const filterText = 'aegis-100'
 
     const filtered = issues.filter(
       (issue) =>
         issue.key.toLowerCase().includes(filterText.toLowerCase()) ||
         issue.fields.summary.toLowerCase().includes(filterText.toLowerCase()),
-    );
+    )
 
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0].key).toBe('AEGIS-100');
-  });
-});
+    expect(filtered).toHaveLength(1)
+    expect(filtered[0].key).toBe('AEGIS-100')
+  })
+})

@@ -10,9 +10,7 @@ export function Loading({ className, message }: LoadingProps) {
   return (
     <div className={cn('flex flex-col items-center justify-center gap-3 p-8', className)}>
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      {message && (
-        <p className="text-sm text-muted-foreground">{message}</p>
-      )}
+      {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </div>
   )
 }

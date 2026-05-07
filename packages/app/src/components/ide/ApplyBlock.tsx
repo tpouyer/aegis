@@ -8,12 +8,12 @@
  * (dismisses). Undo is supported via Monaco's built-in undo stack.
  */
 
-import { useState, useCallback, Suspense, lazy } from 'react'
-import { Check, X, Eye, Code } from 'lucide-react'
+import { Check, Code, Eye, X } from 'lucide-react'
+import { lazy, Suspense, useCallback, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { useIDEStore } from '@/stores/ide'
-import type { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
 import { cn } from '@/lib/utils'
+import type { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
+import { useIDEStore } from '@/stores/ide'
 
 // Lazy-load the diff view only when Apply is clicked
 const MonacoDiffView = lazy(() =>
@@ -39,14 +39,7 @@ interface ApplyBlockProps {
   language?: string
 }
 
-export function ApplyBlock({
-  proposedContent,
-  currentContent,
-  path,
-  repoKey,
-  vfs,
-  language,
-}: ApplyBlockProps) {
+export function ApplyBlock({ proposedContent, currentContent, path, repoKey, vfs, language }: ApplyBlockProps) {
   const [state, setState] = useState<ApplyState>('idle')
   const markTabDirty = useIDEStore((s) => s.markTabDirty)
 
@@ -70,7 +63,9 @@ export function ApplyBlock({
       <div className="my-2 rounded-md border border-green-500/30 bg-green-500/5 p-3">
         <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
           <Check className="h-4 w-4" />
-          <span>Applied to <code className="rounded bg-muted px-1 py-0.5 text-xs">{path}</code></span>
+          <span>
+            Applied to <code className="rounded bg-muted px-1 py-0.5 text-xs">{path}</code>
+          </span>
         </div>
       </div>
     )
@@ -95,25 +90,14 @@ export function ApplyBlock({
           <div className="flex items-center gap-2 text-sm">
             <Eye className="h-4 w-4 text-muted-foreground" />
             <span className="text-foreground">Review changes</span>
-            <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-              {path}
-            </code>
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{path}</code>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 gap-1.5 text-xs"
-              onClick={handleReject}
-            >
+            <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={handleReject}>
               <X className="h-3 w-3" />
               Reject
             </Button>
-            <Button
-              size="sm"
-              className="h-7 gap-1.5 text-xs"
-              onClick={handleAccept}
-            >
+            <Button size="sm" className="h-7 gap-1.5 text-xs" onClick={handleAccept}>
               <Check className="h-3 w-3" />
               Accept
             </Button>
@@ -147,11 +131,7 @@ export function ApplyBlock({
           <Code className="h-3.5 w-3.5" />
           <span>{path}</span>
         </div>
-        <Button
-          size="sm"
-          className={cn('h-6 gap-1 px-2 text-xs')}
-          onClick={handleApply}
-        >
+        <Button size="sm" className={cn('h-6 gap-1 px-2 text-xs')} onClick={handleApply}>
           Apply
         </Button>
       </div>

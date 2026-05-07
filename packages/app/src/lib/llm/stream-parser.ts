@@ -9,7 +9,7 @@
  *   3. We can handle partial lines and connection drops ourselves.
  */
 
-import type { ChatChunk, ToolCall } from './types';
+import type { ChatChunk, ToolCall } from './types'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -19,39 +19,37 @@ import type { ChatChunk, ToolCall } from './types';
  * Yields individual SSE lines from a `Response` body.
  * Handles partial chunks that may arrive split across reads.
  */
-async function* readSSELines(
-  response: Response,
-): AsyncIterable<string> {
-  const reader = response.body?.getReader();
+async function* readSSELines(response: Response): AsyncIterable<string> {
+  const reader = response.body?.getReader()
   if (!reader) {
-    throw new Error('Response body is not readable');
+    throw new Error('Response body is not readable')
   }
 
-  const decoder = new TextDecoder();
-  let buffer = '';
+  const decoder = new TextDecoder()
+  let buffer = ''
 
   try {
     while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      const { done, value } = await reader.read()
+      if (done) break
 
-      buffer += decoder.decode(value, { stream: true });
+      buffer += decoder.decode(value, { stream: true })
 
       // Split on newlines; the last segment is a possibly-incomplete line
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
 
       for (const line of lines) {
-        yield line;
+        yield line
       }
     }
 
     // Flush remaining buffer
     if (buffer.length > 0) {
-      yield buffer;
+      yield buffer
     }
   } finally {
-    reader.releaseLock();
+    reader.releaseLock()
   }
 }
 
@@ -60,19 +58,19 @@ async function* readSSELines(
  * Returns null for non-data lines, empty data, or the [DONE] sentinel.
  */
 function parseSSEData(line: string): unknown | null {
-  const trimmed = line.trim();
+  const trimmed = line.trim()
 
-  if (!trimmed.startsWith('data:')) return null;
+  if (!trimmed.startsWith('data:')) return null
 
-  const payload = trimmed.slice(5).trim();
+  const payload = trimmed.slice(5).trim()
 
-  if (payload === '' || payload === '[DONE]') return null;
+  if (payload === '' || payload === '[DONE]') return null
 
   try {
-    return JSON.parse(payload);
+    return JSON.parse(payload)
   } catch {
     // Malformed JSON — skip the line silently
-    return null;
+    return null
   }
 }
 
@@ -90,44 +88,42 @@ function parseSSEData(line: string): unknown | null {
  *   - `content_block_stop` → finalize current tool call
  *   - `message_stop` → done
  */
-export async function* parseAnthropicStream(
-  response: Response,
-): AsyncIterable<ChatChunk> {
-  let currentToolCall: Partial<ToolCall> | null = null;
-  let toolArgsJson = '';
+export async function* parseAnthropicStream(response: Response): AsyncIterable<ChatChunk> {
+  let currentToolCall: Partial<ToolCall> | null = null
+  let toolArgsJson = ''
 
   for await (const line of readSSELines(response)) {
     // Anthropic sends `event: <type>` lines followed by `data: <json>`.
     // We only process data lines.
-    const data = parseSSEData(line);
-    if (data === null) continue;
+    const data = parseSSEData(line)
+    if (data === null) continue
 
-    const event = data as Record<string, unknown>;
-    const eventType = event.type as string | undefined;
+    const event = data as Record<string, unknown>
+    const eventType = event.type as string | undefined
 
     if (eventType === 'content_block_start') {
-      const block = event.content_block as Record<string, unknown> | undefined;
+      const block = event.content_block as Record<string, unknown> | undefined
       if (block?.type === 'tool_use') {
         currentToolCall = {
           id: block.id as string,
           name: block.name as string,
-        };
-        toolArgsJson = '';
+        }
+        toolArgsJson = ''
       }
     } else if (eventType === 'content_block_delta') {
-      const delta = event.delta as Record<string, unknown> | undefined;
-      if (!delta) continue;
+      const delta = event.delta as Record<string, unknown> | undefined
+      if (!delta) continue
 
       if (delta.type === 'text_delta') {
-        yield { type: 'text', content: delta.text as string };
+        yield { type: 'text', content: delta.text as string }
       } else if (delta.type === 'input_json_delta') {
-        toolArgsJson += delta.partial_json as string;
+        toolArgsJson += delta.partial_json as string
       }
     } else if (eventType === 'content_block_stop') {
       if (currentToolCall) {
-        let args: Record<string, unknown> = {};
+        let args: Record<string, unknown> = {}
         try {
-          args = toolArgsJson ? JSON.parse(toolArgsJson) : {};
+          args = toolArgsJson ? JSON.parse(toolArgsJson) : {}
         } catch {
           // malformed tool args — emit with empty args
         }
@@ -138,18 +134,18 @@ export async function* parseAnthropicStream(
             name: currentToolCall.name!,
             arguments: args,
           },
-        };
-        currentToolCall = null;
-        toolArgsJson = '';
+        }
+        currentToolCall = null
+        toolArgsJson = ''
       }
     } else if (eventType === 'message_stop') {
-      yield { type: 'done' };
+      yield { type: 'done' }
     } else if (eventType === 'error') {
-      const error = event.error as Record<string, unknown> | undefined;
+      const error = event.error as Record<string, unknown> | undefined
       yield {
         type: 'error',
         error: (error?.message as string) ?? 'Unknown Anthropic API error',
-      };
+      }
     }
   }
 }
@@ -166,53 +162,46 @@ export async function* parseAnthropicStream(
  *   - `delta.tool_calls` → tool call chunks
  *   - `[DONE]` → end of stream
  */
-export async function* parseOpenAIStream(
-  response: Response,
-): AsyncIterable<ChatChunk> {
-  const pendingToolCalls = new Map<
-    number,
-    { id: string; name: string; args: string }
-  >();
+export async function* parseOpenAIStream(response: Response): AsyncIterable<ChatChunk> {
+  const pendingToolCalls = new Map<number, { id: string; name: string; args: string }>()
 
   for await (const line of readSSELines(response)) {
-    const data = parseSSEData(line);
-    if (data === null) continue;
+    const data = parseSSEData(line)
+    if (data === null) continue
 
-    const payload = data as Record<string, unknown>;
-    const choices = payload.choices as Array<Record<string, unknown>> | undefined;
-    if (!choices || choices.length === 0) continue;
+    const payload = data as Record<string, unknown>
+    const choices = payload.choices as Array<Record<string, unknown>> | undefined
+    if (!choices || choices.length === 0) continue
 
-    const choice = choices[0];
-    const finishReason = choice.finish_reason as string | null;
-    const delta = choice.delta as Record<string, unknown> | undefined;
+    const choice = choices[0]
+    const finishReason = choice.finish_reason as string | null
+    const delta = choice.delta as Record<string, unknown> | undefined
 
     if (delta) {
       // Text content
       if (typeof delta.content === 'string' && delta.content.length > 0) {
-        yield { type: 'text', content: delta.content };
+        yield { type: 'text', content: delta.content }
       }
 
       // Tool calls (streamed incrementally)
-      const toolCalls = delta.tool_calls as
-        | Array<Record<string, unknown>>
-        | undefined;
+      const toolCalls = delta.tool_calls as Array<Record<string, unknown>> | undefined
       if (toolCalls) {
         for (const tc of toolCalls) {
-          const index = tc.index as number;
-          const fn = tc.function as Record<string, unknown> | undefined;
+          const index = tc.index as number
+          const fn = tc.function as Record<string, unknown> | undefined
 
           if (!pendingToolCalls.has(index)) {
             pendingToolCalls.set(index, {
               id: (tc.id as string) ?? '',
-              name: fn?.name as string ?? '',
+              name: (fn?.name as string) ?? '',
               args: '',
-            });
+            })
           }
 
-          const pending = pendingToolCalls.get(index)!;
-          if (tc.id) pending.id = tc.id as string;
-          if (fn?.name) pending.name = fn.name as string;
-          if (fn?.arguments) pending.args += fn.arguments as string;
+          const pending = pendingToolCalls.get(index)!
+          if (tc.id) pending.id = tc.id as string
+          if (fn?.name) pending.name = fn.name as string
+          if (fn?.arguments) pending.args += fn.arguments as string
         }
       }
     }
@@ -220,21 +209,21 @@ export async function* parseOpenAIStream(
     if (finishReason === 'tool_calls' || finishReason === 'stop') {
       // Flush any accumulated tool calls
       for (const [, tc] of pendingToolCalls) {
-        let args: Record<string, unknown> = {};
+        let args: Record<string, unknown> = {}
         try {
-          args = tc.args ? JSON.parse(tc.args) : {};
+          args = tc.args ? JSON.parse(tc.args) : {}
         } catch {
           // malformed args
         }
         yield {
           type: 'tool_call',
           toolCall: { id: tc.id, name: tc.name, arguments: args },
-        };
+        }
       }
-      pendingToolCalls.clear();
+      pendingToolCalls.clear()
 
       if (finishReason === 'stop') {
-        yield { type: 'done' };
+        yield { type: 'done' }
       }
     }
   }
@@ -250,34 +239,32 @@ export async function* parseOpenAIStream(
  * Ollama uses newline-delimited JSON (NDJSON) — each line is a complete
  * JSON object with a `message.content` field.
  */
-export async function* parseOllamaStream(
-  response: Response,
-): AsyncIterable<ChatChunk> {
+export async function* parseOllamaStream(response: Response): AsyncIterable<ChatChunk> {
   for await (const line of readSSELines(response)) {
-    const trimmed = line.trim();
-    if (trimmed === '') continue;
+    const trimmed = line.trim()
+    if (trimmed === '') continue
 
-    let data: Record<string, unknown>;
+    let data: Record<string, unknown>
     try {
-      data = JSON.parse(trimmed);
+      data = JSON.parse(trimmed)
     } catch {
       // Malformed line — skip
-      continue;
+      continue
     }
 
     if (data.error) {
-      yield { type: 'error', error: data.error as string };
-      continue;
+      yield { type: 'error', error: data.error as string }
+      continue
     }
 
-    const message = data.message as Record<string, unknown> | undefined;
+    const message = data.message as Record<string, unknown> | undefined
     if (message?.content && typeof message.content === 'string') {
-      yield { type: 'text', content: message.content };
+      yield { type: 'text', content: message.content }
     }
 
     // Ollama signals completion with `done: true`
     if (data.done === true) {
-      yield { type: 'done' };
+      yield { type: 'done' }
     }
   }
 }

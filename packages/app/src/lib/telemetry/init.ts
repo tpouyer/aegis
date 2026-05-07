@@ -1,30 +1,27 @@
-import { metrics } from '@opentelemetry/api';
-import {
-  MeterProvider,
-  PeriodicExportingMetricReader,
-} from '@opentelemetry/sdk-metrics';
-import { Resource } from '@opentelemetry/resources';
-import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
-import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
-import { ConsoleMetricExporter } from './exporters/console';
-import { getTelemetryConfig, loadWellKnownConfig } from './config';
-import { resetMeters } from './meters';
+import { metrics } from '@opentelemetry/api'
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http'
+import { Resource } from '@opentelemetry/resources'
+import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
+import { getTelemetryConfig, loadWellKnownConfig } from './config'
+import { ConsoleMetricExporter } from './exporters/console'
+import { resetMeters } from './meters'
 
-let meterProvider: MeterProvider | null = null;
+let _meterProvider: MeterProvider | null = null
 
 function createProvider(): () => void {
-  const config = getTelemetryConfig();
+  const config = getTelemetryConfig()
 
   if (!config.enabled) {
-    return () => {};
+    return () => {}
   }
 
   const resource = new Resource({
     [ATTR_SERVICE_NAME]: 'aegis-app',
     [ATTR_SERVICE_VERSION]: '0.1.0',
-  });
+  })
 
-  const provider = new MeterProvider({ resource });
+  const provider = new MeterProvider({ resource })
 
   if (import.meta.env.DEV) {
     provider.addMetricReader(
@@ -32,7 +29,7 @@ function createProvider(): () => void {
         exporter: new ConsoleMetricExporter(),
         exportIntervalMillis: 15_000,
       }),
-    );
+    )
   }
 
   if (config.otlpEndpoint) {
@@ -41,24 +38,24 @@ function createProvider(): () => void {
         exporter: new OTLPMetricExporter({ url: config.otlpEndpoint }),
         exportIntervalMillis: config.exportIntervalMs,
       }),
-    );
+    )
   }
 
-  metrics.setGlobalMeterProvider(provider);
-  meterProvider = provider;
-  resetMeters();
+  metrics.setGlobalMeterProvider(provider)
+  _meterProvider = provider
+  resetMeters()
 
   const shutdown = () => {
-    provider.shutdown().catch(() => {});
-    meterProvider = null;
-  };
+    provider.shutdown().catch(() => {})
+    _meterProvider = null
+  }
 
-  window.addEventListener('beforeunload', shutdown);
+  window.addEventListener('beforeunload', shutdown)
 
   return () => {
-    window.removeEventListener('beforeunload', shutdown);
-    shutdown();
-  };
+    window.removeEventListener('beforeunload', shutdown)
+    shutdown()
+  }
 }
 
 /**
@@ -67,6 +64,6 @@ function createProvider(): () => void {
  * MeterProvider with the resolved config.
  */
 export async function initTelemetry(): Promise<() => void> {
-  await loadWellKnownConfig();
-  return createProvider();
+  await loadWellKnownConfig()
+  return createProvider()
 }

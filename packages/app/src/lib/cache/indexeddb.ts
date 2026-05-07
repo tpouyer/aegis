@@ -12,18 +12,18 @@
  */
 
 interface CacheEntry<T> {
-  value: T;
-  expiresAt: number;
+  value: T
+  expiresAt: number
 }
 
 export class CacheStore {
-  private dbName: string;
-  private storeName: string;
-  private dbPromise: Promise<IDBDatabase> | null = null;
+  private dbName: string
+  private storeName: string
+  private dbPromise: Promise<IDBDatabase> | null = null
 
   constructor(dbName: string, storeName: string) {
-    this.dbName = dbName;
-    this.storeName = storeName;
+    this.dbName = dbName
+    this.storeName = storeName
   }
 
   /**
@@ -31,27 +31,27 @@ export class CacheStore {
    */
   private getDb(): Promise<IDBDatabase> {
     if (this.dbPromise) {
-      return this.dbPromise;
+      return this.dbPromise
     }
 
     this.dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open(this.dbName, 1);
+      const request = indexedDB.open(this.dbName, 1)
 
       request.onupgradeneeded = () => {
-        const db = request.result;
+        const db = request.result
         if (!db.objectStoreNames.contains(this.storeName)) {
-          db.createObjectStore(this.storeName);
+          db.createObjectStore(this.storeName)
         }
-      };
+      }
 
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = () => resolve(request.result)
       request.onerror = () => {
-        this.dbPromise = null;
-        reject(request.error);
-      };
-    });
+        this.dbPromise = null
+        reject(request.error)
+      }
+    })
 
-    return this.dbPromise;
+    return this.dbPromise
   }
 
   /**
@@ -59,92 +59,92 @@ export class CacheStore {
    * has expired.
    */
   async get<T>(key: string): Promise<T | null> {
-    const db = await this.getDb();
+    const db = await this.getDb()
 
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.storeName, 'readonly');
-      const store = tx.objectStore(this.storeName);
-      const request = store.get(key);
+      const tx = db.transaction(this.storeName, 'readonly')
+      const store = tx.objectStore(this.storeName)
+      const request = store.get(key)
 
       request.onsuccess = () => {
-        const entry = request.result as CacheEntry<T> | undefined;
+        const entry = request.result as CacheEntry<T> | undefined
 
         if (!entry) {
-          resolve(null);
-          return;
+          resolve(null)
+          return
         }
 
         if (Date.now() >= entry.expiresAt) {
           // Entry has expired — return null and schedule cleanup
-          resolve(null);
-          return;
+          resolve(null)
+          return
         }
 
-        resolve(entry.value);
-      };
+        resolve(entry.value)
+      }
 
-      request.onerror = () => reject(request.error);
-    });
+      request.onerror = () => reject(request.error)
+    })
   }
 
   /**
    * Set a value with a TTL (time-to-live) in milliseconds.
    */
   async set<T>(key: string, value: T, ttlMs: number): Promise<void> {
-    const db = await this.getDb();
+    const db = await this.getDb()
     const entry: CacheEntry<T> = {
       value,
       expiresAt: Date.now() + ttlMs,
-    };
+    }
 
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.storeName, 'readwrite');
-      const store = tx.objectStore(this.storeName);
-      const request = store.put(entry, key);
+      const tx = db.transaction(this.storeName, 'readwrite')
+      const store = tx.objectStore(this.storeName)
+      const request = store.put(entry, key)
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
   }
 
   /**
    * Delete a specific key from the cache.
    */
   async delete(key: string): Promise<void> {
-    const db = await this.getDb();
+    const db = await this.getDb()
 
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.storeName, 'readwrite');
-      const store = tx.objectStore(this.storeName);
-      const request = store.delete(key);
+      const tx = db.transaction(this.storeName, 'readwrite')
+      const store = tx.objectStore(this.storeName)
+      const request = store.delete(key)
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
   }
 
   /**
    * Clear all entries from the cache store.
    */
   async clear(): Promise<void> {
-    const db = await this.getDb();
+    const db = await this.getDb()
 
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.storeName, 'readwrite');
-      const store = tx.objectStore(this.storeName);
-      const request = store.clear();
+      const tx = db.transaction(this.storeName, 'readwrite')
+      const store = tx.objectStore(this.storeName)
+      const request = store.clear()
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
   }
 
   /**
    * Check if a key exists AND is not expired.
    */
   async has(key: string): Promise<boolean> {
-    const value = await this.get(key);
-    return value !== null;
+    const value = await this.get(key)
+    return value !== null
   }
 
   /**
@@ -152,63 +152,61 @@ export class CacheStore {
    * entries that exist and are not expired.
    */
   async getMany<T>(keys: string[]): Promise<Map<string, T>> {
-    const db = await this.getDb();
-    const results = new Map<string, T>();
+    const db = await this.getDb()
+    const results = new Map<string, T>()
 
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.storeName, 'readonly');
-      const store = tx.objectStore(this.storeName);
-      let remaining = keys.length;
+      const tx = db.transaction(this.storeName, 'readonly')
+      const store = tx.objectStore(this.storeName)
+      let remaining = keys.length
 
       if (remaining === 0) {
-        resolve(results);
-        return;
+        resolve(results)
+        return
       }
 
       for (const key of keys) {
-        const request = store.get(key);
+        const request = store.get(key)
 
         request.onsuccess = () => {
-          const entry = request.result as CacheEntry<T> | undefined;
+          const entry = request.result as CacheEntry<T> | undefined
 
           if (entry && Date.now() < entry.expiresAt) {
-            results.set(key, entry.value);
+            results.set(key, entry.value)
           }
 
-          remaining--;
+          remaining--
           if (remaining === 0) {
-            resolve(results);
+            resolve(results)
           }
-        };
+        }
 
-        request.onerror = () => reject(request.error);
+        request.onerror = () => reject(request.error)
       }
-    });
+    })
   }
 
   /**
    * Set multiple entries in a single transaction.
    */
-  async setMany<T>(
-    entries: Array<{ key: string; value: T; ttlMs: number }>,
-  ): Promise<void> {
-    const db = await this.getDb();
+  async setMany<T>(entries: Array<{ key: string; value: T; ttlMs: number }>): Promise<void> {
+    const db = await this.getDb()
 
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.storeName, 'readwrite');
-      const store = tx.objectStore(this.storeName);
+      const tx = db.transaction(this.storeName, 'readwrite')
+      const store = tx.objectStore(this.storeName)
 
       for (const { key, value, ttlMs } of entries) {
         const cacheEntry: CacheEntry<T> = {
           value,
           expiresAt: Date.now() + ttlMs,
-        };
-        store.put(cacheEntry, key);
+        }
+        store.put(cacheEntry, key)
       }
 
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+    })
   }
 
   /**
@@ -216,32 +214,32 @@ export class CacheStore {
    * Returns the count of evicted entries.
    */
   async evictExpired(): Promise<number> {
-    const db = await this.getDb();
-    const now = Date.now();
+    const db = await this.getDb()
+    const now = Date.now()
 
     return new Promise((resolve, reject) => {
-      const tx = db.transaction(this.storeName, 'readwrite');
-      const store = tx.objectStore(this.storeName);
-      const cursorRequest = store.openCursor();
-      let evicted = 0;
+      const tx = db.transaction(this.storeName, 'readwrite')
+      const store = tx.objectStore(this.storeName)
+      const cursorRequest = store.openCursor()
+      let evicted = 0
 
       cursorRequest.onsuccess = () => {
-        const cursor = cursorRequest.result;
+        const cursor = cursorRequest.result
         if (!cursor) {
-          resolve(evicted);
-          return;
+          resolve(evicted)
+          return
         }
 
-        const entry = cursor.value as CacheEntry<unknown>;
+        const entry = cursor.value as CacheEntry<unknown>
         if (entry && now >= entry.expiresAt) {
-          cursor.delete();
-          evicted++;
+          cursor.delete()
+          evicted++
         }
 
-        cursor.continue();
-      };
+        cursor.continue()
+      }
 
-      cursorRequest.onerror = () => reject(cursorRequest.error);
-    });
+      cursorRequest.onerror = () => reject(cursorRequest.error)
+    })
   }
 }

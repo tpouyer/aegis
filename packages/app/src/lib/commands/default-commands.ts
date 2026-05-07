@@ -6,18 +6,18 @@
  * navigation, action, and dynamic issue commands.
  */
 
-import { commandRegistry } from './registry';
-import type { Command } from './types';
-import { useThemeStore } from '@/stores/theme';
-import { useSidebarStore } from '@/stores/sidebar';
-import { usePersonaStore, PERSONA_LABELS } from '@/stores/persona';
-import type { PersonaRole } from '@/stores/persona';
+import type { PersonaRole } from '@/stores/persona'
+import { PERSONA_LABELS, usePersonaStore } from '@/stores/persona'
+import { useSidebarStore } from '@/stores/sidebar'
+import { useThemeStore } from '@/stores/theme'
+import { commandRegistry } from './registry'
+import type { Command } from './types'
 
 // ---------------------------------------------------------------------------
 // Types for the navigate callback
 // ---------------------------------------------------------------------------
 
-type NavigateFn = (opts: { to: string; params?: Record<string, string> }) => void;
+type NavigateFn = (opts: { to: string; params?: Record<string, string> }) => void
 
 // ---------------------------------------------------------------------------
 // Registration
@@ -28,7 +28,7 @@ type NavigateFn = (opts: { to: string; params?: Record<string, string> }) => voi
  * unregisters them (useful for HMR / tests).
  */
 export function registerDefaultCommands(navigate: NavigateFn): () => void {
-  const disposers: Array<() => void> = [];
+  const disposers: Array<() => void> = []
 
   // -- Navigation commands --------------------------------------------------
 
@@ -77,10 +77,10 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
       shortcut: '⌘,',
       action: () => navigate({ to: '/settings' }),
     },
-  ];
+  ]
 
   for (const cmd of navCommands) {
-    disposers.push(commandRegistry.register(cmd));
+    disposers.push(commandRegistry.register(cmd))
   }
 
   // -- Action commands ------------------------------------------------------
@@ -93,7 +93,7 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
       category: 'action',
       keywords: ['theme', 'dark', 'light', 'mode', 'appearance'],
       action: () => {
-        useThemeStore.getState().toggle();
+        useThemeStore.getState().toggle()
       },
     },
     {
@@ -104,18 +104,18 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
       keywords: ['sidebar', 'panel', 'navigation', 'collapse', 'expand'],
       shortcut: '⌘B',
       action: () => {
-        useSidebarStore.getState().toggleSidebar();
+        useSidebarStore.getState().toggleSidebar()
       },
     },
-  ];
+  ]
 
   for (const cmd of actionCommands) {
-    disposers.push(commandRegistry.register(cmd));
+    disposers.push(commandRegistry.register(cmd))
   }
 
   // -- Persona switch commands -----------------------------------------------
 
-  const personaRoles = Object.entries(PERSONA_LABELS) as [PersonaRole, string][];
+  const personaRoles = Object.entries(PERSONA_LABELS) as [PersonaRole, string][]
   for (const [roleId, roleLabel] of personaRoles) {
     disposers.push(
       commandRegistry.register({
@@ -125,17 +125,17 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
         category: 'action',
         keywords: ['role', 'persona', 'switch', roleId, roleLabel.toLowerCase()],
         action: () => {
-          usePersonaStore.getState().setRole(roleId);
+          usePersonaStore.getState().setRole(roleId)
         },
       }),
-    );
+    )
   }
 
   return () => {
     for (const dispose of disposers) {
-      dispose();
+      dispose()
     }
-  };
+  }
 }
 
 /**
@@ -146,7 +146,7 @@ export function registerIssueCommands(
   issues: Array<{ key: string; summary: string }>,
   navigate: NavigateFn,
 ): () => void {
-  const disposers: Array<() => void> = [];
+  const disposers: Array<() => void> = []
 
   for (const issue of issues) {
     disposers.push(
@@ -157,12 +157,12 @@ export function registerIssueCommands(
         keywords: [issue.key, issue.summary],
         action: () => navigate({ to: '/board/$boardId', params: { boardId: '1' } }),
       }),
-    );
+    )
   }
 
   return () => {
     for (const dispose of disposers) {
-      dispose();
+      dispose()
     }
-  };
+  }
 }

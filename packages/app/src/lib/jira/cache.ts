@@ -10,27 +10,27 @@
  *   Issue snapshots:             60 seconds
  */
 
-import { CacheStore } from '@/lib/cache/indexeddb';
+import { CacheStore } from '@/lib/cache/indexeddb'
 import type {
+  JiraBoard,
   JiraBoardConfig,
   JiraIssue,
   JiraSearchResponse,
   JiraStatus,
-  JiraUser,
-  JiraBoard,
   JiraTransition,
-} from './types';
+  JiraUser,
+} from './types'
 
 // ---------------------------------------------------------------------------
 // TTL constants (milliseconds)
 // ---------------------------------------------------------------------------
 
 const TTL = {
-  BOARD_CONFIG: 60 * 60 * 1000,        // 1 hour
+  BOARD_CONFIG: 60 * 60 * 1000, // 1 hour
   WORKFLOW_METADATA: 24 * 60 * 60 * 1000, // 24 hours
-  USER_LIST: 60 * 60 * 1000,           // 1 hour
-  ISSUE_SNAPSHOT: 60 * 1000,           // 60 seconds
-} as const;
+  USER_LIST: 60 * 60 * 1000, // 1 hour
+  ISSUE_SNAPSHOT: 60 * 1000, // 60 seconds
+} as const
 
 // ---------------------------------------------------------------------------
 // Key prefixes
@@ -39,24 +39,23 @@ const TTL = {
 const KEY = {
   boards: () => 'jira:boards',
   boardConfig: (boardId: number) => `jira:board-config:${boardId}`,
-  boardIssues: (boardId: number, jql?: string) =>
-    `jira:board-issues:${boardId}:${jql ?? 'default'}`,
+  boardIssues: (boardId: number, jql?: string) => `jira:board-issues:${boardId}:${jql ?? 'default'}`,
   issue: (issueKey: string) => `jira:issue:${issueKey}`,
   transitions: (issueKey: string) => `jira:transitions:${issueKey}`,
   statuses: () => 'jira:statuses',
   currentUser: () => 'jira:current-user',
   searchResults: (jql: string) => `jira:search:${jql}`,
-} as const;
+} as const
 
 // ---------------------------------------------------------------------------
 // JiraCache
 // ---------------------------------------------------------------------------
 
 export class JiraCache {
-  private store: CacheStore;
+  private store: CacheStore
 
   constructor() {
-    this.store = new CacheStore('aegis-jira-cache', 'jira');
+    this.store = new CacheStore('aegis-jira-cache', 'jira')
   }
 
   // -----------------------------------------------------------------------
@@ -64,11 +63,11 @@ export class JiraCache {
   // -----------------------------------------------------------------------
 
   async getBoards(): Promise<JiraBoard[] | null> {
-    return this.store.get<JiraBoard[]>(KEY.boards());
+    return this.store.get<JiraBoard[]>(KEY.boards())
   }
 
   async setBoards(boards: JiraBoard[]): Promise<void> {
-    await this.store.set(KEY.boards(), boards, TTL.BOARD_CONFIG);
+    await this.store.set(KEY.boards(), boards, TTL.BOARD_CONFIG)
   }
 
   // -----------------------------------------------------------------------
@@ -76,37 +75,23 @@ export class JiraCache {
   // -----------------------------------------------------------------------
 
   async getBoardConfig(boardId: number): Promise<JiraBoardConfig | null> {
-    return this.store.get<JiraBoardConfig>(KEY.boardConfig(boardId));
+    return this.store.get<JiraBoardConfig>(KEY.boardConfig(boardId))
   }
 
-  async setBoardConfig(
-    boardId: number,
-    config: JiraBoardConfig,
-  ): Promise<void> {
-    await this.store.set(KEY.boardConfig(boardId), config, TTL.BOARD_CONFIG);
+  async setBoardConfig(boardId: number, config: JiraBoardConfig): Promise<void> {
+    await this.store.set(KEY.boardConfig(boardId), config, TTL.BOARD_CONFIG)
   }
 
   // -----------------------------------------------------------------------
   // Board issues (TTL: 60 seconds)
   // -----------------------------------------------------------------------
 
-  async getBoardIssues(
-    boardId: number,
-    jql?: string,
-  ): Promise<JiraSearchResponse | null> {
-    return this.store.get<JiraSearchResponse>(KEY.boardIssues(boardId, jql));
+  async getBoardIssues(boardId: number, jql?: string): Promise<JiraSearchResponse | null> {
+    return this.store.get<JiraSearchResponse>(KEY.boardIssues(boardId, jql))
   }
 
-  async setBoardIssues(
-    boardId: number,
-    response: JiraSearchResponse,
-    jql?: string,
-  ): Promise<void> {
-    await this.store.set(
-      KEY.boardIssues(boardId, jql),
-      response,
-      TTL.ISSUE_SNAPSHOT,
-    );
+  async setBoardIssues(boardId: number, response: JiraSearchResponse, jql?: string): Promise<void> {
+    await this.store.set(KEY.boardIssues(boardId, jql), response, TTL.ISSUE_SNAPSHOT)
   }
 
   // -----------------------------------------------------------------------
@@ -114,11 +99,11 @@ export class JiraCache {
   // -----------------------------------------------------------------------
 
   async getIssue(issueKey: string): Promise<JiraIssue | null> {
-    return this.store.get<JiraIssue>(KEY.issue(issueKey));
+    return this.store.get<JiraIssue>(KEY.issue(issueKey))
   }
 
   async setIssue(issueKey: string, issue: JiraIssue): Promise<void> {
-    await this.store.set(KEY.issue(issueKey), issue, TTL.ISSUE_SNAPSHOT);
+    await this.store.set(KEY.issue(issueKey), issue, TTL.ISSUE_SNAPSHOT)
   }
 
   // -----------------------------------------------------------------------
@@ -126,18 +111,11 @@ export class JiraCache {
   // -----------------------------------------------------------------------
 
   async getTransitions(issueKey: string): Promise<JiraTransition[] | null> {
-    return this.store.get<JiraTransition[]>(KEY.transitions(issueKey));
+    return this.store.get<JiraTransition[]>(KEY.transitions(issueKey))
   }
 
-  async setTransitions(
-    issueKey: string,
-    transitions: JiraTransition[],
-  ): Promise<void> {
-    await this.store.set(
-      KEY.transitions(issueKey),
-      transitions,
-      TTL.ISSUE_SNAPSHOT,
-    );
+  async setTransitions(issueKey: string, transitions: JiraTransition[]): Promise<void> {
+    await this.store.set(KEY.transitions(issueKey), transitions, TTL.ISSUE_SNAPSHOT)
   }
 
   // -----------------------------------------------------------------------
@@ -145,11 +123,11 @@ export class JiraCache {
   // -----------------------------------------------------------------------
 
   async getStatuses(): Promise<JiraStatus[] | null> {
-    return this.store.get<JiraStatus[]>(KEY.statuses());
+    return this.store.get<JiraStatus[]>(KEY.statuses())
   }
 
   async setStatuses(statuses: JiraStatus[]): Promise<void> {
-    await this.store.set(KEY.statuses(), statuses, TTL.WORKFLOW_METADATA);
+    await this.store.set(KEY.statuses(), statuses, TTL.WORKFLOW_METADATA)
   }
 
   // -----------------------------------------------------------------------
@@ -157,11 +135,11 @@ export class JiraCache {
   // -----------------------------------------------------------------------
 
   async getCurrentUser(): Promise<JiraUser | null> {
-    return this.store.get<JiraUser>(KEY.currentUser());
+    return this.store.get<JiraUser>(KEY.currentUser())
   }
 
   async setCurrentUser(user: JiraUser): Promise<void> {
-    await this.store.set(KEY.currentUser(), user, TTL.USER_LIST);
+    await this.store.set(KEY.currentUser(), user, TTL.USER_LIST)
   }
 
   // -----------------------------------------------------------------------
@@ -169,14 +147,11 @@ export class JiraCache {
   // -----------------------------------------------------------------------
 
   async getSearchResults(jql: string): Promise<JiraSearchResponse | null> {
-    return this.store.get<JiraSearchResponse>(KEY.searchResults(jql));
+    return this.store.get<JiraSearchResponse>(KEY.searchResults(jql))
   }
 
-  async setSearchResults(
-    jql: string,
-    response: JiraSearchResponse,
-  ): Promise<void> {
-    await this.store.set(KEY.searchResults(jql), response, TTL.ISSUE_SNAPSHOT);
+  async setSearchResults(jql: string, response: JiraSearchResponse): Promise<void> {
+    await this.store.set(KEY.searchResults(jql), response, TTL.ISSUE_SNAPSHOT)
   }
 
   // -----------------------------------------------------------------------
@@ -187,32 +162,32 @@ export class JiraCache {
   async invalidateBoardIssues(boardId: number): Promise<void> {
     // Delete the default board issues cache entry.
     // Additional JQL-filtered entries will expire via TTL.
-    await this.store.delete(KEY.boardIssues(boardId));
+    await this.store.delete(KEY.boardIssues(boardId))
   }
 
   /** Invalidate a single issue cache entry. */
   async invalidateIssue(issueKey: string): Promise<void> {
-    await this.store.delete(KEY.issue(issueKey));
-    await this.store.delete(KEY.transitions(issueKey));
+    await this.store.delete(KEY.issue(issueKey))
+    await this.store.delete(KEY.transitions(issueKey))
   }
 
   /** Clear the entire Jira cache. */
   async clearAll(): Promise<void> {
-    await this.store.clear();
+    await this.store.clear()
   }
 
   /** Evict expired entries to reclaim storage. */
   async evictExpired(): Promise<number> {
-    return this.store.evictExpired();
+    return this.store.evictExpired()
   }
 }
 
 // Singleton
-let cacheInstance: JiraCache | null = null;
+let cacheInstance: JiraCache | null = null
 
 export function getJiraCache(): JiraCache {
   if (!cacheInstance) {
-    cacheInstance = new JiraCache();
+    cacheInstance = new JiraCache()
   }
-  return cacheInstance;
+  return cacheInstance
 }

@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { createElement } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ---------------------------------------------------------------------------
 // Mocks — must be set up before importing the component under test
@@ -113,9 +113,7 @@ describe('SettingsPage', () => {
   it('renders the settings page header', () => {
     renderSettings()
     expect(screen.getByText('Settings')).toBeInTheDocument()
-    expect(
-      screen.getByText('Authentication, LLM provider configuration, and preferences.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Authentication, LLM provider configuration, and preferences.')).toBeInTheDocument()
   })
 
   it('renders all tab triggers', () => {
@@ -200,9 +198,7 @@ describe('SettingsPage', () => {
 
       // Integrations is the default tab, so LLM Provider should be visible
       expect(screen.getByText('LLM Provider')).toBeInTheDocument()
-      expect(
-        screen.getByText('Configure the AI model used for chat assistance.'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Configure the AI model used for chat assistance.')).toBeInTheDocument()
     })
 
     it('shows empty state when no LLM provider is registered', () => {

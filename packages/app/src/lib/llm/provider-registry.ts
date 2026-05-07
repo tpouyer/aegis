@@ -7,22 +7,22 @@
  *   const provider = providerRegistry.getDefaultProvider();
  */
 
-import type { LLMProvider } from './types';
+import type { LLMProvider } from './types'
 
 export class ProviderRegistry {
-  private providers = new Map<string, LLMProvider>();
-  private defaultProviderId: string | null = null;
+  private providers = new Map<string, LLMProvider>()
+  private defaultProviderId: string | null = null
 
   /**
    * Register a provider. If a provider with the same id already exists
    * it is replaced.
    */
   register(provider: LLMProvider): void {
-    this.providers.set(provider.id, provider);
+    this.providers.set(provider.id, provider)
 
     // Auto-select the first registered provider as default
     if (this.defaultProviderId === null) {
-      this.defaultProviderId = provider.id;
+      this.defaultProviderId = provider.id
     }
   }
 
@@ -30,10 +30,10 @@ export class ProviderRegistry {
    * Remove a previously registered provider.
    */
   unregister(id: string): void {
-    this.providers.delete(id);
+    this.providers.delete(id)
     if (this.defaultProviderId === id) {
-      const first = this.providers.keys().next();
-      this.defaultProviderId = first.done ? null : first.value;
+      const first = this.providers.keys().next()
+      this.defaultProviderId = first.done ? null : first.value
     }
   }
 
@@ -41,22 +41,22 @@ export class ProviderRegistry {
    * Get a provider by id.
    */
   getProvider(id: string): LLMProvider | undefined {
-    return this.providers.get(id);
+    return this.providers.get(id)
   }
 
   /**
    * List all registered providers.
    */
   listProviders(): LLMProvider[] {
-    return Array.from(this.providers.values());
+    return Array.from(this.providers.values())
   }
 
   /**
    * Get the default provider (if any).
    */
   getDefaultProvider(): LLMProvider | undefined {
-    if (!this.defaultProviderId) return undefined;
-    return this.providers.get(this.defaultProviderId);
+    if (!this.defaultProviderId) return undefined
+    return this.providers.get(this.defaultProviderId)
   }
 
   /**
@@ -64,11 +64,11 @@ export class ProviderRegistry {
    */
   setDefaultProvider(id: string): void {
     if (!this.providers.has(id)) {
-      throw new Error(`Provider "${id}" is not registered`);
+      throw new Error(`Provider "${id}" is not registered`)
     }
-    this.defaultProviderId = id;
+    this.defaultProviderId = id
   }
 }
 
 /** Singleton provider registry for the application. */
-export const providerRegistry = new ProviderRegistry();
+export const providerRegistry = new ProviderRegistry()

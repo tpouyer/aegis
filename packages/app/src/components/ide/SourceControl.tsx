@@ -11,15 +11,15 @@
  * PR creation, and toast notifications on error.
  */
 
-import { GitBranch, ChevronUp, ChevronDown, Loader2, ExternalLink, CheckCircle2 } from 'lucide-react'
-import { useState, useCallback } from 'react'
+import { CheckCircle2, ChevronDown, ChevronUp, ExternalLink, GitBranch, Loader2 } from 'lucide-react'
+import { useCallback, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useIDEStore } from '@/stores/ide'
-import type { FileChange } from '@/lib/vfs/types'
 import { cn } from '@/lib/utils'
+import type { FileChange } from '@/lib/vfs/types'
+import { useIDEStore } from '@/stores/ide'
 
 interface SourceControlProps {
   changes: FileChange[]
@@ -31,29 +31,31 @@ interface SourceControlProps {
 
 function statusLabel(status: FileChange['status']): string {
   switch (status) {
-    case 'added': return 'A'
-    case 'modified': return 'M'
-    case 'deleted': return 'D'
-    default: return '?'
+    case 'added':
+      return 'A'
+    case 'modified':
+      return 'M'
+    case 'deleted':
+      return 'D'
+    default:
+      return '?'
   }
 }
 
 function statusVariant(status: FileChange['status']) {
   switch (status) {
-    case 'added': return 'default' as const
-    case 'modified': return 'secondary' as const
-    case 'deleted': return 'destructive' as const
-    default: return 'outline' as const
+    case 'added':
+      return 'default' as const
+    case 'modified':
+      return 'secondary' as const
+    case 'deleted':
+      return 'destructive' as const
+    default:
+      return 'outline' as const
   }
 }
 
-export function SourceControl({
-  changes,
-  repoKey,
-  onCommit,
-  onCreatePR,
-  onFileClick,
-}: SourceControlProps) {
+export function SourceControl({ changes, repoKey, onCommit, onCreatePR, onFileClick }: SourceControlProps) {
   const { commitMessage, setCommitMessage } = useIDEStore()
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCommitting, setIsCommitting] = useState(false)
@@ -74,38 +76,44 @@ export function SourceControl({
   const hasChanges = totalChanges > 0
   const canCommit = hasChanges && commitMessage.trim().length > 0
 
-  const handleCommit = useCallback(async (targetRepoKey: string) => {
-    setIsCommitting(true)
-    setError(null)
-    setLastCommitSha(null)
+  const handleCommit = useCallback(
+    async (targetRepoKey: string) => {
+      setIsCommitting(true)
+      setError(null)
+      setLastCommitSha(null)
 
-    try {
-      const sha = await onCommit(targetRepoKey, commitMessage)
-      setLastCommitSha(sha)
-      setCommitMessage('')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Commit failed'
-      setError(message)
-    } finally {
-      setIsCommitting(false)
-    }
-  }, [onCommit, commitMessage, setCommitMessage])
+      try {
+        const sha = await onCommit(targetRepoKey, commitMessage)
+        setLastCommitSha(sha)
+        setCommitMessage('')
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Commit failed'
+        setError(message)
+      } finally {
+        setIsCommitting(false)
+      }
+    },
+    [onCommit, commitMessage, setCommitMessage],
+  )
 
-  const handleCreatePR = useCallback(async (targetRepoKey: string) => {
-    setIsCreatingPR(true)
-    setError(null)
-    setLastPRUrl(null)
+  const handleCreatePR = useCallback(
+    async (targetRepoKey: string) => {
+      setIsCreatingPR(true)
+      setError(null)
+      setLastPRUrl(null)
 
-    try {
-      const url = await onCreatePR(targetRepoKey)
-      setLastPRUrl(url)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'PR creation failed'
-      setError(message)
-    } finally {
-      setIsCreatingPR(false)
-    }
-  }, [onCreatePR])
+      try {
+        const url = await onCreatePR(targetRepoKey)
+        setLastPRUrl(url)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'PR creation failed'
+        setError(message)
+      } finally {
+        setIsCreatingPR(false)
+      }
+    },
+    [onCreatePR],
+  )
 
   const isBusy = isCommitting || isCreatingPR
 
@@ -119,9 +127,7 @@ export function SourceControl({
       >
         <div className="flex items-center gap-2">
           <GitBranch className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Source Control
-          </span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Source Control</span>
           {totalChanges > 0 && (
             <Badge variant="secondary" className="h-5 px-1.5 text-xs">
               {totalChanges}
@@ -171,17 +177,13 @@ export function SourceControl({
             )}
 
             {totalChanges === 0 ? (
-              <p className="py-2 text-center text-xs text-muted-foreground">
-                No changes
-              </p>
+              <p className="py-2 text-center text-xs text-muted-foreground">No changes</p>
             ) : (
               Array.from(changesByRepo.entries()).map(([changeRepoKey, repoChanges]) => (
                 <div key={changeRepoKey} className="mb-3">
                   {/* Repo name (only show if multi-repo) */}
                   {changesByRepo.size > 1 && (
-                    <div className="mb-1 text-xs font-medium text-muted-foreground">
-                      {changeRepoKey}
-                    </div>
+                    <div className="mb-1 text-xs font-medium text-muted-foreground">{changeRepoKey}</div>
                   )}
 
                   {/* Change list */}

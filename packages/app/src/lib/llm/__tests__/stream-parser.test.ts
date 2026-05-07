@@ -1,10 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import {
-  parseAnthropicStream,
-  parseOpenAIStream,
-  parseOllamaStream,
-} from '../stream-parser';
-import type { ChatChunk } from '../types';
+import { describe, expect, it } from 'vitest'
+import { parseAnthropicStream, parseOllamaStream, parseOpenAIStream } from '../stream-parser'
+import type { ChatChunk } from '../types'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -14,31 +10,29 @@ import type { ChatChunk } from '../types';
  * Create a mock Response with an SSE body from an array of lines.
  */
 function mockSSEResponse(lines: string[]): Response {
-  const text = lines.join('\n') + '\n';
-  const encoder = new TextEncoder();
+  const text = `${lines.join('\n')}\n`
+  const encoder = new TextEncoder()
   const stream = new ReadableStream({
     start(controller) {
-      controller.enqueue(encoder.encode(text));
-      controller.close();
+      controller.enqueue(encoder.encode(text))
+      controller.close()
     },
-  });
+  })
 
   return new Response(stream, {
     headers: { 'Content-Type': 'text/event-stream' },
-  });
+  })
 }
 
 /**
  * Collect all chunks from an async iterable into an array.
  */
-async function collectChunks(
-  iterable: AsyncIterable<ChatChunk>,
-): Promise<ChatChunk[]> {
-  const chunks: ChatChunk[] = [];
+async function collectChunks(iterable: AsyncIterable<ChatChunk>): Promise<ChatChunk[]> {
+  const chunks: ChatChunk[] = []
   for await (const chunk of iterable) {
-    chunks.push(chunk);
+    chunks.push(chunk)
   }
-  return chunks;
+  return chunks
 }
 
 // ---------------------------------------------------------------------------
@@ -60,18 +54,18 @@ describe('parseAnthropicStream', () => {
       'event: message_stop',
       'data: {"type":"message_stop"}',
       '',
-    ]);
+    ])
 
-    const chunks = await collectChunks(parseAnthropicStream(response));
+    const chunks = await collectChunks(parseAnthropicStream(response))
 
-    const textChunks = chunks.filter((c) => c.type === 'text');
-    expect(textChunks).toHaveLength(2);
-    expect(textChunks[0].content).toBe('Hello');
-    expect(textChunks[1].content).toBe(' world');
+    const textChunks = chunks.filter((c) => c.type === 'text')
+    expect(textChunks).toHaveLength(2)
+    expect(textChunks[0].content).toBe('Hello')
+    expect(textChunks[1].content).toBe(' world')
 
-    const doneChunks = chunks.filter((c) => c.type === 'done');
-    expect(doneChunks).toHaveLength(1);
-  });
+    const doneChunks = chunks.filter((c) => c.type === 'done')
+    expect(doneChunks).toHaveLength(1)
+  })
 
   it('parses tool_use events into tool call chunks', async () => {
     const response = mockSSEResponse([
@@ -90,33 +84,33 @@ describe('parseAnthropicStream', () => {
       'event: message_stop',
       'data: {"type":"message_stop"}',
       '',
-    ]);
+    ])
 
-    const chunks = await collectChunks(parseAnthropicStream(response));
+    const chunks = await collectChunks(parseAnthropicStream(response))
 
-    const toolCallChunks = chunks.filter((c) => c.type === 'tool_call');
-    expect(toolCallChunks).toHaveLength(1);
+    const toolCallChunks = chunks.filter((c) => c.type === 'tool_call')
+    expect(toolCallChunks).toHaveLength(1)
     expect(toolCallChunks[0].toolCall).toEqual({
       id: 'call_123',
       name: 'coding_standards',
       arguments: { repo: 'awx' },
-    });
-  });
+    })
+  })
 
   it('emits an error chunk on API error events', async () => {
     const response = mockSSEResponse([
       'event: error',
       'data: {"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}',
       '',
-    ]);
+    ])
 
-    const chunks = await collectChunks(parseAnthropicStream(response));
+    const chunks = await collectChunks(parseAnthropicStream(response))
 
-    const errorChunks = chunks.filter((c) => c.type === 'error');
-    expect(errorChunks).toHaveLength(1);
-    expect(errorChunks[0].error).toBe('Overloaded');
-  });
-});
+    const errorChunks = chunks.filter((c) => c.type === 'error')
+    expect(errorChunks).toHaveLength(1)
+    expect(errorChunks[0].error).toBe('Overloaded')
+  })
+})
 
 // ---------------------------------------------------------------------------
 // OpenAI stream parser
@@ -135,18 +129,18 @@ describe('parseOpenAIStream', () => {
       '',
       'data: [DONE]',
       '',
-    ]);
+    ])
 
-    const chunks = await collectChunks(parseOpenAIStream(response));
+    const chunks = await collectChunks(parseOpenAIStream(response))
 
-    const textChunks = chunks.filter((c) => c.type === 'text');
-    expect(textChunks).toHaveLength(2);
-    expect(textChunks[0].content).toBe('Hello');
-    expect(textChunks[1].content).toBe(' there');
+    const textChunks = chunks.filter((c) => c.type === 'text')
+    expect(textChunks).toHaveLength(2)
+    expect(textChunks[0].content).toBe('Hello')
+    expect(textChunks[1].content).toBe(' there')
 
-    const doneChunks = chunks.filter((c) => c.type === 'done');
-    expect(doneChunks).toHaveLength(1);
-  });
+    const doneChunks = chunks.filter((c) => c.type === 'done')
+    expect(doneChunks).toHaveLength(1)
+  })
 
   it('handles [DONE] sentinel correctly', async () => {
     const response = mockSSEResponse([
@@ -156,18 +150,18 @@ describe('parseOpenAIStream', () => {
       '',
       'data: [DONE]',
       '',
-    ]);
+    ])
 
-    const chunks = await collectChunks(parseOpenAIStream(response));
+    const chunks = await collectChunks(parseOpenAIStream(response))
 
     // [DONE] should be silently consumed, not produce a chunk
-    const textChunks = chunks.filter((c) => c.type === 'text');
-    expect(textChunks).toHaveLength(1);
-    expect(textChunks[0].content).toBe('A');
+    const textChunks = chunks.filter((c) => c.type === 'text')
+    expect(textChunks).toHaveLength(1)
+    expect(textChunks[0].content).toBe('A')
 
     // The done chunk comes from finish_reason: stop
-    expect(chunks.filter((c) => c.type === 'done')).toHaveLength(1);
-  });
+    expect(chunks.filter((c) => c.type === 'done')).toHaveLength(1)
+  })
 
   it('handles malformed SSE lines gracefully (skip, do not crash)', async () => {
     const response = mockSSEResponse([
@@ -181,20 +175,20 @@ describe('parseOpenAIStream', () => {
       '',
       'data: {"id":"x","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}',
       '',
-    ]);
+    ])
 
-    const chunks = await collectChunks(parseOpenAIStream(response));
+    const chunks = await collectChunks(parseOpenAIStream(response))
 
     // Only the valid content line should produce a chunk
-    const textChunks = chunks.filter((c) => c.type === 'text');
-    expect(textChunks).toHaveLength(1);
-    expect(textChunks[0].content).toBe('OK');
+    const textChunks = chunks.filter((c) => c.type === 'text')
+    expect(textChunks).toHaveLength(1)
+    expect(textChunks[0].content).toBe('OK')
 
     // No error chunks from malformed lines
-    const errorChunks = chunks.filter((c) => c.type === 'error');
-    expect(errorChunks).toHaveLength(0);
-  });
-});
+    const errorChunks = chunks.filter((c) => c.type === 'error')
+    expect(errorChunks).toHaveLength(0)
+  })
+})
 
 // ---------------------------------------------------------------------------
 // Ollama stream parser
@@ -206,28 +200,26 @@ describe('parseOllamaStream', () => {
       '{"model":"llama3","message":{"role":"assistant","content":"Hi"},"done":false}',
       '{"model":"llama3","message":{"role":"assistant","content":" there"},"done":false}',
       '{"model":"llama3","message":{"role":"assistant","content":""},"done":true}',
-    ]);
+    ])
 
-    const chunks = await collectChunks(parseOllamaStream(response));
+    const chunks = await collectChunks(parseOllamaStream(response))
 
-    const textChunks = chunks.filter((c) => c.type === 'text');
-    expect(textChunks).toHaveLength(2);
-    expect(textChunks[0].content).toBe('Hi');
-    expect(textChunks[1].content).toBe(' there');
+    const textChunks = chunks.filter((c) => c.type === 'text')
+    expect(textChunks).toHaveLength(2)
+    expect(textChunks[0].content).toBe('Hi')
+    expect(textChunks[1].content).toBe(' there')
 
-    const doneChunks = chunks.filter((c) => c.type === 'done');
-    expect(doneChunks).toHaveLength(1);
-  });
+    const doneChunks = chunks.filter((c) => c.type === 'done')
+    expect(doneChunks).toHaveLength(1)
+  })
 
   it('emits error chunk on Ollama error response', async () => {
-    const response = mockSSEResponse([
-      '{"error":"model not found"}',
-    ]);
+    const response = mockSSEResponse(['{"error":"model not found"}'])
 
-    const chunks = await collectChunks(parseOllamaStream(response));
+    const chunks = await collectChunks(parseOllamaStream(response))
 
-    expect(chunks).toHaveLength(1);
-    expect(chunks[0].type).toBe('error');
-    expect(chunks[0].error).toBe('model not found');
-  });
-});
+    expect(chunks).toHaveLength(1)
+    expect(chunks[0].type).toBe('error')
+    expect(chunks[0].error).toBe('model not found')
+  })
+})

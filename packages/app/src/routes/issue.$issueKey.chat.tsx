@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { FileText, Tag, User, Calendar, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { AlertCircle, Calendar, ChevronLeft, ChevronRight, FileText, Tag, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { ChatView } from '@/components/chat/ChatView'
 import { Loading } from '@/components/shared/Loading'
-import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
-import { useIssue } from '@/lib/jira/queries'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { authManager } from '@/lib/auth/manager'
-import { useRecentStore } from '@/stores/recent'
+import { useIssue } from '@/lib/jira/queries'
 import type { JiraIssue } from '@/lib/jira/types'
+import { shortcutRegistry, useShortcuts } from '@/lib/shortcuts'
+import { useRecentStore } from '@/stores/recent'
 
 export const Route = createFileRoute('/issue/$issueKey/chat')({
   component: ChatPage,
@@ -46,17 +46,13 @@ function IssueContextPanel({ issue }: { issue: JiraIssue | null }) {
         </div>
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-4 text-center">
           <AlertCircle className="h-8 w-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">
-            Connect to Jira to see issue details
-          </p>
+          <p className="text-sm text-muted-foreground">Connect to Jira to see issue details</p>
         </div>
       </div>
     )
   }
 
-  const description = issue.fields.description
-    ? extractText(issue.fields.description)
-    : null
+  const description = issue.fields.description ? extractText(issue.fields.description) : null
 
   return (
     <div className="absolute inset-0 z-20 flex h-full w-full flex-col border-l border-border bg-card md:static md:z-auto md:w-72">
@@ -118,9 +114,7 @@ function IssueContextPanel({ issue }: { issue: JiraIssue | null }) {
         {/* Components */}
         {issue.fields.components.length > 0 && (
           <div>
-            <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">
-              Components
-            </div>
+            <div className="mb-1 text-xs font-medium uppercase text-muted-foreground">Components</div>
             <div className="flex flex-wrap gap-1">
               {issue.fields.components.map((comp) => (
                 <Badge key={comp.id} variant="secondary" className="text-xs">
@@ -141,9 +135,13 @@ function IssueContextPanel({ issue }: { issue: JiraIssue | null }) {
 
 function ChatPage() {
   const { issueKey } = Route.useParams()
-  const [contextOpen, setContextOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 768 : true)
+  const [contextOpen, setContextOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
+  )
 
-  useEffect(() => { document.title = `${issueKey} Chat — Aegis` }, [issueKey])
+  useEffect(() => {
+    document.title = `${issueKey} Chat — Aegis`
+  }, [issueKey])
 
   // Activate chat-scope keyboard shortcut handling
   useShortcuts('chat')
@@ -171,22 +169,20 @@ function ChatPage() {
     enabled: jiraConnected,
   })
 
-  // Show loading state while issue data is being fetched
-  if (jiraConnected && issueLoading) {
-    return <Loading className="h-full" message="Loading issue..." />
-  }
-
   // Derive chat context from real issue data or fall back to issue key
   const issueSummary = issue?.fields.summary ?? issueKey
-  const issueDescription = issue?.fields.description
-    ? extractText(issue.fields.description)
-    : undefined
+  const issueDescription = issue?.fields.description ? extractText(issue.fields.description) : undefined
 
   // Record visit for recent issues on landing page
   const recordVisit = useRecentStore((s) => s.recordVisit)
   useEffect(() => {
     recordVisit(issueKey, issueSummary, 'chat')
   }, [issueKey, issueSummary, recordVisit])
+
+  // Show loading state while issue data is being fetched
+  if (jiraConnected && issueLoading) {
+    return <Loading className="h-full" message="Loading issue..." />
+  }
 
   return (
     <div className="flex h-full">
@@ -208,11 +204,7 @@ function ChatPage() {
         onClick={() => setContextOpen((prev) => !prev)}
         aria-label={contextOpen ? 'Close context panel' : 'Open context panel'}
       >
-        {contextOpen ? (
-          <ChevronRight className="h-4 w-4" />
-        ) : (
-          <ChevronLeft className="h-4 w-4" />
-        )}
+        {contextOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
 
       {/* Context sidebar */}

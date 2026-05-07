@@ -7,17 +7,25 @@
  * to EditorPlaceholder if Monaco fails to load.
  */
 
-import { Component, Suspense, lazy, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
-import type { OnMount, OnChange } from '@monaco-editor/react'
+import type { OnChange, OnMount } from '@monaco-editor/react'
 import type * as monacoNs from 'monaco-editor'
+import {
+  Component,
+  type ErrorInfo,
+  lazy,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import type { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
 import { useIDEStore } from '@/stores/ide'
 import { EditorPlaceholder } from './EditorPlaceholder'
-import type { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
 
 // Lazy-load Monaco to avoid bloating the initial bundle
-const Editor = lazy(() =>
-  import('@monaco-editor/react').then((mod) => ({ default: mod.default })),
-)
+const Editor = lazy(() => import('@monaco-editor/react').then((mod) => ({ default: mod.default })))
 
 interface MonacoEditorProps {
   path: string
@@ -83,13 +91,7 @@ export function getLanguageFromPath(filePath: string): string {
   return map[ext] ?? 'plaintext'
 }
 
-export function MonacoEditor({
-  path,
-  content,
-  repoKey,
-  vfs,
-  readOnly = false,
-}: MonacoEditorProps) {
+export function MonacoEditor({ path, content, repoKey, vfs, readOnly = false }: MonacoEditorProps) {
   const markTabDirty = useIDEStore((s) => s.markTabDirty)
   const [loadError, setLoadError] = useState(false)
   const editorRef = useRef<monacoNs.editor.IStandaloneCodeEditor | null>(null)
@@ -97,13 +99,10 @@ export function MonacoEditor({
   const language = getLanguageFromPath(path)
   const modelUri = `${repoKey}:${path}`
 
-  const handleMount: OnMount = useCallback(
-    (editor) => {
-      editorRef.current = editor
-      editor.focus()
-    },
-    [],
-  )
+  const handleMount: OnMount = useCallback((editor) => {
+    editorRef.current = editor
+    editor.focus()
+  }, [])
 
   // Dispose Monaco model on unmount to prevent memory leaks
   useEffect(() => {
@@ -117,7 +116,7 @@ export function MonacoEditor({
         editorRef.current = null
       }
     }
-  }, [modelUri])
+  }, [])
 
   const handleChange: OnChange = useCallback(
     (value) => {
@@ -135,9 +134,7 @@ export function MonacoEditor({
   return (
     <Suspense
       fallback={
-        <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-          Loading editor...
-        </div>
+        <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Loading editor...</div>
       }
     >
       <MonacoEditorInner

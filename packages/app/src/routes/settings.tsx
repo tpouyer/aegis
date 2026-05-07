@@ -1,22 +1,22 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Activity, Bot, Info, Link2, Link2Off, Moon, Palette, Settings, Sparkles, Sun, User } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { Settings, Moon, Sun, Link2, Link2Off, Bot, Palette, Info, Sparkles, Activity, User } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Input } from '@/components/ui/input'
-import { EmptyState } from '@/components/shared/EmptyState'
-import { authManager } from '@/lib/auth/manager'
-import { providerRegistry } from '@/lib/llm/provider-registry'
-import type { AuthProvider, AuthState } from '@/lib/auth/types'
-import type { LLMProvider } from '@/lib/llm/types'
-import { initiateGitHubAuth } from '@/lib/auth/github'
 import { initiateAtlassianAuth } from '@/lib/auth/atlassian'
-import { initiateRedHatAuth } from '@/lib/auth/redhat-sso'
+import { getAtlassianConfig, getGitHubConfig, getGoogleConfig, getRedHatConfig } from '@/lib/auth/config'
+import { initiateGitHubAuth } from '@/lib/auth/github'
 import { initiateGoogleAuth } from '@/lib/auth/google'
-import { getGitHubConfig, getAtlassianConfig, getRedHatConfig, getGoogleConfig } from '@/lib/auth/config'
+import { authManager } from '@/lib/auth/manager'
+import { initiateRedHatAuth } from '@/lib/auth/redhat-sso'
+import type { AuthProvider, AuthState } from '@/lib/auth/types'
+import { providerRegistry } from '@/lib/llm/provider-registry'
+import type { LLMProvider } from '@/lib/llm/types'
 
 export const Route = createFileRoute('/settings')({
   component: SettingsPage,
@@ -53,9 +53,9 @@ function useAuthState(): AuthState {
   return state
 }
 
-import { useThemeStore } from '@/stores/theme'
+import { PERSONA_DESCRIPTIONS, PERSONA_LABELS, type PersonaRole, usePersonaStore } from '@/stores/persona'
 import { useTelemetryStore } from '@/stores/telemetry'
-import { usePersonaStore, PERSONA_LABELS, PERSONA_DESCRIPTIONS, type PersonaRole } from '@/stores/persona'
+import { useThemeStore } from '@/stores/theme'
 
 function useTheme() {
   const isDark = useThemeStore((s) => s.isDark)
@@ -95,8 +95,7 @@ function AuthConnectionsSection() {
           Auth Connections
         </CardTitle>
         <CardDescription>
-          Manage your OAuth provider connections. Tokens are stored securely in
-          the Service Worker.
+          Manage your OAuth provider connections. Tokens are stored securely in the Service Worker.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -105,26 +104,17 @@ function AuthConnectionsSection() {
           const token = authState.tokens[provider.id]
 
           return (
-            <div
-              key={provider.id}
-              className="flex items-center justify-between rounded-lg border border-border p-4"
-            >
+            <div key={provider.id} className="flex items-center justify-between rounded-lg border border-border p-4">
               <div className="flex items-center gap-3">
                 <div
                   className={`h-2.5 w-2.5 rounded-full ${isConnected ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
                   aria-label={isConnected ? 'Connected' : 'Disconnected'}
                 />
                 <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {provider.label}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {provider.description}
-                  </p>
+                  <p className="text-sm font-medium text-foreground">{provider.label}</p>
+                  <p className="text-xs text-muted-foreground">{provider.description}</p>
                   {isConnected && token && (
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatExpiry(token.expiresAt)}
-                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{formatExpiry(token.expiresAt)}</p>
                   )}
                 </div>
               </div>
@@ -133,20 +123,12 @@ function AuthConnectionsSection() {
                   {isConnected ? 'Connected' : 'Disconnected'}
                 </Badge>
                 {isConnected ? (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDisconnect(provider.id)}
-                  >
+                  <Button variant="destructive" size="sm" onClick={() => handleDisconnect(provider.id)}>
                     <Link2Off className="mr-1 h-3.5 w-3.5" />
                     Disconnect
                   </Button>
                 ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleConnect(provider.id)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleConnect(provider.id)}>
                     <Link2 className="mr-1 h-3.5 w-3.5" />
                     Connect
                   </Button>
@@ -161,8 +143,8 @@ function AuthConnectionsSection() {
 }
 
 function LLMProviderSection() {
-  const [defaultProvider, setDefaultProvider] = useState<LLMProvider | undefined>(
-    () => providerRegistry.getDefaultProvider(),
+  const [defaultProvider, setDefaultProvider] = useState<LLMProvider | undefined>(() =>
+    providerRegistry.getDefaultProvider(),
   )
   const providers = providerRegistry.listProviders()
 
@@ -178,31 +160,21 @@ function LLMProviderSection() {
           <Bot className="h-5 w-5" />
           LLM Provider
         </CardTitle>
-        <CardDescription>
-          Configure the AI model used for chat assistance.
-        </CardDescription>
+        <CardDescription>Configure the AI model used for chat assistance.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {defaultProvider ? (
           <div className="rounded-lg border border-border p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-foreground">
-                  {defaultProvider.name}
-                </p>
+                <p className="text-sm font-medium text-foreground">{defaultProvider.name}</p>
                 {defaultProvider.models.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    Model: {defaultProvider.models[0].name}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Model: {defaultProvider.models[0].name}</p>
                 )}
               </div>
               <div className="flex items-center gap-1.5">
-                {defaultProvider.supportsToolUse && (
-                  <Badge variant="secondary">Tool Use</Badge>
-                )}
-                {defaultProvider.supportsStreaming && (
-                  <Badge variant="secondary">Streaming</Badge>
-                )}
+                {defaultProvider.supportsToolUse && <Badge variant="secondary">Tool Use</Badge>}
+                {defaultProvider.supportsStreaming && <Badge variant="secondary">Streaming</Badge>}
               </div>
             </div>
           </div>
@@ -219,14 +191,9 @@ function LLMProviderSection() {
           <>
             <Separator />
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">
-                Available Providers
-              </p>
+              <p className="text-sm font-medium text-foreground">Available Providers</p>
               {providers.map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-center justify-between rounded-lg border border-border p-3"
-                >
+                <div key={p.id} className="flex items-center justify-between rounded-lg border border-border p-3">
                   <div>
                     <p className="text-sm text-foreground">{p.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -262,9 +229,7 @@ function RoleSection() {
           <User className="h-5 w-5" />
           Role
         </CardTitle>
-        <CardDescription>
-          Your role determines AI prompts, suggested actions, and dashboard widgets.
-        </CardDescription>
+        <CardDescription>Your role determines AI prompts, suggested actions, and dashboard widgets.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         {roles.map(([id, label]) => (
@@ -293,24 +258,15 @@ function AppearanceSection() {
           <Palette className="h-5 w-5" />
           Appearance
         </CardTitle>
-        <CardDescription>
-          Customize the look and feel of Aegis.
-        </CardDescription>
+        <CardDescription>Customize the look and feel of Aegis.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center justify-between rounded-lg border border-border p-4">
           <div>
             <p className="text-sm font-medium text-foreground">Theme</p>
-            <p className="text-xs text-muted-foreground">
-              Switch between light and dark mode
-            </p>
+            <p className="text-xs text-muted-foreground">Switch between light and dark mode</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggle}
-            aria-label="Toggle theme"
-          >
+          <Button variant="outline" size="sm" onClick={toggle} aria-label="Toggle theme">
             {isDark ? (
               <>
                 <Sun className="mr-1 h-3.5 w-3.5" />
@@ -330,8 +286,16 @@ function AppearanceSection() {
 }
 
 function TelemetrySection() {
-  const { enabled, otlpEndpoint, exportIntervalMs, localStorageEnabled,
-    setEnabled, setOtlpEndpoint, setExportInterval, setLocalStorageEnabled } = useTelemetryStore()
+  const {
+    enabled,
+    otlpEndpoint,
+    exportIntervalMs,
+    localStorageEnabled,
+    setEnabled,
+    setOtlpEndpoint,
+    setExportInterval,
+    setLocalStorageEnabled,
+  } = useTelemetryStore()
   const [endpointInput, setEndpointInput] = useState(otlpEndpoint ?? '')
 
   return (
@@ -341,9 +305,7 @@ function TelemetrySection() {
           <Activity className="h-5 w-5" />
           Telemetry
         </CardTitle>
-        <CardDescription>
-          OpenTelemetry metrics collection and export configuration.
-        </CardDescription>
+        <CardDescription>OpenTelemetry metrics collection and export configuration.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between rounded-lg border border-border p-4">
@@ -397,7 +359,11 @@ function TelemetrySection() {
             <p className="text-sm font-medium text-foreground">Local Metrics Storage</p>
             <p className="text-xs text-muted-foreground">Store metrics in IndexedDB for local analysis</p>
           </div>
-          <Button variant={localStorageEnabled ? 'default' : 'outline'} size="sm" onClick={() => setLocalStorageEnabled(!localStorageEnabled)}>
+          <Button
+            variant={localStorageEnabled ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setLocalStorageEnabled(!localStorageEnabled)}
+          >
             {localStorageEnabled ? 'Enabled' : 'Disabled'}
           </Button>
         </div>
@@ -421,8 +387,7 @@ function AboutSection() {
           <Badge variant="outline">v0.1.0</Badge>
         </div>
         <p className="text-xs text-muted-foreground">
-          Zero-infrastructure development platform. Unified kanban board, AI chat,
-          and web IDE — all in your browser.
+          Zero-infrastructure development platform. Unified kanban board, AI chat, and web IDE — all in your browser.
         </p>
         <Separator />
         <a
@@ -439,7 +404,9 @@ function AboutSection() {
 }
 
 function SettingsPage() {
-  useEffect(() => { document.title = 'Settings — Aegis' }, [])
+  useEffect(() => {
+    document.title = 'Settings — Aegis'
+  }, [])
 
   return (
     <div className="mx-auto max-w-3xl p-6">
@@ -447,9 +414,7 @@ function SettingsPage() {
         <Settings className="h-7 w-7 text-primary" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Settings</h1>
-          <p className="text-sm text-muted-foreground">
-            Authentication, LLM provider configuration, and preferences.
-          </p>
+          <p className="text-sm text-muted-foreground">Authentication, LLM provider configuration, and preferences.</p>
         </div>
       </div>
 

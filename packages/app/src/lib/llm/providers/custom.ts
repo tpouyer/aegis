@@ -6,30 +6,21 @@
  * enterprise gateways, or less common providers.
  */
 
-import type {
-  ChatChunk,
-  ChatMessage,
-  ChatParams,
-  LLMProvider,
-  ModelInfo,
-} from '../types';
-import { parseOpenAIStream } from '../stream-parser';
+import { parseOpenAIStream } from '../stream-parser'
+import type { ChatChunk, ChatMessage, ChatParams, LLMProvider, ModelInfo } from '../types'
 
 /**
  * Convert our ChatMessage format to OpenAI Chat Completions format.
  */
-function toOpenAIMessages(
-  messages: ChatMessage[],
-  systemPrompt?: string,
-): Array<Record<string, unknown>> {
-  const result: Array<Record<string, unknown>> = [];
+function toOpenAIMessages(messages: ChatMessage[], systemPrompt?: string): Array<Record<string, unknown>> {
+  const result: Array<Record<string, unknown>> = []
 
   if (systemPrompt) {
-    result.push({ role: 'system', content: systemPrompt });
+    result.push({ role: 'system', content: systemPrompt })
   }
 
   for (const m of messages) {
-    if (m.role === 'system') continue;
+    if (m.role === 'system') continue
 
     if (m.toolResults) {
       for (const tr of m.toolResults) {
@@ -37,15 +28,15 @@ function toOpenAIMessages(
           role: 'tool',
           tool_call_id: tr.toolCallId,
           content: tr.content,
-        });
+        })
       }
-      continue;
+      continue
     }
 
     const msg: Record<string, unknown> = {
       role: m.role,
       content: m.content || null,
-    };
+    }
 
     if (m.toolCalls && m.toolCalls.length > 0) {
       msg.tool_calls = m.toolCalls.map((tc) => ({
@@ -55,38 +46,38 @@ function toOpenAIMessages(
           name: tc.name,
           arguments: JSON.stringify(tc.arguments),
         },
-      }));
+      }))
     }
 
-    result.push(msg);
+    result.push(msg)
   }
 
-  return result;
+  return result
 }
 
 export interface CustomProviderConfig {
-  name?: string;
-  endpoint: string;
-  apiKey?: string;
-  model: string;
-  supportsToolUse?: boolean;
+  name?: string
+  endpoint: string
+  apiKey?: string
+  model: string
+  supportsToolUse?: boolean
 }
 
 export class CustomProvider implements LLMProvider {
-  readonly id = 'custom';
-  readonly name: string;
-  readonly models: ModelInfo[];
-  readonly supportsToolUse: boolean;
-  readonly supportsStreaming = true;
-  readonly maxContextWindow = 128_000;
+  readonly id = 'custom'
+  readonly name: string
+  readonly models: ModelInfo[]
+  readonly supportsToolUse: boolean
+  readonly supportsStreaming = true
+  readonly maxContextWindow = 128_000
 
-  private relayUrl: string;
+  private relayUrl: string
 
   constructor(config: CustomProviderConfig) {
-    this.name = config.name ?? 'Custom Endpoint';
+    this.name = config.name ?? 'Custom Endpoint'
     // Route through SW relay — SW injects API key from secure storage
-    this.relayUrl = `/_aegis/llm/custom/${encodeURIComponent(config.endpoint)}`;
-    this.supportsToolUse = config.supportsToolUse ?? false;
+    this.relayUrl = `/_aegis/llm/custom/${encodeURIComponent(config.endpoint)}`
+    this.supportsToolUse = config.supportsToolUse ?? false
     this.models = [
       {
         id: config.model,
@@ -94,7 +85,7 @@ export class CustomProvider implements LLMProvider {
         contextWindow: 128_000,
         supportsToolUse: this.supportsToolUse,
       },
-    ];
+    ]
   }
 
   async *chat(params: ChatParams): AsyncIterable<ChatChunk> {
@@ -103,10 +94,10 @@ export class CustomProvider implements LLMProvider {
       messages: toOpenAIMessages(params.messages, params.systemPrompt),
       max_tokens: params.maxTokens ?? 4096,
       stream: params.stream !== false,
-    };
+    }
 
     if (params.temperature !== undefined) {
-      body.temperature = params.temperature;
+      body.temperature = params.temperature
     }
 
     if (params.tools && params.tools.length > 0 && this.supportsToolUse) {
@@ -117,38 +108,38 @@ export class CustomProvider implements LLMProvider {
           description: t.description,
           parameters: t.inputSchema,
         },
-      }));
+      }))
     }
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-    };
+    }
 
-    let response: Response;
+    let response: Response
     try {
       response = await fetch(this.relayUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
         signal: params.signal,
-      });
-    } catch (err) {
+      })
+    } catch (_err) {
       yield {
         type: 'error',
         error: `Cannot connect to ${this.relayUrl}. Check the URL and try again.`,
-      };
-      return;
+      }
+      return
     }
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = await response.text()
       yield {
         type: 'error',
         error: `Custom endpoint error ${response.status}: ${errorText}`,
-      };
-      return;
+      }
+      return
     }
 
-    yield* parseOpenAIStream(response);
+    yield* parseOpenAIStream(response)
   }
 }

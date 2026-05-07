@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { BoardView } from '@/components/board/BoardView'
-import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
+import { shortcutRegistry, useShortcuts } from '@/lib/shortcuts'
 import { useBoardStore } from '@/stores/board'
 
 export const Route = createFileRoute('/board/$boardId')({
@@ -12,7 +12,9 @@ function BoardPage() {
   const { boardId } = Route.useParams()
   const numericBoardId = Number(boardId)
 
-  useEffect(() => { document.title = `Board ${boardId} — Aegis` }, [boardId])
+  useEffect(() => {
+    document.title = `Board ${boardId} — Aegis`
+  }, [boardId])
 
   // Activate board-scope keyboard shortcut handling
   useShortcuts('board')
@@ -41,9 +43,7 @@ function BoardPage() {
         // BoardView listens to focusedCardIndex and opens detail;
         // this is a marker — BoardView wires it via onCardClick.
         // We dispatch a custom event that BoardView can handle.
-        document.dispatchEvent(
-          new CustomEvent('aegis:open-focused-card'),
-        )
+        document.dispatchEvent(new CustomEvent('aegis:open-focused-card'))
       },
       when: () => useBoardStore.getState().focusedCardIndex >= 0,
     })
@@ -53,9 +53,7 @@ function BoardPage() {
       scope: 'board',
       description: 'Focus filter bar',
       action: () => {
-        const filterInput = document.querySelector<HTMLInputElement>(
-          '[data-shortcut-target="filter-bar"]',
-        )
+        const filterInput = document.querySelector<HTMLInputElement>('[data-shortcut-target="filter-bar"]')
         filterInput?.focus()
       },
     })
@@ -65,9 +63,7 @@ function BoardPage() {
       scope: 'board',
       description: 'Close card detail / clear focus',
       action: () => {
-        document.dispatchEvent(
-          new CustomEvent('aegis:close-card-detail'),
-        )
+        document.dispatchEvent(new CustomEvent('aegis:close-card-detail'))
         useBoardStore.getState().clearFocus()
       },
     })

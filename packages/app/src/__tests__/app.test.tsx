@@ -1,12 +1,7 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import {
-  RouterProvider,
-  createRouter,
-  createRootRoute,
-  createRoute,
-} from '@tanstack/react-router'
+import { createRootRoute, createRoute, createRouter, RouterProvider } from '@tanstack/react-router'
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { Header } from '@/components/shared/Header'
 
 describe('App', () => {

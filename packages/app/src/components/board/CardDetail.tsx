@@ -6,34 +6,28 @@
  * comments, status, and assignee info.
  */
 
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { Link } from '@tanstack/react-router';
-import { ExternalLink, User, Tag, GitBranch, MessageCircle, MessageSquare, Code2 } from 'lucide-react';
-import { SafeLink } from '@/components/shared/SafeLink';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useIssue } from '@/lib/jira/queries';
+import { Link } from '@tanstack/react-router'
+import { Code2, ExternalLink, GitBranch, MessageCircle, MessageSquare, Tag, User } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { SafeLink } from '@/components/shared/SafeLink'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { useIssue } from '@/lib/jira/queries'
 
 interface CardDetailProps {
-  issueKey: string | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  issueKey: string | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
   const { data: issue, isLoading } = useIssue(issueKey ?? '', {
     enabled: !!issueKey && open,
-  });
+  })
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -56,13 +50,7 @@ export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
                 <span>{issue.fields.summary}</span>
               </SheetTitle>
               <SheetDescription className="flex items-center gap-2">
-                <Badge
-                  variant={
-                    issue.fields.status.statusCategory.key === 'done'
-                      ? 'default'
-                      : 'secondary'
-                  }
-                >
+                <Badge variant={issue.fields.status.statusCategory.key === 'done' ? 'default' : 'secondary'}>
                   {issue.fields.status.name}
                 </Badge>
                 <Badge variant="outline">{issue.fields.priority.name}</Badge>
@@ -107,8 +95,7 @@ export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
             </div>
 
             {/* Components and labels */}
-            {(issue.fields.components.length > 0 ||
-              issue.fields.labels.length > 0) && (
+            {(issue.fields.components.length > 0 || issue.fields.labels.length > 0) && (
               <div className="mb-4 flex flex-wrap gap-1.5">
                 {issue.fields.components.map((c) => (
                   <Badge key={c.id} variant="secondary" className="text-xs">
@@ -128,16 +115,12 @@ export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
 
             {/* Description */}
             <section className="mb-4">
-              <h4 className="mb-2 text-sm font-semibold text-foreground">
-                Description
-              </h4>
+              <h4 className="mb-2 text-sm font-semibold text-foreground">Description</h4>
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 {issue.fields.description ? (
                   <DescriptionRenderer content={issue.fields.description} />
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">
-                    No description provided.
-                  </p>
+                  <p className="text-sm text-muted-foreground italic">No description provided.</p>
                 )}
               </div>
             </section>
@@ -153,29 +136,17 @@ export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
                   </h4>
                   <ul className="space-y-1.5">
                     {issue.fields.issuelinks.map((link) => {
-                      const linkedIssue =
-                        link.outwardIssue ?? link.inwardIssue;
-                      const direction = link.outwardIssue
-                        ? link.type.outward
-                        : link.type.inward;
-                      if (!linkedIssue) return null;
+                      const linkedIssue = link.outwardIssue ?? link.inwardIssue
+                      const direction = link.outwardIssue ? link.type.outward : link.type.inward
+                      if (!linkedIssue) return null
                       return (
-                        <li
-                          key={link.id}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <span className="text-muted-foreground">
-                            {direction}
-                          </span>
+                        <li key={link.id} className="flex items-center gap-2 text-sm">
+                          <span className="text-muted-foreground">{direction}</span>
                           <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                          <span className="font-medium">
-                            {linkedIssue.key}
-                          </span>
-                          <span className="truncate text-muted-foreground">
-                            {linkedIssue.fields.summary}
-                          </span>
+                          <span className="font-medium">{linkedIssue.key}</span>
+                          <span className="truncate text-muted-foreground">{linkedIssue.fields.summary}</span>
                         </li>
-                      );
+                      )
                     })}
                   </ul>
                 </section>
@@ -187,29 +158,18 @@ export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
               <>
                 <Separator className="my-4" />
                 <section className="mb-4">
-                  <h4 className="mb-2 text-sm font-semibold text-foreground">
-                    Subtasks
-                  </h4>
+                  <h4 className="mb-2 text-sm font-semibold text-foreground">Subtasks</h4>
                   <ul className="space-y-1.5">
                     {issue.fields.subtasks.map((subtask) => (
-                      <li
-                        key={subtask.key}
-                        className="flex items-center gap-2 text-sm"
-                      >
+                      <li key={subtask.key} className="flex items-center gap-2 text-sm">
                         <Badge
-                          variant={
-                            subtask.fields.status.statusCategory.key === 'done'
-                              ? 'default'
-                              : 'outline'
-                          }
+                          variant={subtask.fields.status.statusCategory.key === 'done' ? 'default' : 'outline'}
                           className="text-[10px] px-1.5 py-0"
                         >
                           {subtask.fields.status.name}
                         </Badge>
                         <span className="font-medium">{subtask.key}</span>
-                        <span className="truncate text-muted-foreground">
-                          {subtask.fields.summary}
-                        </span>
+                        <span className="truncate text-muted-foreground">{subtask.fields.summary}</span>
                       </li>
                     ))}
                   </ul>
@@ -218,48 +178,40 @@ export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
             )}
 
             {/* Comments */}
-            {issue.fields.comment &&
-              issue.fields.comment.comments.length > 0 && (
-                <>
-                  <Separator className="my-4" />
-                  <section className="mb-4">
-                    <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      Comments ({issue.fields.comment.total})
-                    </h4>
-                    <ul className="space-y-3">
-                      {issue.fields.comment.comments.map((comment) => (
-                        <li
-                          key={comment.id}
-                          className="rounded-md border border-border p-3"
-                        >
-                          <div className="mb-1.5 flex items-center gap-2 text-xs text-muted-foreground">
-                            <img
-                              src={comment.author.avatarUrls['16x16']}
-                              alt={comment.author.displayName}
-                              className="h-4 w-4 rounded-full"
-                            />
-                            <span className="font-medium text-foreground">
-                              {comment.author.displayName}
-                            </span>
-                            <span>
-                              {new Date(comment.created).toLocaleDateString()}
-                            </span>
-                          </div>
-                          <div className="text-sm text-card-foreground">
-                            <DescriptionRenderer content={comment.body} />
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                </>
-              )}
+            {issue.fields.comment && issue.fields.comment.comments.length > 0 && (
+              <>
+                <Separator className="my-4" />
+                <section className="mb-4">
+                  <h4 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    Comments ({issue.fields.comment.total})
+                  </h4>
+                  <ul className="space-y-3">
+                    {issue.fields.comment.comments.map((comment) => (
+                      <li key={comment.id} className="rounded-md border border-border p-3">
+                        <div className="mb-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+                          <img
+                            src={comment.author.avatarUrls['16x16']}
+                            alt={comment.author.displayName}
+                            className="h-4 w-4 rounded-full"
+                          />
+                          <span className="font-medium text-foreground">{comment.author.displayName}</span>
+                          <span>{new Date(comment.created).toLocaleDateString()}</span>
+                        </div>
+                        <div className="text-sm text-card-foreground">
+                          <DescriptionRenderer content={comment.body} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </>
+            )}
           </ScrollArea>
         )}
       </SheetContent>
     </Sheet>
-  );
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -272,28 +224,28 @@ export function CardDetail({ issueKey, open, onOpenChange }: CardDetailProps) {
  * A full ADF renderer would be a separate concern.
  */
 function DescriptionRenderer({ content }: { content: unknown }) {
-  const text = extractText(content);
+  const text = extractText(content)
 
   return (
     <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: SafeLink }}>
       {text}
     </ReactMarkdown>
-  );
+  )
 }
 
 /** Extract plain text from ADF or return content as-is if it's a string. */
 function extractText(content: unknown): string {
-  if (typeof content === 'string') return content;
+  if (typeof content === 'string') return content
 
   // ADF is a tree structure — walk it to extract text nodes
   if (content && typeof content === 'object' && 'type' in content) {
-    const adf = content as { type: string; content?: unknown[]; text?: string };
-    if (adf.text) return adf.text;
+    const adf = content as { type: string; content?: unknown[]; text?: string }
+    if (adf.text) return adf.text
     if (adf.content) {
-      return adf.content.map(extractText).join('\n');
+      return adf.content.map(extractText).join('\n')
     }
   }
 
   // Fallback
-  return '';
+  return ''
 }

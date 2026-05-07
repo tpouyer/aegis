@@ -8,51 +8,42 @@
  * Auto-detects available models via GET /api/tags.
  */
 
-import type {
-  ChatChunk,
-  ChatMessage,
-  ChatParams,
-  LLMProvider,
-  ModelInfo,
-} from '../types';
-import { parseOllamaStream } from '../stream-parser';
+import { parseOllamaStream } from '../stream-parser'
+import type { ChatChunk, ChatMessage, ChatParams, LLMProvider, ModelInfo } from '../types'
 
 /**
  * Convert our ChatMessage format to Ollama /api/chat format.
  */
-function toOllamaMessages(
-  messages: ChatMessage[],
-  systemPrompt?: string,
-): Array<Record<string, unknown>> {
-  const result: Array<Record<string, unknown>> = [];
+function toOllamaMessages(messages: ChatMessage[], systemPrompt?: string): Array<Record<string, unknown>> {
+  const result: Array<Record<string, unknown>> = []
 
   if (systemPrompt) {
-    result.push({ role: 'system', content: systemPrompt });
+    result.push({ role: 'system', content: systemPrompt })
   }
 
   for (const m of messages) {
-    if (m.role === 'system') continue;
+    if (m.role === 'system') continue
     result.push({
       role: m.role,
       content: m.content,
-    });
+    })
   }
 
-  return result;
+  return result
 }
 
 export class OllamaProvider implements LLMProvider {
-  readonly id = 'ollama';
-  readonly name = 'Ollama (Local)';
-  models: ModelInfo[] = [];
-  readonly supportsToolUse = false;
-  readonly supportsStreaming = true;
-  readonly maxContextWindow = 32_000;
+  readonly id = 'ollama'
+  readonly name = 'Ollama (Local)'
+  models: ModelInfo[] = []
+  readonly supportsToolUse = false
+  readonly supportsStreaming = true
+  readonly maxContextWindow = 32_000
 
-  private endpoint: string;
+  private endpoint: string
 
   constructor(config?: { endpoint?: string }) {
-    this.endpoint = config?.endpoint ?? 'http://localhost:11434';
+    this.endpoint = config?.endpoint ?? 'http://localhost:11434'
   }
 
   /**
@@ -61,26 +52,26 @@ export class OllamaProvider implements LLMProvider {
    */
   async detectModels(): Promise<ModelInfo[]> {
     try {
-      const response = await fetch(`${this.endpoint}/api/tags`);
+      const response = await fetch(`${this.endpoint}/api/tags`)
       if (!response.ok) {
-        return this.models;
+        return this.models
       }
 
       const data = (await response.json()) as {
-        models?: Array<{ name: string; details?: Record<string, unknown> }>;
-      };
+        models?: Array<{ name: string; details?: Record<string, unknown> }>
+      }
 
       this.models = (data.models ?? []).map((m) => ({
         id: m.name,
         name: m.name,
         contextWindow: 32_000,
         supportsToolUse: false,
-      }));
+      }))
 
-      return this.models;
+      return this.models
     } catch {
       // Ollama not running or unreachable — return empty
-      return this.models;
+      return this.models
     }
   }
 
@@ -89,37 +80,37 @@ export class OllamaProvider implements LLMProvider {
       model: params.model,
       messages: toOllamaMessages(params.messages, params.systemPrompt),
       stream: params.stream !== false,
-    };
-
-    if (params.temperature !== undefined) {
-      body.options = { temperature: params.temperature };
     }
 
-    let response: Response;
+    if (params.temperature !== undefined) {
+      body.options = { temperature: params.temperature }
+    }
+
+    let response: Response
     try {
       response = await fetch(`${this.endpoint}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
         signal: params.signal,
-      });
-    } catch (err) {
+      })
+    } catch (_err) {
       yield {
         type: 'error',
         error: `Cannot connect to Ollama at ${this.endpoint}. Is it running?`,
-      };
-      return;
+      }
+      return
     }
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = await response.text()
       yield {
         type: 'error',
         error: `Ollama error ${response.status}: ${errorText}`,
-      };
-      return;
+      }
+      return
     }
 
-    yield* parseOllamaStream(response);
+    yield* parseOllamaStream(response)
   }
 }

@@ -15,29 +15,23 @@
  *     -> Currently stubbed; will be implemented in the Tool Aggregation phase.
  */
 
-import type { ToolCall, ToolResult } from './types';
+import type { ToolCall, ToolResult } from './types'
 
 // ---------------------------------------------------------------------------
 // Debug logging
 // ---------------------------------------------------------------------------
 
-const DEBUG = import.meta.env.DEV;
+const DEBUG = import.meta.env.DEV
 
 function logToolCall(toolCall: ToolCall): void {
-  if (!DEBUG) return;
-  console.debug(
-    `[tool-router] call: ${toolCall.name} (${toolCall.id})`,
-    toolCall.arguments,
-  );
+  if (!DEBUG) return
+  console.debug(`[tool-router] call: ${toolCall.name} (${toolCall.id})`, toolCall.arguments)
 }
 
 function logToolResult(result: ToolResult): void {
-  if (!DEBUG) return;
-  const status = result.isError ? 'ERROR' : 'OK';
-  console.debug(
-    `[tool-router] result [${status}]: ${result.toolCallId}`,
-    result.content.slice(0, 200),
-  );
+  if (!DEBUG) return
+  const status = result.isError ? 'ERROR' : 'OK'
+  console.debug(`[tool-router] result [${status}]: ${result.toolCallId}`, result.content.slice(0, 200))
 }
 
 // ---------------------------------------------------------------------------
@@ -51,7 +45,7 @@ const CONTENT_TOOLS = new Set([
   'architecture',
   'security_policy',
   'onboarding',
-]);
+])
 
 // ---------------------------------------------------------------------------
 // Mock org context data
@@ -92,7 +86,7 @@ const MOCK_ORG_CONTEXT: Record<string, string> = {
     '- Feature branches are prefixed with feat/, bugfix/, or chore/.',
     '- Sprint cadence: 2-week sprints with planning on Mondays.',
   ].join('\n'),
-};
+}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -105,35 +99,35 @@ const MOCK_ORG_CONTEXT: Record<string, string> = {
  * rather than propagated, keeping the streaming loop intact.
  */
 export async function routeToolCall(toolCall: ToolCall): Promise<ToolResult> {
-  logToolCall(toolCall);
+  logToolCall(toolCall)
 
-  let result: ToolResult;
+  let result: ToolResult
 
   try {
     if (toolCall.name === 'org_context') {
-      result = await resolveOrgContext(toolCall);
+      result = await resolveOrgContext(toolCall)
     } else if (CONTENT_TOOLS.has(toolCall.name)) {
-      result = await resolveContentTool(toolCall);
+      result = await resolveContentTool(toolCall)
     } else if (toolCall.name === 'search' || toolCall.name === 'execute') {
-      result = await routeToMCP(toolCall);
+      result = await routeToMCP(toolCall)
     } else {
       result = {
         toolCallId: toolCall.id,
         content: `Unknown tool: ${toolCall.name}`,
         isError: true,
-      };
+      }
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const message = err instanceof Error ? err.message : String(err)
     result = {
       toolCallId: toolCall.id,
       content: `Tool execution failed: ${message}`,
       isError: true,
-    };
+    }
   }
 
-  logToolResult(result);
-  return result;
+  logToolResult(result)
+  return result
 }
 
 // ---------------------------------------------------------------------------
@@ -147,31 +141,31 @@ export async function routeToolCall(toolCall: ToolCall): Promise<ToolResult> {
  * or returns all available context when no topic is specified.
  */
 async function resolveOrgContext(toolCall: ToolCall): Promise<ToolResult> {
-  const topic = (toolCall.arguments.topic as string | undefined)?.toLowerCase();
+  const topic = (toolCall.arguments.topic as string | undefined)?.toLowerCase()
 
   if (topic && MOCK_ORG_CONTEXT[topic]) {
     return {
       toolCallId: toolCall.id,
       content: MOCK_ORG_CONTEXT[topic],
-    };
+    }
   }
 
   if (topic) {
     // Unknown topic — list available topics
-    const available = Object.keys(MOCK_ORG_CONTEXT).join(', ');
+    const available = Object.keys(MOCK_ORG_CONTEXT).join(', ')
     return {
       toolCallId: toolCall.id,
       content: `Topic "${topic}" not found. Available topics: ${available}`,
       isError: true,
-    };
+    }
   }
 
   // No topic — return all context
-  const allContext = Object.values(MOCK_ORG_CONTEXT).join('\n\n');
+  const allContext = Object.values(MOCK_ORG_CONTEXT).join('\n\n')
   return {
     toolCallId: toolCall.id,
     content: allContext,
-  };
+  }
 }
 
 /**
@@ -182,12 +176,12 @@ async function resolveContentTool(toolCall: ToolCall): Promise<ToolResult> {
   // TODO: Wire to WASM engine's ProxyEngine.resolve_content()
   // For now, return a stub that indicates the tool exists but
   // content resolution is not yet implemented.
-  const repo = (toolCall.arguments.repo as string) ?? 'default';
+  const repo = (toolCall.arguments.repo as string) ?? 'default'
 
   return {
     toolCallId: toolCall.id,
     content: `[${toolCall.name}] Content for repository "${repo}" will be resolved from the WASM engine manifest. This is a placeholder — the engine integration is pending.`,
-  };
+  }
 }
 
 /**
@@ -201,5 +195,5 @@ async function routeToMCP(toolCall: ToolCall): Promise<ToolResult> {
   return {
     toolCallId: toolCall.id,
     content: `[${toolCall.name}] MCP tool execution is not yet available. The Service Worker MCP proxy will be implemented in the Tool Aggregation phase.`,
-  };
+  }
 }

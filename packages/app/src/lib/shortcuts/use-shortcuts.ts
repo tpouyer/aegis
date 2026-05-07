@@ -6,8 +6,8 @@
  * to `shortcutRegistry.handleKeyDown()`.
  */
 
-import { useEffect } from 'react';
-import { shortcutRegistry } from './registry';
+import { useEffect } from 'react'
+import { shortcutRegistry } from './registry'
 
 /**
  * Attach keyboard shortcut handling for the given scope.
@@ -21,12 +21,12 @@ import { shortcutRegistry } from './registry';
 export function useShortcuts(scope: string): void {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      shortcutRegistry.handleKeyDown(event, scope);
+      shortcutRegistry.handleKeyDown(event, scope)
     }
 
-    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
-    };
-  }, [scope]);
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [scope])
 }

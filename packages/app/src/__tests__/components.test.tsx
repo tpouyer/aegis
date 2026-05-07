@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { Loading } from '@/components/shared/Loading'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+import { Loading } from '@/components/shared/Loading'
 
 describe('Loading', () => {
   it('renders the loading spinner', () => {

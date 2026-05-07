@@ -8,8 +8,8 @@
  * Add this component once in the root layout.
  */
 
-import { CheckCircle, XCircle, Info, X } from 'lucide-react';
-import { useToastStore, type ToastType } from '@/stores/toast';
+import { CheckCircle, Info, X, XCircle } from 'lucide-react'
+import { type ToastType, useToastStore } from '@/stores/toast'
 
 const typeStyles: Record<ToastType, { container: string; icon: string }> = {
   success: {
@@ -24,19 +24,19 @@ const typeStyles: Record<ToastType, { container: string; icon: string }> = {
     container: 'border-blue-500/30 bg-blue-50 dark:bg-blue-950/30',
     icon: 'text-blue-600 dark:text-blue-400',
   },
-};
+}
 
 const TypeIcon: Record<ToastType, typeof CheckCircle> = {
   success: CheckCircle,
   error: XCircle,
   info: Info,
-};
+}
 
 export function Toaster() {
-  const toasts = useToastStore((s) => s.toasts);
-  const removeToast = useToastStore((s) => s.removeToast);
+  const toasts = useToastStore((s) => s.toasts)
+  const removeToast = useToastStore((s) => s.removeToast)
 
-  if (toasts.length === 0) return null;
+  if (toasts.length === 0) return null
 
   return (
     <div
@@ -45,8 +45,8 @@ export function Toaster() {
       className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 md:max-w-[420px]"
     >
       {toasts.map((t) => {
-        const styles = typeStyles[t.type];
-        const Icon = TypeIcon[t.type];
+        const styles = typeStyles[t.type]
+        const Icon = TypeIcon[t.type]
 
         return (
           <div
@@ -57,11 +57,7 @@ export function Toaster() {
             <Icon className={`h-5 w-5 flex-shrink-0 mt-0.5 ${styles.icon}`} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground">{t.title}</p>
-              {t.description && (
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  {t.description}
-                </p>
-              )}
+              {t.description && <p className="mt-0.5 text-sm text-muted-foreground">{t.description}</p>}
             </div>
             <button
               type="button"
@@ -72,8 +68,8 @@ export function Toaster() {
               <X className="h-4 w-4" />
             </button>
           </div>
-        );
+        )
       })}
     </div>
-  );
+  )
 }

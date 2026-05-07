@@ -5,10 +5,10 @@
  * Expanding reveals the arguments passed and the result content.
  */
 
-import { useState, useCallback } from 'react'
 import { ChevronDown, ChevronRight, Wrench } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useCallback, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ToolCall, ToolResult as ToolResultType } from '@/lib/llm/types'
 
 interface ToolResultProps {
@@ -29,7 +29,12 @@ export function ToolResult({ toolCall, toolResult }: ToolResultProps) {
       <CardHeader
         className="cursor-pointer select-none p-3"
         onClick={toggle}
-        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } }}
+        onKeyDown={(e: React.KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            toggle()
+          }
+        }}
         role="button"
         tabIndex={0}
         aria-expanded={expanded}
@@ -55,23 +60,17 @@ export function ToolResult({ toolCall, toolResult }: ToolResultProps) {
         <CardContent className="px-3 pb-3 pt-0">
           <div className="space-y-2 text-xs">
             <div>
-              <span className="font-semibold text-muted-foreground">
-                Arguments:
-              </span>
+              <span className="font-semibold text-muted-foreground">Arguments:</span>
               <pre className="mt-1 overflow-x-auto rounded bg-muted p-2 text-muted-foreground">
                 {JSON.stringify(toolCall.arguments, null, 2)}
               </pre>
             </div>
             {toolResult && (
               <div>
-                <span className="font-semibold text-muted-foreground">
-                  Result:
-                </span>
+                <span className="font-semibold text-muted-foreground">Result:</span>
                 <pre
                   className={`mt-1 overflow-x-auto rounded p-2 ${
-                    isError
-                      ? 'bg-destructive/10 text-destructive'
-                      : 'bg-muted text-muted-foreground'
+                    isError ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground'
                   }`}
                 >
                   {toolResult.content}

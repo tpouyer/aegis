@@ -6,16 +6,10 @@
  * with platform-correct modifier symbols.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
-import { shortcutRegistry, isMac, parseKeyDescriptor } from '@/lib/shortcuts';
-import type { Shortcut } from '@/lib/shortcuts';
+import { useCallback, useEffect, useState } from 'react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import type { Shortcut } from '@/lib/shortcuts'
+import { isMac, parseKeyDescriptor, shortcutRegistry } from '@/lib/shortcuts'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -26,9 +20,9 @@ const SCOPE_LABELS: Record<string, string> = {
   board: 'Board',
   chat: 'Chat',
   ide: 'IDE',
-};
+}
 
-const SCOPE_ORDER: string[] = ['global', 'board', 'chat', 'ide'];
+const SCOPE_ORDER: string[] = ['global', 'board', 'chat', 'ide']
 
 /**
  * Render a key descriptor as a user-facing string with platform-correct
@@ -40,34 +34,34 @@ function formatKey(key: string): string {
     return key
       .split(' ')
       .map((k) => formatSingleKey(k))
-      .join(' then ');
+      .join(' then ')
   }
-  return formatSingleKey(key);
+  return formatSingleKey(key)
 }
 
 function formatSingleKey(descriptor: string): string {
-  const parsed = parseKeyDescriptor(descriptor);
-  const parts: string[] = [];
+  const parsed = parseKeyDescriptor(descriptor)
+  const parts: string[] = []
 
   if (parsed.mod) {
-    parts.push(isMac ? '⌘' : 'Ctrl');
+    parts.push(isMac ? '⌘' : 'Ctrl')
   }
   if (parsed.shift) {
-    parts.push(isMac ? '⇧' : 'Shift');
+    parts.push(isMac ? '⇧' : 'Shift')
   }
   if (parsed.alt) {
-    parts.push(isMac ? '⌥' : 'Alt');
+    parts.push(isMac ? '⌥' : 'Alt')
   }
 
   // Capitalise the key name for display
-  const keyName = parsed.key.length === 1 ? parsed.key.toUpperCase() : capitalise(parsed.key);
-  parts.push(keyName);
+  const keyName = parsed.key.length === 1 ? parsed.key.toUpperCase() : capitalise(parsed.key)
+  parts.push(keyName)
 
-  return parts.join(isMac ? '' : '+');
+  return parts.join(isMac ? '' : '+')
 }
 
 function capitalise(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 // ---------------------------------------------------------------------------
@@ -75,7 +69,7 @@ function capitalise(s: string): string {
 // ---------------------------------------------------------------------------
 
 export function ShortcutHelp() {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
 
   // Register the `?` shortcut to open this overlay
   useEffect(() => {
@@ -84,23 +78,23 @@ export function ShortcutHelp() {
       scope: 'global',
       description: 'Show keyboard shortcuts',
       action: () => setOpen(true),
-    });
-    return unregister;
-  }, []);
+    })
+    return unregister
+  }, [])
 
   const handleOpenChange = useCallback((value: boolean) => {
-    setOpen(value);
-  }, []);
+    setOpen(value)
+  }, [])
 
   // Group shortcuts by scope
-  const allShortcuts = shortcutRegistry.getShortcuts();
-  const grouped = new Map<string, Shortcut[]>();
+  const allShortcuts = shortcutRegistry.getShortcuts()
+  const grouped = new Map<string, Shortcut[]>()
 
   for (const shortcut of allShortcuts) {
     // Skip the "?" shortcut itself from the listing to avoid redundancy
-    const existing = grouped.get(shortcut.scope) ?? [];
-    existing.push(shortcut);
-    grouped.set(shortcut.scope, existing);
+    const existing = grouped.get(shortcut.scope) ?? []
+    existing.push(shortcut)
+    grouped.set(shortcut.scope, existing)
   }
 
   return (
@@ -109,15 +103,15 @@ export function ShortcutHelp() {
         <DialogHeader>
           <DialogTitle>Keyboard Shortcuts</DialogTitle>
           <DialogDescription>
-            Press <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-mono">?</kbd>{' '}
-            anytime to show this reference.
+            Press <kbd className="rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-mono">?</kbd> anytime
+            to show this reference.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 pt-2">
           {SCOPE_ORDER.map((scope) => {
-            const shortcuts = grouped.get(scope);
-            if (!shortcuts || shortcuts.length === 0) return null;
+            const shortcuts = grouped.get(scope)
+            if (!shortcuts || shortcuts.length === 0) return null
 
             return (
               <div key={scope}>
@@ -130,9 +124,7 @@ export function ShortcutHelp() {
                       key={`${shortcut.key}-${idx}`}
                       className="flex items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-accent/50"
                     >
-                      <span className="text-foreground">
-                        {shortcut.description}
-                      </span>
+                      <span className="text-foreground">{shortcut.description}</span>
                       <kbd className="ml-4 shrink-0 rounded border border-border bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
                         {formatKey(shortcut.key)}
                       </kbd>
@@ -140,10 +132,10 @@ export function ShortcutHelp() {
                   ))}
                 </ul>
               </div>
-            );
+            )
           })}
         </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

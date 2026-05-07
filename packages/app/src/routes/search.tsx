@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { Search as SearchIcon } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Input } from '@/components/ui/input'
 
 export const Route = createFileRoute('/search')({
@@ -8,7 +8,9 @@ export const Route = createFileRoute('/search')({
 })
 
 function SearchPage() {
-  useEffect(() => { document.title = 'Search — Aegis' }, [])
+  useEffect(() => {
+    document.title = 'Search — Aegis'
+  }, [])
   const [query, setQuery] = useState('')
 
   // Since Jira client may not be initialized, show a placeholder search UI
@@ -38,13 +40,9 @@ function SearchPage() {
 
       {/* Results area - placeholder for now since JiraClient search needs to be connected */}
       {query.length > 0 ? (
-        <div className="text-center py-12 text-sm text-muted-foreground">
-          Connect to Jira to search issues
-        </div>
+        <div className="text-center py-12 text-sm text-muted-foreground">Connect to Jira to search issues</div>
       ) : (
-        <div className="text-center py-12 text-sm text-muted-foreground">
-          Type to search across all Jira issues
-        </div>
+        <div className="text-center py-12 text-sm text-muted-foreground">Type to search across all Jira issues</div>
       )}
     </div>
   )

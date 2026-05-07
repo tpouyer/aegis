@@ -12,9 +12,9 @@
 
 export interface JiraConfig {
   /** Base URL for the Jira Cloud instance, e.g. https://your-domain.atlassian.net */
-  baseUrl: string;
+  baseUrl: string
   /** Atlassian Cloud site ID (resolved after OAuth) */
-  cloudId: string;
+  cloudId: string
 }
 
 // ---------------------------------------------------------------------------
@@ -22,58 +22,58 @@ export interface JiraConfig {
 // ---------------------------------------------------------------------------
 
 export interface JiraUser {
-  accountId: string;
-  displayName: string;
-  emailAddress?: string;
+  accountId: string
+  displayName: string
+  emailAddress?: string
   avatarUrls: {
-    '48x48': string;
-    '32x32': string;
-    '24x24': string;
-    '16x16': string;
-  };
-  active: boolean;
+    '48x48': string
+    '32x32': string
+    '24x24': string
+    '16x16': string
+  }
+  active: boolean
 }
 
 export interface JiraStatus {
-  id: string;
-  name: string;
-  description?: string;
+  id: string
+  name: string
+  description?: string
   statusCategory: {
-    id: number;
-    key: string; // 'new' | 'indeterminate' | 'done'
-    name: string;
-    colorName: string;
-  };
+    id: number
+    key: string // 'new' | 'indeterminate' | 'done'
+    name: string
+    colorName: string
+  }
 }
 
 export interface JiraPriority {
-  id: string;
-  name: string;
-  iconUrl: string;
+  id: string
+  name: string
+  iconUrl: string
 }
 
 export interface JiraIssueType {
-  id: string;
-  name: string;
-  description?: string;
-  iconUrl: string;
-  subtask: boolean;
+  id: string
+  name: string
+  description?: string
+  iconUrl: string
+  subtask: boolean
 }
 
 export interface JiraComponent {
-  id: string;
-  name: string;
-  description?: string;
+  id: string
+  name: string
+  description?: string
 }
 
 export interface JiraSprint {
-  id: number;
-  name: string;
-  state: 'active' | 'closed' | 'future';
-  startDate?: string;
-  endDate?: string;
-  completeDate?: string;
-  goal?: string;
+  id: number
+  name: string
+  state: 'active' | 'closed' | 'future'
+  startDate?: string
+  endDate?: string
+  completeDate?: string
+  goal?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -81,65 +81,65 @@ export interface JiraSprint {
 // ---------------------------------------------------------------------------
 
 export interface JiraIssueLink {
-  id: string;
+  id: string
   type: {
-    id: string;
-    name: string;
-    inward: string;
-    outward: string;
-  };
-  inwardIssue?: JiraIssueSummary;
-  outwardIssue?: JiraIssueSummary;
+    id: string
+    name: string
+    inward: string
+    outward: string
+  }
+  inwardIssue?: JiraIssueSummary
+  outwardIssue?: JiraIssueSummary
 }
 
 export interface JiraIssueSummary {
-  id: string;
-  key: string;
+  id: string
+  key: string
   fields: {
-    summary: string;
-    status: JiraStatus;
-    priority: JiraPriority;
-    issuetype: JiraIssueType;
-  };
+    summary: string
+    status: JiraStatus
+    priority: JiraPriority
+    issuetype: JiraIssueType
+  }
 }
 
 export interface JiraComment {
-  id: string;
-  author: JiraUser;
-  body: unknown; // Atlassian Document Format (ADF)
-  created: string;
-  updated: string;
+  id: string
+  author: JiraUser
+  body: unknown // Atlassian Document Format (ADF)
+  created: string
+  updated: string
 }
 
 export interface JiraIssue {
-  id: string;
-  key: string;
-  self: string;
+  id: string
+  key: string
+  self: string
   fields: {
-    summary: string;
-    description: unknown | null; // ADF or null
-    status: JiraStatus;
-    priority: JiraPriority;
-    issuetype: JiraIssueType;
-    assignee: JiraUser | null;
-    reporter: JiraUser | null;
-    components: JiraComponent[];
-    labels: string[];
-    created: string;
-    updated: string;
+    summary: string
+    description: unknown | null // ADF or null
+    status: JiraStatus
+    priority: JiraPriority
+    issuetype: JiraIssueType
+    assignee: JiraUser | null
+    reporter: JiraUser | null
+    components: JiraComponent[]
+    labels: string[]
+    created: string
+    updated: string
     /** Story points — custom field, varies by instance */
-    [storyPointField: `customfield_${string}`]: number | null | undefined;
-    fixVersions?: Array<{ id: string; name: string; released: boolean }>;
-    sprint?: JiraSprint | null;
-    subtasks?: JiraIssueSummary[];
-    issuelinks?: JiraIssueLink[];
+    [storyPointField: `customfield_${string}`]: number | null | undefined
+    fixVersions?: Array<{ id: string; name: string; released: boolean }>
+    sprint?: JiraSprint | null
+    subtasks?: JiraIssueSummary[]
+    issuelinks?: JiraIssueLink[]
     comment?: {
-      comments: JiraComment[];
-      total: number;
-    };
+      comments: JiraComment[]
+      total: number
+    }
     /** Acceptance criteria — often a custom field or stored in description */
-    [acceptanceCriteriaField: string]: unknown;
-  };
+    [acceptanceCriteriaField: string]: unknown
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -147,28 +147,28 @@ export interface JiraIssue {
 // ---------------------------------------------------------------------------
 
 export interface JiraBoard {
-  id: number;
-  name: string;
-  type: 'kanban' | 'scrum' | 'simple';
-  self: string;
+  id: number
+  name: string
+  type: 'kanban' | 'scrum' | 'simple'
+  self: string
   location?: {
-    projectId: number;
-    projectKey: string;
-    projectName: string;
-  };
+    projectId: number
+    projectKey: string
+    projectName: string
+  }
 }
 
 export interface JiraBoardColumn {
-  name: string;
-  statuses: Array<{ id: string; self: string }>;
+  name: string
+  statuses: Array<{ id: string; self: string }>
 }
 
 export interface JiraBoardConfig {
-  id: number;
-  name: string;
+  id: number
+  name: string
   columnConfig: {
-    columns: JiraBoardColumn[];
-  };
+    columns: JiraBoardColumn[]
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -176,21 +176,21 @@ export interface JiraBoardConfig {
 // ---------------------------------------------------------------------------
 
 export interface JiraTransition {
-  id: string;
-  name: string;
-  to: JiraStatus;
-  hasScreen: boolean;
-  isGlobal: boolean;
-  isInitial: boolean;
-  isConditional: boolean;
-  fields?: Record<string, JiraTransitionField>;
+  id: string
+  name: string
+  to: JiraStatus
+  hasScreen: boolean
+  isGlobal: boolean
+  isInitial: boolean
+  isConditional: boolean
+  fields?: Record<string, JiraTransitionField>
 }
 
 export interface JiraTransitionField {
-  required: boolean;
-  name: string;
-  fieldId: string;
-  allowedValues?: Array<{ id: string; name: string }>;
+  required: boolean
+  name: string
+  fieldId: string
+  allowedValues?: Array<{ id: string; name: string }>
 }
 
 // ---------------------------------------------------------------------------
@@ -198,21 +198,21 @@ export interface JiraTransitionField {
 // ---------------------------------------------------------------------------
 
 export interface JiraPaginatedResponse<T> {
-  startAt: number;
-  maxResults: number;
-  total: number;
-  values: T[];
+  startAt: number
+  maxResults: number
+  total: number
+  values: T[]
 }
 
 export interface JiraSearchResponse {
-  startAt: number;
-  maxResults: number;
-  total: number;
-  issues: JiraIssue[];
+  startAt: number
+  maxResults: number
+  total: number
+  issues: JiraIssue[]
 }
 
 export interface JiraTransitionsResponse {
-  transitions: JiraTransition[];
+  transitions: JiraTransition[]
 }
 
 // ---------------------------------------------------------------------------
@@ -220,15 +220,15 @@ export interface JiraTransitionsResponse {
 // ---------------------------------------------------------------------------
 
 export interface BoardColumn {
-  name: string;
-  statusIds: string[];
-  issues: JiraIssue[];
+  name: string
+  statusIds: string[]
+  issues: JiraIssue[]
 }
 
 export interface BoardFilters {
-  assignee: string | null;
-  component: string | null;
-  priority: string | null;
-  text: string | null;
-  issueType: string | null;
+  assignee: string | null
+  component: string | null
+  priority: string | null
+  text: string | null
+  issueType: string | null
 }

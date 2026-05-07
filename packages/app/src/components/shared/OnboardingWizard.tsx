@@ -1,5 +1,7 @@
+import { Bot, Check, ChevronRight, Github, Globe, KeyRound, SkipForward } from 'lucide-react'
 import { useCallback, useState } from 'react'
-import { Github, KeyRound, Globe, Bot, Check, ChevronRight, SkipForward } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -8,15 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { initiateAtlassianAuth } from '@/lib/auth/atlassian'
+import { getAtlassianConfig, getGitHubConfig, getGoogleConfig } from '@/lib/auth/config'
+import { initiateGitHubAuth } from '@/lib/auth/github'
+import { initiateGoogleAuth } from '@/lib/auth/google'
 import { authManager } from '@/lib/auth/manager'
 import { AuthLevel } from '@/lib/auth/types'
-import { initiateGitHubAuth } from '@/lib/auth/github'
-import { initiateAtlassianAuth } from '@/lib/auth/atlassian'
-import { initiateGoogleAuth } from '@/lib/auth/google'
-import { getGitHubConfig, getAtlassianConfig, getGoogleConfig } from '@/lib/auth/config'
 
 interface OnboardingWizardProps {
   open: boolean
@@ -50,29 +50,26 @@ function StepDescription({ step }: { step: Step }) {
     case 'github':
       return (
         <p className="text-sm text-muted-foreground">
-          Connect your GitHub account to access repositories, create branches,
-          and manage pull requests directly from Aegis.
+          Connect your GitHub account to access repositories, create branches, and manage pull requests directly from
+          Aegis.
         </p>
       )
     case 'atlassian':
       return (
         <p className="text-sm text-muted-foreground">
-          Link your Atlassian account to sync Jira boards and access
-          Confluence documentation. This step is optional.
+          Link your Atlassian account to sync Jira boards and access Confluence documentation. This step is optional.
         </p>
       )
     case 'google':
       return (
         <p className="text-sm text-muted-foreground">
-          Connect your Google account to enable Vertex AI models. This step is
-          available only for Red Hat employees.
+          Connect your Google account to enable Vertex AI models. This step is available only for Red Hat employees.
         </p>
       )
     case 'llm':
       return (
         <p className="text-sm text-muted-foreground">
-          Select which AI provider and model to use for chat assistance. You can
-          change this later in Settings.
+          Select which AI provider and model to use for chat assistance. You can change this later in Settings.
         </p>
       )
   }
@@ -84,9 +81,7 @@ export function OnboardingWizard({ open, onOpenChange }: OnboardingWizardProps) 
 
   const isRHEmployee = authManager.getAuthLevel() === AuthLevel.RedHatSSO
 
-  const visibleSteps = STEPS.filter(
-    (step) => !step.rhOnly || isRHEmployee,
-  )
+  const visibleSteps = STEPS.filter((step) => !step.rhOnly || isRHEmployee)
 
   const currentStep = visibleSteps[currentStepIndex]
   const isLastStep = currentStepIndex === visibleSteps.length - 1
@@ -155,11 +150,7 @@ export function OnboardingWizard({ open, onOpenChange }: OnboardingWizardProps) 
             <div
               key={step.id}
               className={`h-1.5 flex-1 rounded-full transition-colors ${
-                index < currentStepIndex
-                  ? 'bg-primary'
-                  : index === currentStepIndex
-                    ? 'bg-primary/60'
-                    : 'bg-muted'
+                index < currentStepIndex ? 'bg-primary' : index === currentStepIndex ? 'bg-primary/60' : 'bg-muted'
               }`}
             />
           ))}
@@ -188,9 +179,7 @@ export function OnboardingWizard({ open, onOpenChange }: OnboardingWizardProps) 
           {isStepComplete ? (
             <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-900 dark:bg-green-950">
               <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <p className="text-sm text-green-700 dark:text-green-300">
-                {currentStep.label} connected successfully
-              </p>
+              <p className="text-sm text-green-700 dark:text-green-300">{currentStep.label} connected successfully</p>
             </div>
           ) : (
             <Button className="w-full" onClick={handleConnect}>
@@ -209,11 +198,7 @@ export function OnboardingWizard({ open, onOpenChange }: OnboardingWizardProps) 
           ) : (
             <div />
           )}
-          <Button
-            variant={isLastStep ? 'default' : 'outline'}
-            size="sm"
-            onClick={handleNext}
-          >
+          <Button variant={isLastStep ? 'default' : 'outline'} size="sm" onClick={handleNext}>
             {isLastStep ? 'Finish' : 'Next'}
             {!isLastStep && <ChevronRight className="ml-1 h-3.5 w-3.5" />}
           </Button>

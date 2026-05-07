@@ -6,19 +6,19 @@
  * IssueCard components.
  */
 
-import { Droppable } from '@hello-pangea/dnd';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import { IssueCard } from './Card';
-import type { JiraIssue } from '@/lib/jira/types';
+import { Droppable } from '@hello-pangea/dnd'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import type { JiraIssue } from '@/lib/jira/types'
+import { IssueCard } from './Card'
 
 interface ColumnProps {
-  columnId: string;
-  name: string;
-  issues: JiraIssue[];
-  onCardClick?: (issueKey: string) => void;
-  focusedGlobalIndex?: number;
-  startIndex?: number;
+  columnId: string
+  name: string
+  issues: JiraIssue[]
+  onCardClick?: (issueKey: string) => void
+  focusedGlobalIndex?: number
+  startIndex?: number
 }
 
 export function Column({ columnId, name, issues, onCardClick, focusedGlobalIndex = -1, startIndex = 0 }: ColumnProps) {
@@ -41,9 +41,7 @@ export function Column({ columnId, name, issues, onCardClick, focusedGlobalIndex
               {...provided.droppableProps}
               aria-label={`${name} column, ${issues.length} issues`}
               className={`min-h-[120px] p-2 transition-colors ${
-                snapshot.isDraggingOver
-                  ? 'bg-primary/5 ring-1 ring-inset ring-primary/20'
-                  : ''
+                snapshot.isDraggingOver ? 'bg-primary/5 ring-1 ring-inset ring-primary/20' : ''
               }`}
             >
               {issues.map((issue, index) => (
@@ -59,14 +57,12 @@ export function Column({ columnId, name, issues, onCardClick, focusedGlobalIndex
 
               {/* Empty state */}
               {issues.length === 0 && !snapshot.isDraggingOver && (
-                <p className="py-8 text-center text-xs text-muted-foreground">
-                  No issues
-                </p>
+                <p className="py-8 text-center text-xs text-muted-foreground">No issues</p>
               )}
             </div>
           </ScrollArea>
         )}
       </Droppable>
     </div>
-  );
+  )
 }

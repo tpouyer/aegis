@@ -13,6 +13,11 @@
     "test": "npm run test:engine && npm run test:app",
     "test:engine": "cd packages/engine && cargo test",
     "test:app": "npm run test --workspace=packages/app",
-    "lint": "npm run lint --workspace=packages/app"
+    "lint": "npm run lint --workspace=packages/app",
+    "lint:biome": "biome check packages/app/src/",
+    "format": "biome format --write packages/app/src/"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.14"
   }
 }

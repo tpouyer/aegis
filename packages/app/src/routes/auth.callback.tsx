@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react'
-import { handleGitHubCallback } from '@/lib/auth/github'
+import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { handleAtlassianCallback } from '@/lib/auth/atlassian'
-import { handleRedHatCallback } from '@/lib/auth/redhat-sso'
+import { getAtlassianConfig, getGitHubConfig, getGoogleConfig, getRedHatConfig } from '@/lib/auth/config'
+import { handleGitHubCallback } from '@/lib/auth/github'
 import { handleGoogleCallback } from '@/lib/auth/google'
-import { getGitHubConfig, getAtlassianConfig, getRedHatConfig, getGoogleConfig } from '@/lib/auth/config'
 import { authManager } from '@/lib/auth/manager'
-import { toast } from '@/stores/toast'
+import { handleRedHatCallback } from '@/lib/auth/redhat-sso'
 import type { AuthProvider, TokenSet } from '@/lib/auth/types'
+import { toast } from '@/stores/toast'
 
 export const Route = createFileRoute('/auth/callback')({
   component: AuthCallbackPage,

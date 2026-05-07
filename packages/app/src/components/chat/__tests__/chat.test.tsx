@@ -8,12 +8,12 @@
  *   - Message list renders user and assistant messages differently
  */
 
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { useChatStore, exportChatAsMarkdown } from '@/stores/chat'
-import type { ChatSession } from '@/stores/chat'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { routeToolCall } from '@/lib/llm/tool-router'
 import type { ChatMessage, ToolCall } from '@/lib/llm/types'
+import type { ChatSession } from '@/stores/chat'
+import { exportChatAsMarkdown, useChatStore } from '@/stores/chat'
 import { MessageList } from '../MessageList'
 
 // ---------------------------------------------------------------------------
@@ -137,9 +137,7 @@ describe('exportChatAsMarkdown', () => {
           id: 'a2',
           role: 'assistant',
           content: '',
-          toolCalls: [
-            { id: 'tc-err', name: 'unknown_tool', arguments: {} },
-          ],
+          toolCalls: [{ id: 'tc-err', name: 'unknown_tool', arguments: {} }],
           toolResults: [
             {
               toolCallId: 'tc-err',
@@ -183,16 +181,12 @@ describe('model switching', () => {
   })
 
   it('preserves conversation history when switching models', () => {
-    const { createSession: create, addMessage, switchModel } =
-      useChatStore.getState()
+    const { createSession: create, addMessage, switchModel } = useChatStore.getState()
 
     create('SWITCH-2', 'anthropic', 'claude-sonnet-4-6')
 
     addMessage('SWITCH-2', createMessage({ id: 'u1', role: 'user', content: 'Hello' }))
-    addMessage(
-      'SWITCH-2',
-      createMessage({ id: 'a1', role: 'assistant', content: 'Hi there' }),
-    )
+    addMessage('SWITCH-2', createMessage({ id: 'a1', role: 'assistant', content: 'Hi there' }))
 
     switchModel('SWITCH-2', 'gpt-4o')
 
@@ -323,19 +317,13 @@ vi.mock('remark-gfm', () => ({
 describe('MessageList', () => {
   it('renders empty state when there are no messages', () => {
     render(<MessageList messages={[]} isStreaming={false} />)
-    expect(
-      screen.getByText('Start a conversation to get AI assistance with this issue.'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Start a conversation to get AI assistance with this issue.')).toBeInTheDocument()
   })
 
   it('renders user messages with right alignment', () => {
-    const messages: ChatMessage[] = [
-      createMessage({ id: 'u1', role: 'user', content: 'User message here' }),
-    ]
+    const messages: ChatMessage[] = [createMessage({ id: 'u1', role: 'user', content: 'User message here' })]
 
-    const { container } = render(
-      <MessageList messages={messages} isStreaming={false} />,
-    )
+    const { container } = render(<MessageList messages={messages} isStreaming={false} />)
 
     // User messages are wrapped in a div with justify-end
     const bubble = container.querySelector('.justify-end')
@@ -352,9 +340,7 @@ describe('MessageList', () => {
       }),
     ]
 
-    const { container } = render(
-      <MessageList messages={messages} isStreaming={false} />,
-    )
+    const { container } = render(<MessageList messages={messages} isStreaming={false} />)
 
     // Assistant messages are wrapped in a div with justify-start
     const bubble = container.querySelector('.justify-start')
@@ -368,9 +354,7 @@ describe('MessageList', () => {
       createMessage({ id: 'a1', role: 'assistant', content: 'From assistant' }),
     ]
 
-    const { container } = render(
-      <MessageList messages={messages} isStreaming={false} />,
-    )
+    const { container } = render(<MessageList messages={messages} isStreaming={false} />)
 
     // User bubble has bg-primary class
     const userBubble = container.querySelector('.bg-primary')
@@ -382,9 +366,7 @@ describe('MessageList', () => {
   })
 
   it('shows streaming indicator when isStreaming is true', () => {
-    const messages: ChatMessage[] = [
-      createMessage({ id: 'a1', role: 'assistant', content: 'Thinking...' }),
-    ]
+    const messages: ChatMessage[] = [createMessage({ id: 'a1', role: 'assistant', content: 'Thinking...' })]
 
     render(<MessageList messages={messages} isStreaming={true} />)
 
@@ -392,9 +374,7 @@ describe('MessageList', () => {
   })
 
   it('does not show streaming indicator when isStreaming is false', () => {
-    const messages: ChatMessage[] = [
-      createMessage({ id: 'a1', role: 'assistant', content: 'Done.' }),
-    ]
+    const messages: ChatMessage[] = [createMessage({ id: 'a1', role: 'assistant', content: 'Done.' })]
 
     render(<MessageList messages={messages} isStreaming={false} />)
 

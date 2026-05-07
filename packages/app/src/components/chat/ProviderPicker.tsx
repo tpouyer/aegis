@@ -5,35 +5,26 @@
  * API key / endpoint input, and a test connection button.
  */
 
+import { CheckCircle, Cloud, Cpu, Globe, Loader2, Server, Settings2, XCircle } from 'lucide-react'
 import { useCallback, useState } from 'react'
-import {
-  Cloud,
-  Server,
-  Globe,
-  Cpu,
-  Settings2,
-  CheckCircle,
-  XCircle,
-  Loader2,
-} from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
+import { sendTokenToSW } from '@/lib/auth/sw-bridge'
 import { providerRegistry } from '@/lib/llm/provider-registry'
 import { AnthropicProvider } from '@/lib/llm/providers/anthropic'
-import { OpenAIProvider } from '@/lib/llm/providers/openai'
-import { OllamaProvider } from '@/lib/llm/providers/ollama'
 import { CustomProvider } from '@/lib/llm/providers/custom'
-import { sendTokenToSW } from '@/lib/auth/sw-bridge'
+import { OllamaProvider } from '@/lib/llm/providers/ollama'
+import { OpenAIProvider } from '@/lib/llm/providers/openai'
+import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
 // Provider descriptors
@@ -75,8 +66,7 @@ const PROVIDER_OPTIONS: ProviderOption[] = [
   {
     id: 'ollama',
     name: 'Ollama (Local)',
-    description:
-      'Free, local inference. No API key required. Models auto-detected.',
+    description: 'Free, local inference. No API key required. Models auto-detected.',
     icon: <Cpu className="h-5 w-5" />,
     toolUse: false,
     streaming: true,
@@ -87,8 +77,7 @@ const PROVIDER_OPTIONS: ProviderOption[] = [
   {
     id: 'custom',
     name: 'Custom Endpoint',
-    description:
-      'Any OpenAI-compatible API (vLLM, text-generation-inference, etc.).',
+    description: 'Any OpenAI-compatible API (vLLM, text-generation-inference, etc.).',
     icon: <Settings2 className="h-5 w-5" />,
     toolUse: false,
     streaming: true,
@@ -107,19 +96,13 @@ interface ProviderPickerProps {
   onProviderSelected: (providerId: string) => void
 }
 
-export function ProviderPicker({
-  open,
-  onOpenChange,
-  onProviderSelected,
-}: ProviderPickerProps) {
+export function ProviderPicker({ open, onOpenChange, onProviderSelected }: ProviderPickerProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [apiKey, setApiKey] = useState('')
   const [endpoint, setEndpoint] = useState('')
   const [model, setModel] = useState('')
   const [testing, setTesting] = useState(false)
-  const [testResult, setTestResult] = useState<
-    'success' | 'error' | null
-  >(null)
+  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
   const [testError, setTestError] = useState('')
 
   const selected = PROVIDER_OPTIONS.find((p) => p.id === selectedId)
@@ -198,19 +181,25 @@ export function ProviderPicker({
     if (!selected) return
 
     if (apiKey && (selected.id === 'anthropic' || selected.id === 'openai' || selected.id === 'custom')) {
-      await sendTokenToSW(selected.id as 'github', {
-        accessToken: apiKey,
-        expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
-        provider: selected.id as 'github',
-        endpoint: selected.id === 'custom' ? endpoint : undefined,
-      } as any);
+      await sendTokenToSW(
+        selected.id as 'github',
+        {
+          accessToken: apiKey,
+          expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+          provider: selected.id as 'github',
+          endpoint: selected.id === 'custom' ? endpoint : undefined,
+        } as any,
+      )
     } else if (selected.id === 'ollama') {
-      await sendTokenToSW('github' as any, {
-        accessToken: '',
-        expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
-        provider: 'ollama' as any,
-        endpoint,
-      } as any);
+      await sendTokenToSW(
+        'github' as any,
+        {
+          accessToken: '',
+          expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+          provider: 'ollama' as any,
+          endpoint,
+        } as any,
+      )
     }
 
     switch (selected.id) {
@@ -239,9 +228,7 @@ export function ProviderPicker({
   }, [selected, apiKey, endpoint, model, onProviderSelected, onOpenChange])
 
   const canSave =
-    selected &&
-    (!selected.requiresApiKey || apiKey.trim()) &&
-    (!selected.requiresEndpoint || endpoint.trim())
+    selected && (!selected.requiresApiKey || apiKey.trim()) && (!selected.requiresEndpoint || endpoint.trim())
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -249,8 +236,8 @@ export function ProviderPicker({
         <DialogHeader>
           <DialogTitle>Configure LLM Provider</DialogTitle>
           <DialogDescription>
-            Choose an AI provider for chat assistance. Your API key is stored
-            securely and never sent through Aegis servers.
+            Choose an AI provider for chat assistance. Your API key is stored securely and never sent through Aegis
+            servers.
           </DialogDescription>
         </DialogHeader>
 
@@ -262,9 +249,7 @@ export function ProviderPicker({
               onClick={() => handleSelect(option.id)}
               className={cn(
                 'flex items-start gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent',
-                selectedId === option.id
-                  ? 'border-primary bg-accent'
-                  : 'border-border',
+                selectedId === option.id ? 'border-primary bg-accent' : 'border-border',
               )}
             >
               <div className="mt-0.5 text-muted-foreground">{option.icon}</div>
@@ -282,13 +267,9 @@ export function ProviderPicker({
                     </Badge>
                   )}
                 </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {option.description}
-                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{option.description}</p>
               </div>
-              {selectedId === option.id && (
-                <Server className="mt-0.5 h-4 w-4 text-primary" />
-              )}
+              {selectedId === option.id && <Server className="mt-0.5 h-4 w-4 text-primary" />}
             </button>
           ))}
         </div>
@@ -298,9 +279,7 @@ export function ProviderPicker({
           <div className="space-y-3 border-t border-border pt-3">
             {selected.requiresApiKey && (
               <div>
-                <label className="mb-1 block text-sm font-medium">
-                  API Key
-                </label>
+                <label className="mb-1 block text-sm font-medium">API Key</label>
                 <Input
                   type="password"
                   placeholder="sk-..."
@@ -311,9 +290,7 @@ export function ProviderPicker({
             )}
             {selected.requiresEndpoint && (
               <div>
-                <label className="mb-1 block text-sm font-medium">
-                  Endpoint URL
-                </label>
+                <label className="mb-1 block text-sm font-medium">Endpoint URL</label>
                 <Input
                   type="url"
                   placeholder="http://localhost:11434"
@@ -324,25 +301,14 @@ export function ProviderPicker({
             )}
             {selected.id === 'custom' && (
               <div>
-                <label className="mb-1 block text-sm font-medium">
-                  Model Name
-                </label>
-                <Input
-                  placeholder="my-model"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                />
+                <label className="mb-1 block text-sm font-medium">Model Name</label>
+                <Input placeholder="my-model" value={model} onChange={(e) => setModel(e.target.value)} />
               </div>
             )}
 
             {/* Test connection */}
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTestConnection}
-                disabled={testing || !canSave}
-              >
+              <Button variant="outline" size="sm" onClick={handleTestConnection} disabled={testing || !canSave}>
                 {testing && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                 Test Connection
               </Button>

@@ -1,4 +1,4 @@
-import type { PersonaRole } from '@/stores/persona';
+import type { PersonaRole } from '@/stores/persona'
 
 const PROMPTS: Record<PersonaRole, string[]> = {
   developer: [
@@ -37,7 +37,7 @@ const PROMPTS: Record<PersonaRole, string[]> = {
     'How many customers are affected by this?',
     'What is the expected fix timeline?',
   ],
-};
+}
 
 const GENERAL_PROMPTS: Record<PersonaRole, string[]> = {
   developer: [
@@ -76,10 +76,10 @@ const GENERAL_PROMPTS: Record<PersonaRole, string[]> = {
     'Check the status of a customer escalation',
     'What was fixed in the latest release?',
   ],
-};
+}
 
 export function getSuggestedPrompts(role: PersonaRole, issueKey?: string): string[] {
-  return issueKey ? PROMPTS[role] : GENERAL_PROMPTS[role];
+  return issueKey ? PROMPTS[role] : GENERAL_PROMPTS[role]
 }
 
 export const PERSONA_SYSTEM_DESCRIPTIONS: Record<PersonaRole, string> = {
@@ -89,4 +89,4 @@ export const PERSONA_SYSTEM_DESCRIPTIONS: Record<PersonaRole, string> = {
   architect: 'Focus on design patterns, system coupling, scalability, and cross-cutting concerns.',
   manager: 'Focus on team capacity, blockers, progress tracking, and risk assessment.',
   support: 'Focus on customer impact, workarounds, fix timelines, and communication.',
-};
+}

@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { createElement } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -48,8 +48,7 @@ vi.mock('@/lib/auth/manager', () => ({
 const mockRecentIssues = vi.fn().mockReturnValue([])
 
 vi.mock('@/stores/recent', () => ({
-  useRecentStore: (selector: (s: { issues: unknown[] }) => unknown) =>
-    selector({ issues: mockRecentIssues() }),
+  useRecentStore: (selector: (s: { issues: unknown[] }) => unknown) => selector({ issues: mockRecentIssues() }),
 }))
 
 // Import the module to capture the component
@@ -93,16 +92,12 @@ describe('Landing Page', () => {
 
     it('renders the tagline', () => {
       renderLanding()
-      expect(
-        screen.getByText('Guard your workflow, ship with confidence.'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Guard your workflow, ship with confidence.')).toBeInTheDocument()
     })
 
     it('renders "Zero-infrastructure development platform"', () => {
       renderLanding()
-      expect(
-        screen.getByText('Zero-infrastructure development platform'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Zero-infrastructure development platform')).toBeInTheDocument()
     })
   })
 
@@ -123,15 +118,9 @@ describe('Landing Page', () => {
     it('shows feature descriptions', () => {
       renderLanding()
 
-      expect(
-        screen.getByText('Jira-backed boards with drag-and-drop transitions'),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByText("Context-aware AI with your team's conventions"),
-      ).toBeInTheDocument()
-      expect(
-        screen.getByText('Browser-based editing with branch management'),
-      ).toBeInTheDocument()
+      expect(screen.getByText('Jira-backed boards with drag-and-drop transitions')).toBeInTheDocument()
+      expect(screen.getByText("Context-aware AI with your team's conventions")).toBeInTheDocument()
+      expect(screen.getByText('Browser-based editing with branch management')).toBeInTheDocument()
     })
 
     it('can toggle About section', () => {
@@ -294,9 +283,7 @@ describe('Landing Page', () => {
         tokens: { github: { accessToken: 'x', expiresAt: Date.now() + 3600_000, provider: 'github' } },
         isAuthenticated: true,
       })
-      mockRecentIssues.mockReturnValue([
-        { key: 'PROJ-1', summary: 'Test', lastVisited: Date.now(), lastView: 'chat' },
-      ])
+      mockRecentIssues.mockReturnValue([{ key: 'PROJ-1', summary: 'Test', lastVisited: Date.now(), lastView: 'chat' }])
 
       renderLanding()
 
@@ -310,9 +297,7 @@ describe('Landing Page', () => {
         tokens: { github: { accessToken: 'x', expiresAt: Date.now() + 3600_000, provider: 'github' } },
         isAuthenticated: true,
       })
-      mockRecentIssues.mockReturnValue([
-        { key: 'PROJ-2', summary: 'Test', lastVisited: Date.now(), lastView: 'ide' },
-      ])
+      mockRecentIssues.mockReturnValue([{ key: 'PROJ-2', summary: 'Test', lastVisited: Date.now(), lastView: 'ide' }])
 
       renderLanding()
 
@@ -326,9 +311,7 @@ describe('Landing Page', () => {
         tokens: { github: { accessToken: 'x', expiresAt: Date.now() + 3600_000, provider: 'github' } },
         isAuthenticated: true,
       })
-      mockRecentIssues.mockReturnValue([
-        { key: 'PROJ-1', summary: 'Test', lastVisited: Date.now(), lastView: 'chat' },
-      ])
+      mockRecentIssues.mockReturnValue([{ key: 'PROJ-1', summary: 'Test', lastVisited: Date.now(), lastView: 'chat' }])
 
       renderLanding()
 

@@ -10,16 +10,10 @@
  *   - error:         something went wrong (non-fatal)
  */
 
+import { AlertCircle, Inbox, Info, LogIn, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import {
-  Info,
-  LogIn,
-  Inbox,
-  AlertCircle,
-  type LucideIcon,
-} from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 export type EmptyStateVariant = 'info' | 'auth-required' | 'no-data' | 'error'
@@ -75,33 +69,22 @@ export function EmptyState({
 
   return (
     <Card
-      className={cn(
-        'mx-auto max-w-md bg-gradient-to-b from-muted/50 to-transparent',
-        className,
-      )}
+      className={cn('mx-auto max-w-md bg-gradient-to-b from-muted/50 to-transparent', className)}
       role="status"
       aria-label={title}
     >
       <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
-        <Icon
-          className={cn('h-10 w-10', iconColor)}
-          aria-hidden="true"
-        />
+        <Icon className={cn('h-10 w-10', iconColor)} aria-hidden="true" />
 
         <div className="space-y-1.5">
           <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-          {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          )}
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
         </div>
 
         {children}
 
         {action && (
-          <Button
-            variant={action.variant ?? 'default'}
-            onClick={action.onClick}
-          >
+          <Button variant={action.variant ?? 'default'} onClick={action.onClick}>
             {action.label}
           </Button>
         )}

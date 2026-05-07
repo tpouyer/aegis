@@ -1,6 +1,6 @@
-import { Moon, Sun, Shield, Menu } from 'lucide-react'
-import { useThemeStore } from '@/stores/theme'
+import { Menu, Moon, Shield, Sun } from 'lucide-react'
 import { useSidebarStore } from '@/stores/sidebar'
+import { useThemeStore } from '@/stores/theme'
 
 export function Header() {
   const isDark = useThemeStore((s) => s.isDark)

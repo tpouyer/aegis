@@ -7,8 +7,8 @@
  */
 
 import { File, X } from 'lucide-react'
-import { useIDEStore } from '@/stores/ide'
 import { cn } from '@/lib/utils'
+import { useIDEStore } from '@/stores/ide'
 
 export function EditorTabs() {
   const { openTabs, activeTab, setActiveTab, closeTab } = useIDEStore()
@@ -18,7 +18,11 @@ export function EditorTabs() {
   }
 
   return (
-    <div className="flex items-center overflow-x-auto border-b border-border bg-muted/30" role="tablist" aria-label="Open files">
+    <div
+      className="flex items-center overflow-x-auto border-b border-border bg-muted/30"
+      role="tablist"
+      aria-label="Open files"
+    >
       {openTabs.map((tab, index) => {
         const fileName = tab.path.split('/').pop() ?? tab.path
         const isActive = index === activeTab
@@ -29,9 +33,7 @@ export function EditorTabs() {
             className={cn(
               'group flex items-center gap-1.5 border-r border-border px-3 py-1.5 text-sm',
               'cursor-pointer select-none',
-              isActive
-                ? 'bg-background text-foreground'
-                : 'text-muted-foreground hover:bg-background/50',
+              isActive ? 'bg-background text-foreground' : 'text-muted-foreground hover:bg-background/50',
             )}
           >
             <button
@@ -43,9 +45,7 @@ export function EditorTabs() {
             >
               <File className="h-3.5 w-3.5 shrink-0" />
               <span className="whitespace-nowrap">{fileName}</span>
-              {tab.isDirty && (
-                <span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
-              )}
+              {tab.isDirty && <span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true" />}
             </button>
             <button
               onClick={(e) => {

@@ -6,12 +6,12 @@
  * Multi-repo: shows a separate tree per initialized repo.
  */
 
-import { useMemo, useCallback } from 'react'
-import { File, Folder, FolderOpen, ChevronRight, ChevronDown } from 'lucide-react'
+import { ChevronDown, ChevronRight, File, Folder, FolderOpen } from 'lucide-react'
+import { useCallback, useMemo } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useIDEStore } from '@/stores/ide'
 import type { TreeEntry } from '@/lib/github/types'
 import { cn } from '@/lib/utils'
+import { useIDEStore } from '@/stores/ide'
 
 interface FileExplorerProps {
   repoKey: string
@@ -94,11 +94,7 @@ function TreeItem({ node, repoKey, depth }: TreeItemProps) {
     }
   }, [isDirectory, fullPath, repoKey, node.path, toggleExplorerPath, openFile])
 
-  const Icon = isDirectory
-    ? isExpanded
-      ? FolderOpen
-      : Folder
-    : getFileIcon(node.name)
+  const Icon = isDirectory ? (isExpanded ? FolderOpen : Folder) : getFileIcon(node.name)
 
   return (
     <div role="treeitem" aria-expanded={isDirectory ? isExpanded : undefined}>
@@ -119,22 +115,14 @@ function TreeItem({ node, repoKey, depth }: TreeItemProps) {
         ) : (
           <span className="h-4 w-4 shrink-0" />
         )}
-        <Icon className={cn(
-          'h-4 w-4 shrink-0',
-          isDirectory ? 'text-blue-400' : 'text-muted-foreground',
-        )} />
+        <Icon className={cn('h-4 w-4 shrink-0', isDirectory ? 'text-blue-400' : 'text-muted-foreground')} />
         <span className="truncate">{node.name}</span>
       </button>
 
       {isDirectory && isExpanded && (
         <div role="group">
           {node.children.map((child) => (
-            <TreeItem
-              key={child.path}
-              node={child}
-              repoKey={repoKey}
-              depth={depth + 1}
-            />
+            <TreeItem key={child.path} node={child} repoKey={repoKey} depth={depth + 1} />
           ))}
         </div>
       )}
@@ -151,9 +139,7 @@ export function FileExplorer({ repoKey, tree }: FileExplorerProps) {
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 border-b border-border px-3 py-2">
         <Folder className="h-4 w-4 text-muted-foreground" />
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Explorer
-        </span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Explorer</span>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-1" role="tree" aria-label="File explorer">
@@ -162,12 +148,7 @@ export function FileExplorer({ repoKey, tree }: FileExplorerProps) {
             <span className="text-sm font-medium text-foreground">{repoName}</span>
           </div>
           {nodes.map((node) => (
-            <TreeItem
-              key={node.path}
-              node={node}
-              repoKey={repoKey}
-              depth={1}
-            />
+            <TreeItem key={node.path} node={node} repoKey={repoKey} depth={1} />
           ))}
         </div>
       </ScrollArea>

@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import { EmptyState, type EmptyStateVariant } from '../EmptyState'
 
 // ---------------------------------------------------------------------------
@@ -9,12 +9,7 @@ import { EmptyState, type EmptyStateVariant } from '../EmptyState'
 
 describe('EmptyState', () => {
   it('renders with title and description', () => {
-    render(
-      <EmptyState
-        title="No items found"
-        description="Try changing your filters."
-      />,
-    )
+    render(<EmptyState title="No items found" description="Try changing your filters." />)
 
     expect(screen.getByText('No items found')).toBeInTheDocument()
     expect(screen.getByText('Try changing your filters.')).toBeInTheDocument()
@@ -24,12 +19,7 @@ describe('EmptyState', () => {
     const handleClick = vi.fn()
     const user = userEvent.setup()
 
-    render(
-      <EmptyState
-        title="Connect required"
-        action={{ label: 'Connect Now', onClick: handleClick }}
-      />,
-    )
+    render(<EmptyState title="Connect required" action={{ label: 'Connect Now', onClick: handleClick }} />)
 
     const button = screen.getByRole('button', { name: 'Connect Now' })
     expect(button).toBeInTheDocument()
@@ -46,17 +36,10 @@ describe('EmptyState', () => {
   })
 
   it('renders correct icon for each variant', () => {
-    const variants: EmptyStateVariant[] = [
-      'info',
-      'auth-required',
-      'no-data',
-      'error',
-    ]
+    const variants: EmptyStateVariant[] = ['info', 'auth-required', 'no-data', 'error']
 
     for (const variant of variants) {
-      const { container, unmount } = render(
-        <EmptyState variant={variant} title={`${variant} state`} />,
-      )
+      const { container, unmount } = render(<EmptyState variant={variant} title={`${variant} state`} />)
 
       // Each variant renders an SVG icon inside the card
       const svg = container.querySelector('svg')
@@ -84,9 +67,7 @@ describe('EmptyState', () => {
   })
 
   it('applies custom className', () => {
-    const { container } = render(
-      <EmptyState title="Custom class" className="my-custom-class" />,
-    )
+    const { container } = render(<EmptyState title="Custom class" className="my-custom-class" />)
 
     // The Card wrapper should have the custom class
     const card = container.firstChild as HTMLElement
@@ -111,17 +92,13 @@ describe('Board empty state', () => {
       />,
     )
 
-    expect(
-      screen.getByText('Connect to Jira to see your boards'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Connect to Jira to see your boards')).toBeInTheDocument()
     expect(
       screen.getByText(
         'Link your Atlassian account to load boards, view issues, and transition cards with drag-and-drop.',
       ),
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Connect to Jira' }),
-    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Connect to Jira' })).toBeInTheDocument()
   })
 
   it('shows no-data state when filters produce no results', async () => {
@@ -141,9 +118,7 @@ describe('Board empty state', () => {
       />,
     )
 
-    expect(
-      screen.getByText('No issues match your filters'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('No issues match your filters')).toBeInTheDocument()
 
     const clearButton = screen.getByRole('button', { name: 'Clear Filters' })
     await user.click(clearButton)
@@ -174,10 +149,8 @@ describe('Chat empty state', () => {
         description="Ask the AI assistant about implementation approaches, coding standards, or anything related to this issue."
       >
         <div className="mt-2 w-full space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">
-            Suggested prompts
-          </p>
-          <ul className="space-y-1.5" role="list" aria-label="Suggested prompts">
+          <p className="text-xs font-medium text-muted-foreground">Suggested prompts</p>
+          <ul className="space-y-1.5" aria-label="Suggested prompts">
             {prompts.map((prompt) => (
               <li key={prompt}>
                 <button
@@ -195,9 +168,7 @@ describe('Chat empty state', () => {
     )
 
     // Title is rendered
-    expect(
-      screen.getByText('Start a conversation about AEGIS-42'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('Start a conversation about AEGIS-42')).toBeInTheDocument()
 
     // All suggested prompts are visible
     for (const prompt of prompts) {
@@ -216,7 +187,7 @@ describe('Chat empty state', () => {
   it('renders the suggested prompts list with accessible role', () => {
     render(
       <EmptyState variant="info" title="Start a conversation about AEGIS-1">
-        <ul role="list" aria-label="Suggested prompts">
+        <ul aria-label="Suggested prompts">
           <li>
             <button type="button">Prompt 1</button>
           </li>

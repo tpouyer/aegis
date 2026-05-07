@@ -9,19 +9,16 @@
  * Uses MessageChannel for request/response semantics over postMessage.
  */
 
-import type { AuthProvider, TokenSet } from './types';
+import type { AuthProvider, TokenSet } from './types'
 
 /** Timeout for SW message responses (ms) */
-const SW_MESSAGE_TIMEOUT = 5_000;
+const SW_MESSAGE_TIMEOUT = 5_000
 
 /**
  * Send a token to the Service Worker for storage in its memory-scoped Map.
  * The SW will use this token to inject Authorization headers on matching requests.
  */
-export async function sendTokenToSW(
-  provider: AuthProvider,
-  token: TokenSet,
-): Promise<void> {
+export async function sendTokenToSW(provider: AuthProvider, token: TokenSet): Promise<void> {
   await postMessageToSW({
     type: 'SET_TOKEN',
     provider,
@@ -31,7 +28,7 @@ export async function sendTokenToSW(
       expiresAt: token.expiresAt,
       provider: token.provider,
     },
-  });
+  })
 }
 
 /**
@@ -41,16 +38,14 @@ export async function clearTokenInSW(provider: AuthProvider): Promise<void> {
   await postMessageToSW({
     type: 'CLEAR_TOKEN',
     provider,
-  });
+  })
 }
 
 /**
  * Query the Service Worker for which providers currently have tokens stored.
  */
-export async function getTokenStatusFromSW(): Promise<
-  Record<AuthProvider, boolean>
-> {
-  const response = await postMessageToSW({ type: 'GET_TOKEN_STATUS' });
+export async function getTokenStatusFromSW(): Promise<Record<AuthProvider, boolean>> {
+  const response = await postMessageToSW({ type: 'GET_TOKEN_STATUS' })
 
   return (
     response ?? {
@@ -59,7 +54,7 @@ export async function getTokenStatusFromSW(): Promise<
       'redhat-sso': false,
       google: false,
     }
-  );
+  )
 }
 
 /**
@@ -67,29 +62,29 @@ export async function getTokenStatusFromSW(): Promise<
  * via a MessageChannel.
  */
 async function postMessageToSW(message: unknown): Promise<unknown> {
-  const sw = navigator.serviceWorker?.controller;
+  const sw = navigator.serviceWorker?.controller
   if (!sw) {
     // SW not yet active — this is expected on first load before install
-    console.warn('[auth/sw-bridge] No active Service Worker controller');
-    return undefined;
+    console.warn('[auth/sw-bridge] No active Service Worker controller')
+    return undefined
   }
 
   return new Promise((resolve, reject) => {
-    const channel = new MessageChannel();
+    const channel = new MessageChannel()
 
     const timeout = setTimeout(() => {
-      reject(new Error('[auth/sw-bridge] Service Worker response timed out'));
-    }, SW_MESSAGE_TIMEOUT);
+      reject(new Error('[auth/sw-bridge] Service Worker response timed out'))
+    }, SW_MESSAGE_TIMEOUT)
 
     channel.port1.onmessage = (event: MessageEvent) => {
-      clearTimeout(timeout);
+      clearTimeout(timeout)
       if (event.data?.error) {
-        reject(new Error(event.data.error));
+        reject(new Error(event.data.error))
       } else {
-        resolve(event.data?.payload);
+        resolve(event.data?.payload)
       }
-    };
+    }
 
-    sw.postMessage(message, [channel.port2]);
-  });
+    sw.postMessage(message, [channel.port2])
+  })
 }

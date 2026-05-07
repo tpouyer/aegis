@@ -7,15 +7,15 @@
  * - Code blocks: syntax highlighted with copy button
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { Check, Copy, RefreshCw } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { SafeLink } from '@/components/shared/SafeLink'
-import { Copy, Check, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { ToolResult } from './ToolResult'
 import type { ChatMessage } from '@/lib/llm/types'
+import { ToolResult } from './ToolResult'
 
 interface MessageListProps {
   messages: ChatMessage[]
@@ -30,7 +30,7 @@ export function MessageList({ messages, isStreaming, onRetry, className }: Messa
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, messages.length > 0 ? messages[messages.length - 1]?.content : undefined])
+  }, [])
 
   // Find the last user message content for retry
   const lastUserContent = useCallback(() => {
@@ -48,9 +48,7 @@ export function MessageList({ messages, isStreaming, onRetry, className }: Messa
   if (messages.length === 0) {
     return (
       <div className={`flex flex-1 items-center justify-center ${className ?? ''}`}>
-        <p className="text-sm text-muted-foreground">
-          Start a conversation to get AI assistance with this issue.
-        </p>
+        <p className="text-sm text-muted-foreground">Start a conversation to get AI assistance with this issue.</p>
       </div>
     )
   }
@@ -81,22 +79,14 @@ export function MessageList({ messages, isStreaming, onRetry, className }: Messa
 // Message bubble
 // ---------------------------------------------------------------------------
 
-function MessageBubble({
-  message,
-  onRetry,
-}: {
-  message: ChatMessage
-  onRetry?: () => void
-}) {
+function MessageBubble({ message, onRetry }: { message: ChatMessage; onRetry?: () => void }) {
   const isUser = message.role === 'user'
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
         className={`max-w-[85%] rounded-lg px-4 py-2 ${
-          isUser
-            ? 'bg-primary text-primary-foreground'
-            : 'bg-muted text-foreground'
+          isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
         }`}
       >
         {isUser ? (
@@ -117,9 +107,7 @@ function MessageBubble({
 
         {/* Tool calls / results */}
         {message.toolCalls?.map((tc) => {
-          const result = message.toolResults?.find(
-            (tr) => tr.toolCallId === tc.id,
-          )
+          const result = message.toolResults?.find((tr) => tr.toolCallId === tc.id)
           return <ToolResult key={tc.id} toolCall={tc} toolResult={result} />
         })}
 
@@ -149,20 +137,13 @@ function MessageBubble({
 // Code block with copy button
 // ---------------------------------------------------------------------------
 
-function CodeBlock({
-  children,
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLElement>) {
+function CodeBlock({ children, className, ...props }: React.HTMLAttributes<HTMLElement>) {
   const [copied, setCopied] = useState(false)
 
   const isInline = !className && typeof children === 'string'
 
   const handleCopy = useCallback(() => {
-    const text =
-      typeof children === 'string'
-        ? children
-        : (children as React.ReactElement)?.props?.children ?? ''
+    const text = typeof children === 'string' ? children : ((children as React.ReactElement)?.props?.children ?? '')
 
     navigator.clipboard.writeText(String(text)).then(() => {
       setCopied(true)
@@ -192,11 +173,7 @@ function CodeBlock({
         onClick={handleCopy}
         aria-label="Copy code"
       >
-        {copied ? (
-          <Check className="h-3.5 w-3.5 text-green-500" />
-        ) : (
-          <Copy className="h-3.5 w-3.5" />
-        )}
+        {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
       </Button>
     </div>
   )

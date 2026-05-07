@@ -6,8 +6,10 @@
  * the chat store to the active LLM provider.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
 import { Bot, ChevronDown, MessageCircle } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { Loading } from '@/components/shared/Loading'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,19 +20,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Loading } from '@/components/shared/Loading'
-import { EmptyState } from '@/components/shared/EmptyState'
-import { MessageList } from './MessageList'
-import { MessageInput } from './MessageInput'
-import { ProviderPicker } from './ProviderPicker'
-import { useChatStore } from '@/stores/chat'
+import { getSuggestedPrompts, PERSONA_SYSTEM_DESCRIPTIONS } from '@/lib/llm/persona-prompts'
 import { providerRegistry } from '@/lib/llm/provider-registry'
 import { buildSystemPrompt } from '@/lib/llm/system-prompt'
 import { routeToolCall } from '@/lib/llm/tool-router'
+import type { ChatMessage } from '@/lib/llm/types'
 import { instrumentedChat } from '@/lib/telemetry/instruments/llm'
-import { usePersonaStore, PERSONA_LABELS } from '@/stores/persona'
-import { getSuggestedPrompts, PERSONA_SYSTEM_DESCRIPTIONS } from '@/lib/llm/persona-prompts'
-import type { ChatMessage, ChatChunk } from '@/lib/llm/types'
+import { useChatStore } from '@/stores/chat'
+import { PERSONA_LABELS, usePersonaStore } from '@/stores/persona'
+import { MessageInput } from './MessageInput'
+import { MessageList } from './MessageList'
+import { ProviderPicker } from './ProviderPicker'
 
 interface ChatViewProps {
   issueKey: string
@@ -40,22 +40,9 @@ interface ChatViewProps {
   className?: string
 }
 
-export function ChatView({
-  issueKey,
-  issueSummary,
-  issueDescription,
-  acceptanceCriteria,
-  className,
-}: ChatViewProps) {
-  const {
-    sessions,
-    createSession,
-    addMessage,
-    appendStreamChunk,
-    setStreaming,
-    switchModel,
-    loadSession,
-  } = useChatStore()
+export function ChatView({ issueKey, issueSummary, issueDescription, acceptanceCriteria, className }: ChatViewProps) {
+  const { sessions, createSession, addMessage, appendStreamChunk, setStreaming, switchModel, loadSession } =
+    useChatStore()
 
   const session = sessions.get(issueKey)
   const abortRef = useRef<AbortController | null>(null)
@@ -212,8 +199,7 @@ export function ChatView({
         }
       } catch (err) {
         if (!controller.signal.aborted) {
-          const errorMessage =
-            err instanceof Error ? err.message : 'An error occurred'
+          const errorMessage = err instanceof Error ? err.message : 'An error occurred'
           const sess = useChatStore.getState().sessions.get(issueKey)
           if (sess) {
             const msgs = [...sess.messages]
@@ -266,9 +252,7 @@ export function ChatView({
     return <Loading message="Loading chat session..." className="h-full" />
   }
 
-  const provider = session
-    ? providerRegistry.getProvider(session.providerId)
-    : providerRegistry.getDefaultProvider()
+  const provider = session ? providerRegistry.getProvider(session.providerId) : providerRegistry.getDefaultProvider()
 
   return (
     <div className={`flex h-full flex-col ${className ?? ''}`}>
@@ -276,9 +260,7 @@ export function ChatView({
       <div className="flex items-center justify-between border-b border-border bg-card px-4 py-2">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-primary" />
-          <span className="text-sm font-medium text-foreground">
-            {issueKey || 'General Chat'}
-          </span>
+          <span className="text-sm font-medium text-foreground">{issueKey || 'General Chat'}</span>
           {issueSummary && <span className="text-sm text-muted-foreground">{issueSummary}</span>}
         </div>
 
@@ -295,10 +277,7 @@ export function ChatView({
               <DropdownMenuLabel>{provider.name}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               {provider.models.map((model) => (
-                <DropdownMenuItem
-                  key={model.id}
-                  onClick={() => handleModelSwitch(model.id)}
-                >
+                <DropdownMenuItem key={model.id} onClick={() => handleModelSwitch(model.id)}>
                   <span className="flex-1">{model.name}</span>
                   {model.supportsToolUse && (
                     <Badge variant="secondary" className="ml-2 text-[10px]">
@@ -308,11 +287,7 @@ export function ChatView({
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setShowProviderPicker(true)}
-              >
-                Change provider...
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowProviderPicker(true)}>Change provider...</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -351,35 +326,20 @@ export function ChatView({
 // Chat empty state with suggested prompts
 // ---------------------------------------------------------------------------
 
-function ChatEmptyState({
-  issueKey,
-  onSend,
-}: {
-  issueKey?: string
-  onSend: (content: string) => void
-}) {
+function ChatEmptyState({ issueKey, onSend }: { issueKey?: string; onSend: (content: string) => void }) {
   const role = usePersonaStore((s) => s.role)
   const prompts = getSuggestedPrompts(role, issueKey)
-  const title = issueKey
-    ? `Start a conversation about ${issueKey}`
-    : 'Start a conversation'
+  const title = issueKey ? `Start a conversation about ${issueKey}` : 'Start a conversation'
   const description = issueKey
     ? `Ask questions about this issue from a ${PERSONA_LABELS[role]} perspective.`
     : `Ask anything — org context, processes, or general questions as a ${PERSONA_LABELS[role]}.`
 
   return (
     <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
-      <EmptyState
-        variant="info"
-        icon={MessageCircle}
-        title={title}
-        description={description}
-      >
+      <EmptyState variant="info" icon={MessageCircle} title={title} description={description}>
         <div className="mt-2 w-full space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">
-            Suggested prompts
-          </p>
-          <ul className="space-y-1.5" role="list" aria-label="Suggested prompts">
+          <p className="text-xs font-medium text-muted-foreground">Suggested prompts</p>
+          <ul className="space-y-1.5" aria-label="Suggested prompts">
             {prompts.map((prompt) => (
               <li key={prompt}>
                 <button

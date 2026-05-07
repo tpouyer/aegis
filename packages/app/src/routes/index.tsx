@@ -1,39 +1,38 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useEffect, useState, useCallback } from 'react'
 import {
-  Shield,
-  LayoutDashboard,
-  MessageSquare,
-  Code2,
-  Github,
-  KeyRound,
   ArrowRight,
+  Blocks,
   ChevronDown,
   ChevronRight,
-  Settings,
-  Cpu,
-  Zap,
   ClipboardList,
-  TestTube2,
-  Blocks,
-  Users,
+  Code2,
+  Cpu,
+  Github,
   Headphones,
-  Search,
+  KeyRound,
+  LayoutDashboard,
+  MessageSquare,
+  Settings,
+  Shield,
+  TestTube2,
+  Users,
+  Zap,
 } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useCallback, useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { getGitHubConfig, getRedHatConfig } from '@/lib/auth/config'
+import { initiateGitHubAuth } from '@/lib/auth/github'
 import { authManager } from '@/lib/auth/manager'
+import { initiateRedHatAuth } from '@/lib/auth/redhat-sso'
 import type { AuthState } from '@/lib/auth/types'
 import { AuthLevel } from '@/lib/auth/types'
-import { initiateGitHubAuth } from '@/lib/auth/github'
-import { initiateRedHatAuth } from '@/lib/auth/redhat-sso'
-import { getGitHubConfig, getRedHatConfig } from '@/lib/auth/config'
-import { useRecentStore } from '@/stores/recent'
-import type { RecentIssue } from '@/stores/recent'
-import { usePersonaStore, PERSONA_LABELS } from '@/stores/persona'
 import type { PersonaRole } from '@/stores/persona'
+import { PERSONA_LABELS, usePersonaStore } from '@/stores/persona'
+import type { RecentIssue } from '@/stores/recent'
+import { useRecentStore } from '@/stores/recent'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -48,7 +47,7 @@ const FEATURES = [
   {
     icon: MessageSquare,
     title: 'AI Chat',
-    description: 'Context-aware AI with your team\'s conventions',
+    description: "Context-aware AI with your team's conventions",
   },
   {
     icon: Code2,
@@ -91,15 +90,9 @@ function HeroSection() {
       <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
         <Shield className="h-9 w-9 text-primary" />
       </div>
-      <h1 className="text-4xl font-bold tracking-tight text-foreground">
-        Aegis
-      </h1>
-      <p className="mt-2 text-lg text-muted-foreground">
-        Guard your workflow, ship with confidence.
-      </p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Zero-infrastructure development platform
-      </p>
+      <h1 className="text-4xl font-bold tracking-tight text-foreground">Aegis</h1>
+      <p className="mt-2 text-lg text-muted-foreground">Guard your workflow, ship with confidence.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Zero-infrastructure development platform</p>
     </div>
   )
 }
@@ -146,11 +139,7 @@ function AboutSection({ defaultExpanded }: { defaultExpanded: boolean }) {
         onClick={() => setExpanded((prev) => !prev)}
         aria-expanded={expanded}
       >
-        {expanded ? (
-          <ChevronDown className="h-4 w-4" />
-        ) : (
-          <ChevronRight className="h-4 w-4" />
-        )}
+        {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         About Aegis
       </button>
       {expanded && (
@@ -179,9 +168,7 @@ function AuthCTA() {
     <Card>
       <CardHeader>
         <CardTitle className="text-center text-lg">Get Started</CardTitle>
-        <CardDescription className="text-center">
-          Choose how you want to use Aegis
-        </CardDescription>
+        <CardDescription className="text-center">Choose how you want to use Aegis</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between rounded-lg border border-border p-4">
@@ -228,9 +215,9 @@ function AuthCTA() {
 // ---------------------------------------------------------------------------
 
 function AuthBadges({ authState }: { authState: AuthState }) {
-  const connectedProviders = (
-    Object.keys(authState.tokens) as Array<keyof typeof authState.tokens>
-  ).filter((p) => authManager.isConnected(p))
+  const connectedProviders = (Object.keys(authState.tokens) as Array<keyof typeof authState.tokens>).filter((p) =>
+    authManager.isConnected(p),
+  )
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -249,9 +236,7 @@ function AuthBadges({ authState }: { authState: AuthState }) {
 // ---------------------------------------------------------------------------
 
 function RecentIssueCard({ issue }: { issue: RecentIssue }) {
-  const linkTo = issue.lastView === 'ide'
-    ? '/issue/$issueKey/ide'
-    : '/issue/$issueKey/chat'
+  const linkTo = issue.lastView === 'ide' ? '/issue/$issueKey/ide' : '/issue/$issueKey/chat'
   const viewLabel = issue.lastView === 'ide' ? 'IDE' : 'Chat'
   const ViewIcon = issue.lastView === 'ide' ? Code2 : MessageSquare
 
@@ -259,9 +244,7 @@ function RecentIssueCard({ issue }: { issue: RecentIssue }) {
     <Card className="flex flex-col justify-between">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-semibold">{issue.key}</CardTitle>
-        <CardDescription className="line-clamp-2 text-xs">
-          {issue.summary}
-        </CardDescription>
+        <CardDescription className="line-clamp-2 text-xs">{issue.summary}</CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" asChild>
@@ -283,9 +266,7 @@ function RecentIssuesSection() {
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-        Recent Issues
-      </h2>
+      <h2 className="mb-3 text-sm font-medium text-muted-foreground">Recent Issues</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {issues.map((issue) => (
           <RecentIssueCard key={issue.key} issue={issue} />
@@ -299,14 +280,17 @@ function RecentIssuesSection() {
 // Role-based widget
 // ---------------------------------------------------------------------------
 
-const ROLE_WIDGETS: Record<PersonaRole, {
-  icon: typeof Zap
-  title: string
-  description: string
-  linkTo: string
-  linkParams?: Record<string, string>
-  linkLabel: string
-}> = {
+const ROLE_WIDGETS: Record<
+  PersonaRole,
+  {
+    icon: typeof Zap
+    title: string
+    description: string
+    linkTo: string
+    linkParams?: Record<string, string>
+    linkLabel: string
+  }
+> = {
   developer: {
     icon: Zap,
     title: 'Quick Actions',
@@ -366,9 +350,7 @@ function RoleWidgetSection() {
 
   return (
     <div>
-      <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-        {PERSONA_LABELS[role]} Focus
-      </h2>
+      <h2 className="mb-3 text-sm font-medium text-muted-foreground">{PERSONA_LABELS[role]} Focus</h2>
       <Card>
         <CardContent className="flex items-center gap-4 p-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
@@ -397,9 +379,7 @@ function RoleWidgetSection() {
 function QuickActions() {
   return (
     <div>
-      <h2 className="mb-3 text-sm font-medium text-muted-foreground">
-        Quick Actions
-      </h2>
+      <h2 className="mb-3 text-sm font-medium text-muted-foreground">Quick Actions</h2>
       <div className="flex flex-wrap gap-3">
         <Button variant="outline" asChild>
           <Link to="/board/$boardId" params={{ boardId: '1' }}>
@@ -485,15 +465,13 @@ function UnauthenticatedLanding() {
 function HomePage() {
   const authState = useAuthState()
 
-  useEffect(() => { document.title = 'Aegis — Home' }, [])
+  useEffect(() => {
+    document.title = 'Aegis — Home'
+  }, [])
 
   return (
     <div className="mx-auto max-w-3xl p-6">
-      {authState.isAuthenticated ? (
-        <AuthenticatedLanding authState={authState} />
-      ) : (
-        <UnauthenticatedLanding />
-      )}
+      {authState.isAuthenticated ? <AuthenticatedLanding authState={authState} /> : <UnauthenticatedLanding />}
     </div>
   )
 }

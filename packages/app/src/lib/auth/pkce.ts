@@ -7,8 +7,7 @@
  * Uses the Web Crypto API (crypto.subtle) for SHA-256 hashing.
  */
 
-const VERIFIER_CHARSET =
-  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+const VERIFIER_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~'
 
 /**
  * Generate a cryptographically random code verifier (43-128 characters).
@@ -16,15 +15,15 @@ const VERIFIER_CHARSET =
  */
 export function generateCodeVerifier(length = 64): string {
   if (length < 43 || length > 128) {
-    throw new RangeError('Code verifier length must be between 43 and 128');
+    throw new RangeError('Code verifier length must be between 43 and 128')
   }
 
-  const randomValues = new Uint8Array(length);
-  crypto.getRandomValues(randomValues);
+  const randomValues = new Uint8Array(length)
+  crypto.getRandomValues(randomValues)
 
   return Array.from(randomValues)
     .map((byte) => VERIFIER_CHARSET[byte % VERIFIER_CHARSET.length])
-    .join('');
+    .join('')
 }
 
 /**
@@ -33,11 +32,11 @@ export function generateCodeVerifier(length = 64): string {
  * code_challenge = BASE64URL(SHA256(code_verifier))
  */
 export async function generateCodeChallenge(verifier: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const digest = await crypto.subtle.digest('SHA-256', data);
+  const encoder = new TextEncoder()
+  const data = encoder.encode(verifier)
+  const digest = await crypto.subtle.digest('SHA-256', data)
 
-  return base64UrlEncode(digest);
+  return base64UrlEncode(digest)
 }
 
 /**
@@ -45,23 +44,23 @@ export async function generateCodeChallenge(verifier: string): Promise<string> {
  * Returns a 32-character hex string.
  */
 export function generateState(): string {
-  const randomValues = new Uint8Array(16);
-  crypto.getRandomValues(randomValues);
+  const randomValues = new Uint8Array(16)
+  crypto.getRandomValues(randomValues)
 
   return Array.from(randomValues)
     .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
+    .join('')
 }
 
 /**
  * Base64url-encode an ArrayBuffer (no padding, URL-safe alphabet).
  */
 function base64UrlEncode(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
   for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+    binary += String.fromCharCode(byte)
   }
 
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }

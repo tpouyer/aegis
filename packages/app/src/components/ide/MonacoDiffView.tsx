@@ -6,12 +6,12 @@
  * inline and side-by-side diff modes. Read-only for review.
  */
 
-import { Suspense, lazy, useState, useCallback } from 'react'
 import type { DiffOnMount } from '@monaco-editor/react'
 import { Columns2, Rows2 } from 'lucide-react'
+import { lazy, Suspense, useCallback, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { getLanguageFromPath } from './MonacoEditor'
 import { cn } from '@/lib/utils'
+import { getLanguageFromPath } from './MonacoEditor'
 
 // Lazy-load the DiffEditor to avoid bloating the initial bundle
 const DiffEditor = lazy(() =>
@@ -49,10 +49,7 @@ export function MonacoDiffView({
           <Button
             variant="ghost"
             size="sm"
-            className={cn(
-              'h-6 w-6 p-0',
-              !isInline && 'bg-accent',
-            )}
+            className={cn('h-6 w-6 p-0', !isInline && 'bg-accent')}
             onClick={() => setIsInline(false)}
             title="Side by side"
           >
@@ -61,10 +58,7 @@ export function MonacoDiffView({
           <Button
             variant="ghost"
             size="sm"
-            className={cn(
-              'h-6 w-6 p-0',
-              isInline && 'bg-accent',
-            )}
+            className={cn('h-6 w-6 p-0', isInline && 'bg-accent')}
             onClick={() => setIsInline(true)}
             title="Inline"
           >

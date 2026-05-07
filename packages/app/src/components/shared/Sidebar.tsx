@@ -69,7 +69,12 @@ export function Sidebar() {
       </aside>
 
       {/* Mobile sidebar - slide-over sheet */}
-      <Sheet open={sidebarOpen} onOpenChange={(open) => { if (!open) closeSidebar() }}>
+      <Sheet
+        open={sidebarOpen}
+        onOpenChange={(open) => {
+          if (!open) closeSidebar()
+        }}
+      >
         <SheetContent side="left" className="w-56 bg-sidebar p-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SidebarNav onNavigate={closeSidebar} />

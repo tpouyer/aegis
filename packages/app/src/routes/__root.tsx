@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
 import { createRootRoute, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
-import { Sidebar } from '@/components/shared/Sidebar'
-import { Header } from '@/components/shared/Header'
-import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
-import { Toaster } from '@/components/shared/Toaster'
+import { useCallback, useEffect, useState } from 'react'
 import { CommandPalette } from '@/components/shared/CommandPalette'
-import { ShortcutHelp } from '@/components/shared/ShortcutHelp'
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+import { Header } from '@/components/shared/Header'
 import { IssueContextBar } from '@/components/shared/IssueContextBar'
-import { registerDefaultCommands } from '@/lib/commands/default-commands'
-import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
+import { ShortcutHelp } from '@/components/shared/ShortcutHelp'
+import { Sidebar } from '@/components/shared/Sidebar'
+import { Toaster } from '@/components/shared/Toaster'
 import { authManager } from '@/lib/auth/manager'
+import { registerDefaultCommands } from '@/lib/commands/default-commands'
+import { shortcutRegistry, useShortcuts } from '@/lib/shortcuts'
 
 export const Route = createRootRoute({
   component: RootLayout,
@@ -63,19 +63,16 @@ function RootLayout() {
   }, [navigate])
 
   // Global Cmd+K / Ctrl+K handler
-  const handleGlobalKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        // Don't capture when a Monaco editor has focus
-        const active = document.activeElement
-        if (active?.closest('.monaco-editor')) return
+  const handleGlobalKeyDown = useCallback((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      // Don't capture when a Monaco editor has focus
+      const active = document.activeElement
+      if (active?.closest('.monaco-editor')) return
 
-        e.preventDefault()
-        setPaletteOpen((prev) => !prev)
-      }
-    },
-    [],
-  )
+      e.preventDefault()
+      setPaletteOpen((prev) => !prev)
+    }
+  }, [])
 
   useEffect(() => {
     document.addEventListener('keydown', handleGlobalKeyDown)
@@ -85,7 +82,10 @@ function RootLayout() {
   return (
     <ErrorBoundary>
       <div className="flex h-screen flex-col">
-        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-background focus:p-4 focus:text-foreground focus:shadow-lg">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-background focus:p-4 focus:text-foreground focus:shadow-lg"
+        >
           Skip to main content
         </a>
         <Header />

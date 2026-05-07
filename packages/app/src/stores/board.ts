@@ -8,54 +8,54 @@
  * See design doc section 5.4 for the optimistic update pattern.
  */
 
-import { create } from 'zustand';
-import type { BoardFilters } from '@/lib/jira/types';
+import { create } from 'zustand'
+import type { BoardFilters } from '@/lib/jira/types'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export interface DragState {
-  isDragging: boolean;
-  sourceColumn: string | null;
-  targetColumn: string | null;
-  draggedIssueKey: string | null;
+  isDragging: boolean
+  sourceColumn: string | null
+  targetColumn: string | null
+  draggedIssueKey: string | null
 }
 
 export interface OptimisticUpdate {
-  issueKey: string;
+  issueKey: string
   /** The status ID the issue is optimistically moved to */
-  targetStatusId: string;
+  targetStatusId: string
   /** The original status ID for rollback */
-  originalStatusId: string;
+  originalStatusId: string
   /** Timestamp for ordering / staleness checks */
-  timestamp: number;
+  timestamp: number
 }
 
 export interface BoardState {
-  dragState: DragState;
-  filters: BoardFilters;
-  optimisticUpdates: Map<string, OptimisticUpdate>;
+  dragState: DragState
+  filters: BoardFilters
+  optimisticUpdates: Map<string, OptimisticUpdate>
   /** Index of the keyboard-focused card (-1 = no focus) */
-  focusedCardIndex: number;
+  focusedCardIndex: number
   /** Total number of visible cards (set by BoardView for bounds checking) */
-  totalCardCount: number;
+  totalCardCount: number
 }
 
 export interface BoardActions {
-  startDrag: (issueKey: string, sourceColumn: string) => void;
-  endDrag: () => void;
-  setFilter: <K extends keyof BoardFilters>(key: K, value: BoardFilters[K]) => void;
-  clearFilters: () => void;
-  applyOptimisticUpdate: (update: OptimisticUpdate) => void;
-  rollbackOptimisticUpdate: (issueKey: string) => void;
-  focusNextCard: () => void;
-  focusPrevCard: () => void;
-  clearFocus: () => void;
-  setTotalCardCount: (count: number) => void;
+  startDrag: (issueKey: string, sourceColumn: string) => void
+  endDrag: () => void
+  setFilter: <K extends keyof BoardFilters>(key: K, value: BoardFilters[K]) => void
+  clearFilters: () => void
+  applyOptimisticUpdate: (update: OptimisticUpdate) => void
+  rollbackOptimisticUpdate: (issueKey: string) => void
+  focusNextCard: () => void
+  focusPrevCard: () => void
+  clearFocus: () => void
+  setTotalCardCount: (count: number) => void
 }
 
-export type BoardStore = BoardState & BoardActions;
+export type BoardStore = BoardState & BoardActions
 
 // ---------------------------------------------------------------------------
 // Initial state
@@ -66,7 +66,7 @@ const initialDragState: DragState = {
   sourceColumn: null,
   targetColumn: null,
   draggedIssueKey: null,
-};
+}
 
 const initialFilters: BoardFilters = {
   assignee: null,
@@ -74,7 +74,7 @@ const initialFilters: BoardFilters = {
   priority: null,
   text: null,
   issueType: null,
-};
+}
 
 // ---------------------------------------------------------------------------
 // Store
@@ -116,35 +116,33 @@ export const useBoardStore = create<BoardStore>((set, get) => ({
 
   applyOptimisticUpdate: (update) =>
     set((state) => {
-      const next = new Map(state.optimisticUpdates);
-      next.set(update.issueKey, update);
-      return { optimisticUpdates: next };
+      const next = new Map(state.optimisticUpdates)
+      next.set(update.issueKey, update)
+      return { optimisticUpdates: next }
     }),
 
   rollbackOptimisticUpdate: (issueKey) =>
     set((state) => {
-      const next = new Map(state.optimisticUpdates);
-      next.delete(issueKey);
-      return { optimisticUpdates: next };
+      const next = new Map(state.optimisticUpdates)
+      next.delete(issueKey)
+      return { optimisticUpdates: next }
     }),
 
   focusNextCard: () => {
-    const { focusedCardIndex, totalCardCount } = get();
-    if (totalCardCount === 0) return;
-    const next = focusedCardIndex < totalCardCount - 1
-      ? focusedCardIndex + 1
-      : focusedCardIndex;
-    set({ focusedCardIndex: next });
+    const { focusedCardIndex, totalCardCount } = get()
+    if (totalCardCount === 0) return
+    const next = focusedCardIndex < totalCardCount - 1 ? focusedCardIndex + 1 : focusedCardIndex
+    set({ focusedCardIndex: next })
   },
 
   focusPrevCard: () => {
-    const { focusedCardIndex } = get();
-    if (focusedCardIndex < 0) return;
-    const next = focusedCardIndex > 0 ? focusedCardIndex - 1 : 0;
-    set({ focusedCardIndex: next });
+    const { focusedCardIndex } = get()
+    if (focusedCardIndex < 0) return
+    const next = focusedCardIndex > 0 ? focusedCardIndex - 1 : 0
+    set({ focusedCardIndex: next })
   },
 
   clearFocus: () => set({ focusedCardIndex: -1 }),
 
   setTotalCardCount: (count) => set({ totalCardCount: count }),
-}));
+}))

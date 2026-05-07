@@ -10,21 +10,21 @@
  * initial bundle stays small.
  */
 
-import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { Code, GitCompareArrows, FileCode, FolderOpen, Github, PanelLeft } from 'lucide-react'
-import { FileExplorer } from './FileExplorer'
-import { EditorTabs } from './EditorTabs'
-import { MonacoEditor } from './MonacoEditor'
-import { MonacoDiffView } from './MonacoDiffView'
-import { SourceControl } from './SourceControl'
+import { Code, FileCode, FolderOpen, GitCompareArrows, Github, PanelLeft } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { useIDEStore } from '@/stores/ide'
 import { Button } from '@/components/ui/button'
-import type { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
 import type { TreeEntry } from '@/lib/github/types'
-import type { FileChange } from '@/lib/vfs/types'
 import { cn } from '@/lib/utils'
+import type { FileChange } from '@/lib/vfs/types'
+import type { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
+import { useIDEStore } from '@/stores/ide'
+import { EditorTabs } from './EditorTabs'
+import { FileExplorer } from './FileExplorer'
+import { MonacoDiffView } from './MonacoDiffView'
+import { MonacoEditor } from './MonacoEditor'
+import { SourceControl } from './SourceControl'
 
 /** Tracks which file+repo the diff view is showing. */
 interface DiffTarget {
@@ -43,22 +43,9 @@ interface IDELayoutProps {
   baseBranch: string
 }
 
-export function IDELayout({
-  vfs,
-  repoKey,
-  tree,
-  issueKey,
-  branch,
-  baseBranch,
-}: IDELayoutProps) {
+export function IDELayout({ vfs, repoKey, tree, issueKey, branch, baseBranch }: IDELayoutProps) {
   const navigate = useNavigate()
-  const {
-    openTabs,
-    activeTab,
-    showDiff,
-    openFile,
-    toggleDiffView,
-  } = useIDEStore()
+  const { openTabs, activeTab, showDiff, openFile, toggleDiffView } = useIDEStore()
 
   const [fileContent, setFileContent] = useState<string>('')
   const [changes, setChanges] = useState<FileChange[]>([])
@@ -67,9 +54,7 @@ export function IDELayout({
   const [explorerVisible, setExplorerVisible] = useState(false)
 
   // Current active tab info
-  const currentTab = activeTab >= 0 && activeTab < openTabs.length
-    ? openTabs[activeTab]
-    : null
+  const currentTab = activeTab >= 0 && activeTab < openTabs.length ? openTabs[activeTab] : null
 
   // Refresh the changes list
   const refreshChanges = useCallback(() => {
@@ -86,55 +71,69 @@ export function IDELayout({
     let cancelled = false
     setIsLoadingFile(true)
 
-    vfs.readFile(currentTab.repoKey, currentTab.path).then((content) => {
-      if (!cancelled) {
-        setFileContent(content)
-        setIsLoadingFile(false)
-      }
-    }).catch((err) => {
-      if (!cancelled) {
-        setFileContent(`Error loading file: ${err.message}`)
-        setIsLoadingFile(false)
-      }
-    })
+    vfs
+      .readFile(currentTab.repoKey, currentTab.path)
+      .then((content) => {
+        if (!cancelled) {
+          setFileContent(content)
+          setIsLoadingFile(false)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setFileContent(`Error loading file: ${err.message}`)
+          setIsLoadingFile(false)
+        }
+      })
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [currentTab, vfs])
 
   // Handle commit
-  const handleCommit = useCallback(async (commitRepoKey: string, message: string) => {
-    const sha = await vfs.commit(commitRepoKey, message)
-    refreshChanges()
-    return sha
-  }, [vfs, refreshChanges])
+  const handleCommit = useCallback(
+    async (commitRepoKey: string, message: string) => {
+      const sha = await vfs.commit(commitRepoKey, message)
+      refreshChanges()
+      return sha
+    },
+    [vfs, refreshChanges],
+  )
 
   // Handle create PR
-  const handleCreatePR = useCallback(async (commitRepoKey: string) => {
-    const pr = await vfs.createPR(commitRepoKey, {
-      title: `${issueKey}: Implementation`,
-      body: `Addresses ${issueKey}`,
-    })
-    return pr.htmlUrl
-  }, [vfs, issueKey])
+  const handleCreatePR = useCallback(
+    async (commitRepoKey: string) => {
+      const pr = await vfs.createPR(commitRepoKey, {
+        title: `${issueKey}: Implementation`,
+        body: `Addresses ${issueKey}`,
+      })
+      return pr.htmlUrl
+    },
+    [vfs, issueKey],
+  )
 
   // Handle file click from source control (show Monaco diff)
-  const handleSourceControlFileClick = useCallback((clickedRepo: string, path: string) => {
-    const diff = vfs.getDiff(clickedRepo, path)
-    if (diff.hunks.length === 0) return
+  const handleSourceControlFileClick = useCallback(
+    (clickedRepo: string, path: string) => {
+      const diff = vfs.getDiff(clickedRepo, path)
+      if (diff.hunks.length === 0) return
 
-    // Extract original and modified content from the diff's underlying change
-    const change = vfs.getChanges(clickedRepo).find((c) => c.path === path)
-    setDiffTarget({
-      repoKey: clickedRepo,
-      path,
-      original: change?.originalContent ?? '',
-      modified: change?.currentContent ?? '',
-    })
+      // Extract original and modified content from the diff's underlying change
+      const change = vfs.getChanges(clickedRepo).find((c) => c.path === path)
+      setDiffTarget({
+        repoKey: clickedRepo,
+        path,
+        original: change?.originalContent ?? '',
+        modified: change?.currentContent ?? '',
+      })
 
-    if (!showDiff) {
-      toggleDiffView()
-    }
-  }, [vfs, showDiff, toggleDiffView])
+      if (!showDiff) {
+        toggleDiffView()
+      }
+    },
+    [vfs, showDiff, toggleDiffView],
+  )
 
   // Handle file content changes from Monaco
   const handleContentChange = useCallback(() => {
@@ -151,12 +150,8 @@ export function IDELayout({
       <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-2">
         <div className="flex items-center gap-3">
           <Code className="h-5 w-5 text-primary" />
-          <span className="text-sm font-semibold text-foreground">
-            Aegis IDE
-          </span>
-          <span className="text-sm text-muted-foreground">
-            {issueKey}
-          </span>
+          <span className="text-sm font-semibold text-foreground">Aegis IDE</span>
+          <span className="text-sm text-muted-foreground">{issueKey}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {/* Code/Diff toggle */}
@@ -165,11 +160,10 @@ export function IDELayout({
               <Button
                 variant="ghost"
                 size="sm"
-                className={cn(
-                  'h-6 gap-1 px-2 text-xs',
-                  !showDiff && 'bg-accent',
-                )}
-                onClick={() => { if (showDiff) toggleDiffView() }}
+                className={cn('h-6 gap-1 px-2 text-xs', !showDiff && 'bg-accent')}
+                onClick={() => {
+                  if (showDiff) toggleDiffView()
+                }}
               >
                 <FileCode className="h-3 w-3" />
                 Code
@@ -177,19 +171,22 @@ export function IDELayout({
               <Button
                 variant="ghost"
                 size="sm"
-                className={cn(
-                  'h-6 gap-1 px-2 text-xs',
-                  showDiff && 'bg-accent',
-                )}
-                onClick={() => { if (!showDiff) toggleDiffView() }}
+                className={cn('h-6 gap-1 px-2 text-xs', showDiff && 'bg-accent')}
+                onClick={() => {
+                  if (!showDiff) toggleDiffView()
+                }}
               >
                 <GitCompareArrows className="h-3 w-3" />
                 Diff
               </Button>
             </div>
           )}
-          <span>Branch: <code className="rounded bg-muted px-1.5 py-0.5">{branch}</code></span>
-          <span>Base: <code className="rounded bg-muted px-1.5 py-0.5">{baseBranch}</code></span>
+          <span>
+            Branch: <code className="rounded bg-muted px-1.5 py-0.5">{branch}</code>
+          </span>
+          <span>
+            Base: <code className="rounded bg-muted px-1.5 py-0.5">{baseBranch}</code>
+          </span>
         </div>
       </div>
 
@@ -210,11 +207,13 @@ export function IDELayout({
       {/* Main panels */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel -- File Explorer */}
-        <div className={cn(
-          'w-60 shrink-0 border-r border-border bg-muted/10',
-          explorerVisible ? 'block' : 'hidden',
-          'lg:block',
-        )}>
+        <div
+          className={cn(
+            'w-60 shrink-0 border-r border-border bg-muted/10',
+            explorerVisible ? 'block' : 'hidden',
+            'lg:block',
+          )}
+        >
           <FileExplorer repoKey={repoKey} tree={tree} />
         </div>
 
@@ -231,16 +230,9 @@ export function IDELayout({
               />
             ) : currentTab ? (
               isLoadingFile ? (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  Loading...
-                </div>
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Loading...</div>
               ) : (
-                <MonacoEditor
-                  path={currentTab.path}
-                  content={fileContent}
-                  repoKey={currentTab.repoKey}
-                  vfs={vfs}
-                />
+                <MonacoEditor path={currentTab.path} content={fileContent} repoKey={currentTab.repoKey} vfs={vfs} />
               )
             ) : tree.length === 0 ? (
               <div className="flex h-full items-center justify-center p-8">
@@ -252,7 +244,7 @@ export function IDELayout({
                   action={{
                     label: 'Connect to GitHub',
                     onClick: () => {
-                      navigate({ to: '/settings' });
+                      navigate({ to: '/settings' })
                     },
                   }}
                 />

@@ -5,10 +5,10 @@
  * file-extension-to-language mapping utility.
  */
 
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
-import { getLanguageFromPath } from '../MonacoEditor'
 import { useIDEStore } from '@/stores/ide'
+import { getLanguageFromPath } from '../MonacoEditor'
 
 // ── Mock @radix-ui/react-scroll-area ─────────────────────────────
 // Radix ScrollArea uses ResizeObserver internally, which triggers
@@ -27,12 +27,8 @@ vi.mock('@radix-ui/react-scroll-area', () => {
     ScrollAreaScrollbar: React.forwardRef(({ children, ...props }: any, ref: any) =>
       React.createElement('div', { ref, ...props }, children),
     ),
-    ScrollAreaThumb: React.forwardRef((props: any, ref: any) =>
-      React.createElement('div', { ref, ...props }),
-    ),
-    Corner: React.forwardRef((props: any, ref: any) =>
-      React.createElement('div', { ref, ...props }),
-    ),
+    ScrollAreaThumb: React.forwardRef((props: any, ref: any) => React.createElement('div', { ref, ...props })),
+    Corner: React.forwardRef((props: any, ref: any) => React.createElement('div', { ref, ...props })),
   }
 })
 
@@ -180,14 +176,7 @@ describe('MonacoEditor', () => {
     const { MonacoEditor } = await import('../MonacoEditor')
     const vfs = createMockVfs()
 
-    render(
-      <MonacoEditor
-        path="src/index.ts"
-        content="const x = 1;"
-        repoKey="org/repo"
-        vfs={vfs}
-      />,
-    )
+    render(<MonacoEditor path="src/index.ts" content="const x = 1;" repoKey="org/repo" vfs={vfs} />)
 
     // Wait for lazy-loaded editor to appear
     await waitFor(() => {
@@ -199,14 +188,7 @@ describe('MonacoEditor', () => {
     const { MonacoEditor } = await import('../MonacoEditor')
     const vfs = createMockVfs()
 
-    render(
-      <MonacoEditor
-        path="styles/main.css"
-        content="body { color: red; }"
-        repoKey="org/repo"
-        vfs={vfs}
-      />,
-    )
+    render(<MonacoEditor path="styles/main.css" content="body { color: red; }" repoKey="org/repo" vfs={vfs} />)
 
     await waitFor(() => {
       const editor = screen.getByTestId('monaco-editor')
@@ -218,14 +200,7 @@ describe('MonacoEditor', () => {
     const { MonacoEditor } = await import('../MonacoEditor')
     const vfs = createMockVfs()
 
-    render(
-      <MonacoEditor
-        path="src/index.ts"
-        content="const x = 1;"
-        repoKey="org/repo"
-        vfs={vfs}
-      />,
-    )
+    render(<MonacoEditor path="src/index.ts" content="const x = 1;" repoKey="org/repo" vfs={vfs} />)
 
     await waitFor(() => {
       expect(screen.getByTestId('monaco-textarea')).toBeInTheDocument()
@@ -366,9 +341,7 @@ describe('SourceControl', () => {
 
     const { unmount } = render(
       <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
+        changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
         repoKey="org/repo"
         onCommit={vi.fn().mockResolvedValue('sha')}
         onCreatePR={vi.fn().mockResolvedValue('url')}
@@ -394,9 +367,7 @@ describe('SourceControl', () => {
 
     const { unmount } = render(
       <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
+        changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
         repoKey="org/repo"
         onCommit={vi.fn().mockResolvedValue('sha')}
         onCreatePR={vi.fn().mockResolvedValue('url')}
@@ -423,9 +394,7 @@ describe('SourceControl', () => {
 
     const { unmount } = render(
       <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
+        changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
         repoKey="org/repo"
         onCommit={onCommit}
         onCreatePR={vi.fn().mockResolvedValue('url')}
@@ -458,9 +427,7 @@ describe('SourceControl', () => {
 
     const { unmount } = render(
       <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
+        changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
         repoKey="org/repo"
         onCommit={onCommit}
         onCreatePR={vi.fn().mockResolvedValue('url')}
@@ -489,9 +456,7 @@ describe('SourceControl', () => {
 
     const { unmount } = render(
       <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
+        changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
         repoKey="org/repo"
         onCommit={vi.fn().mockResolvedValue('sha')}
         onCreatePR={onCreatePR}
@@ -509,10 +474,7 @@ describe('SourceControl', () => {
     await waitFor(() => {
       expect(screen.getByText('PR created')).toBeInTheDocument()
       const viewLink = screen.getByText('View')
-      expect(viewLink.closest('a')).toHaveAttribute(
-        'href',
-        'https://github.com/org/repo/pull/42',
-      )
+      expect(viewLink.closest('a')).toHaveAttribute('href', 'https://github.com/org/repo/pull/42')
     })
 
     unmount()

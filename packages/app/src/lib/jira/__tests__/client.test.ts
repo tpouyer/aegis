@@ -1,16 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { JiraConfig } from '../types';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { JiraConfig } from '../types'
 
 // ---------------------------------------------------------------------------
 // Mock resilientFetch (clients now use this instead of bare fetch)
 // ---------------------------------------------------------------------------
 
-const mockFetch = vi.hoisted(() => vi.fn());
+const mockFetch = vi.hoisted(() => vi.fn())
 vi.mock('../../fetch/resilient-fetch', () => ({
   resilientFetch: (...args: unknown[]) => mockFetch(...args),
-}));
+}))
 
-import { JiraClient, JiraClientError } from '../client';
+import { JiraClient, JiraClientError } from '../client'
 
 function jsonResponse(data: unknown, status = 200) {
   return Promise.resolve({
@@ -19,7 +19,7 @@ function jsonResponse(data: unknown, status = 200) {
     statusText: status === 200 ? 'OK' : 'Error',
     json: () => Promise.resolve(data),
     text: () => Promise.resolve(JSON.stringify(data)),
-  });
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -29,19 +29,19 @@ function jsonResponse(data: unknown, status = 200) {
 const config: JiraConfig = {
   baseUrl: 'https://test.atlassian.net',
   cloudId: 'test-cloud-id',
-};
+}
 
 describe('JiraClient', () => {
-  let client: JiraClient;
+  let client: JiraClient
 
   beforeEach(() => {
-    client = new JiraClient(config);
-    mockFetch.mockReset();
-  });
+    client = new JiraClient(config)
+    mockFetch.mockReset()
+  })
 
   afterEach(() => {
-    vi.restoreAllMocks();
-  });
+    vi.restoreAllMocks()
+  })
 
   // -----------------------------------------------------------------------
   // getBoards
@@ -55,15 +55,15 @@ describe('JiraClient', () => {
         total: 1,
         values: [{ id: 1, name: 'Test Board', type: 'kanban' }],
       }),
-    );
+    )
 
-    await client.getBoards(0, 25);
+    await client.getBoards(0, 25)
 
-    const calledUrl = mockFetch.mock.calls[0][0] as string;
+    const calledUrl = mockFetch.mock.calls[0][0] as string
     expect(calledUrl).toBe(
       'https://test.atlassian.net/ex/jira/test-cloud-id/rest/agile/1.0/board?startAt=0&maxResults=25',
-    );
-  });
+    )
+  })
 
   // -----------------------------------------------------------------------
   // getIssuesForBoard
@@ -77,15 +77,15 @@ describe('JiraClient', () => {
         total: 0,
         issues: [],
       }),
-    );
+    )
 
-    const jql = 'assignee = currentUser()';
-    await client.getIssuesForBoard(42, jql);
+    const jql = 'assignee = currentUser()'
+    await client.getIssuesForBoard(42, jql)
 
-    const calledUrl = mockFetch.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('jql=assignee+%3D+currentUser%28%29');
-    expect(calledUrl).toContain('/board/42/issue');
-  });
+    const calledUrl = mockFetch.mock.calls[0][0] as string
+    expect(calledUrl).toContain('jql=assignee+%3D+currentUser%28%29')
+    expect(calledUrl).toContain('/board/42/issue')
+  })
 
   // -----------------------------------------------------------------------
   // doTransition
@@ -100,18 +100,18 @@ describe('JiraClient', () => {
         json: () => Promise.resolve(undefined),
         text: () => Promise.resolve(''),
       }),
-    );
+    )
 
-    await client.doTransition('AAP-123', '31', { resolution: { name: 'Done' } });
+    await client.doTransition('AAP-123', '31', { resolution: { name: 'Done' } })
 
-    const [url, init] = mockFetch.mock.calls[0];
-    expect(url).toContain('/api/3/issue/AAP-123/transitions');
-    expect(init.method).toBe('POST');
+    const [url, init] = mockFetch.mock.calls[0]
+    expect(url).toContain('/api/3/issue/AAP-123/transitions')
+    expect(init.method).toBe('POST')
 
-    const body = JSON.parse(init.body);
-    expect(body.transition).toEqual({ id: '31' });
-    expect(body.fields).toEqual({ resolution: { name: 'Done' } });
-  });
+    const body = JSON.parse(init.body)
+    expect(body.transition).toEqual({ id: '31' })
+    expect(body.fields).toEqual({ resolution: { name: 'Done' } })
+  })
 
   // -----------------------------------------------------------------------
   // searchIssues
@@ -125,25 +125,20 @@ describe('JiraClient', () => {
         total: 100,
         issues: [],
       }),
-    );
+    )
 
-    await client.searchIssues(
-      'project = AAP ORDER BY rank',
-      ['summary', 'status'],
-      25,
-      10,
-    );
+    await client.searchIssues('project = AAP ORDER BY rank', ['summary', 'status'], 25, 10)
 
-    const [url, init] = mockFetch.mock.calls[0];
-    expect(url).toContain('/api/3/search');
-    expect(init.method).toBe('POST');
+    const [url, init] = mockFetch.mock.calls[0]
+    expect(url).toContain('/api/3/search')
+    expect(init.method).toBe('POST')
 
-    const body = JSON.parse(init.body);
-    expect(body.jql).toBe('project = AAP ORDER BY rank');
-    expect(body.fields).toEqual(['summary', 'status']);
-    expect(body.maxResults).toBe(25);
-    expect(body.startAt).toBe(10);
-  });
+    const body = JSON.parse(init.body)
+    expect(body.jql).toBe('project = AAP ORDER BY rank')
+    expect(body.fields).toEqual(['summary', 'status'])
+    expect(body.maxResults).toBe(25)
+    expect(body.startAt).toBe(10)
+  })
 
   // -----------------------------------------------------------------------
   // getIssue
@@ -155,18 +150,16 @@ describe('JiraClient', () => {
       key: 'AAP-456',
       self: 'https://test.atlassian.net/rest/api/3/issue/10001',
       fields: { summary: 'Test issue' },
-    };
+    }
 
-    mockFetch.mockReturnValue(jsonResponse(mockIssue));
+    mockFetch.mockReturnValue(jsonResponse(mockIssue))
 
-    const issue = await client.getIssue('AAP-456');
+    const issue = await client.getIssue('AAP-456')
 
-    const calledUrl = mockFetch.mock.calls[0][0] as string;
-    expect(calledUrl).toBe(
-      'https://test.atlassian.net/ex/jira/test-cloud-id/rest/api/3/issue/AAP-456',
-    );
-    expect(issue.key).toBe('AAP-456');
-  });
+    const calledUrl = mockFetch.mock.calls[0][0] as string
+    expect(calledUrl).toBe('https://test.atlassian.net/ex/jira/test-cloud-id/rest/api/3/issue/AAP-456')
+    expect(issue.key).toBe('AAP-456')
+  })
 
   // -----------------------------------------------------------------------
   // Error handling
@@ -180,11 +173,11 @@ describe('JiraClient', () => {
         statusText: 'Not Found',
         text: () => Promise.resolve('Issue not found'),
       }),
-    );
+    )
 
-    await expect(client.getIssue('NOPE-999')).rejects.toThrow(JiraClientError);
-    await expect(client.getIssue('NOPE-999')).rejects.toThrow('404');
-  });
+    await expect(client.getIssue('NOPE-999')).rejects.toThrow(JiraClientError)
+    await expect(client.getIssue('NOPE-999')).rejects.toThrow('404')
+  })
 
   // -----------------------------------------------------------------------
   // getCurrentUser
@@ -202,15 +195,15 @@ describe('JiraClient', () => {
         '24x24': 'https://avatar.example.com/24',
         '16x16': 'https://avatar.example.com/16',
       },
-    };
+    }
 
-    mockFetch.mockReturnValue(jsonResponse(mockUser));
+    mockFetch.mockReturnValue(jsonResponse(mockUser))
 
-    const user = await client.getCurrentUser();
+    const user = await client.getCurrentUser()
 
-    const calledUrl = mockFetch.mock.calls[0][0] as string;
-    expect(calledUrl).toContain('/api/3/myself');
-    expect(user.accountId).toBe('abc123');
-    expect(user.displayName).toBe('Test User');
-  });
-});
+    const calledUrl = mockFetch.mock.calls[0][0] as string
+    expect(calledUrl).toContain('/api/3/myself')
+    expect(user.accountId).toBe('abc123')
+    expect(user.displayName).toBe('Test User')
+  })
+})

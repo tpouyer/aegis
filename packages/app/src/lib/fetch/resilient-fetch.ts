@@ -13,13 +13,13 @@
 
 export interface RetryConfig {
   /** Maximum number of retry attempts (default: 3). */
-  maxRetries: number;
+  maxRetries: number
   /** Base delay in milliseconds before the first retry (default: 1000). */
-  baseDelay: number;
+  baseDelay: number
   /** Maximum delay cap in milliseconds (default: 10000). */
-  maxDelay: number;
+  maxDelay: number
   /** HTTP status codes that are eligible for retry. */
-  retryOn: Set<number>;
+  retryOn: Set<number>
 }
 
 const DEFAULT_RETRY_CONFIG: RetryConfig = {
@@ -27,15 +27,15 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
   baseDelay: 1000,
   maxDelay: 10_000,
   retryOn: new Set([429, 500, 502, 503, 504]),
-};
+}
 
 // ---------------------------------------------------------------------------
 // In-flight GET deduplication map
 // ---------------------------------------------------------------------------
 
-import { recordHttpStart } from '@/lib/telemetry/instruments/http';
+import { recordHttpStart } from '@/lib/telemetry/instruments/http'
 
-const inflightGETs = new Map<string, Promise<Response>>();
+const inflightGETs = new Map<string, Promise<Response>>()
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,14 +47,11 @@ const inflightGETs = new Map<string, Promise<Response>>();
  * Uses exponential backoff: baseDelay * 2^attempt, capped at maxDelay,
  * plus random jitter in [0, 300ms).
  */
-export function computeDelay(
-  attempt: number,
-  config: RetryConfig,
-): number {
-  const exponential = config.baseDelay * Math.pow(2, attempt);
-  const capped = Math.min(exponential, config.maxDelay);
-  const jitter = Math.random() * 300;
-  return capped + jitter;
+export function computeDelay(attempt: number, config: RetryConfig): number {
+  const exponential = config.baseDelay * 2 ** attempt
+  const capped = Math.min(exponential, config.maxDelay)
+  const jitter = Math.random() * 300
+  return capped + jitter
 }
 
 /**
@@ -67,29 +64,29 @@ export function computeDelay(
  * Returns `null` if the header is missing or unparseable.
  */
 function parseRetryAfter(header: string | null): number | null {
-  if (header === null) return null;
+  if (header === null) return null
 
   // Try integer seconds first.
-  const seconds = Number(header);
+  const seconds = Number(header)
   if (!Number.isNaN(seconds) && seconds >= 0) {
-    return seconds * 1000;
+    return seconds * 1000
   }
 
   // Try as HTTP-date.
-  const date = new Date(header);
+  const date = new Date(header)
   if (!Number.isNaN(date.getTime())) {
-    return Math.max(0, date.getTime() - Date.now());
+    return Math.max(0, date.getTime() - Date.now())
   }
 
-  return null;
+  return null
 }
 
 /**
  * Returns true if the request method is (or defaults to) GET.
  */
 function isGET(options?: RequestInit): boolean {
-  const method = options?.method?.toUpperCase() ?? 'GET';
-  return method === 'GET';
+  const method = options?.method?.toUpperCase() ?? 'GET'
+  return method === 'GET'
 }
 
 /**
@@ -99,26 +96,26 @@ function isGET(options?: RequestInit): boolean {
 function wait(ms: number, signal?: AbortSignal | null): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     if (signal?.aborted) {
-      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
-      return;
+      reject(signal.reason ?? new DOMException('Aborted', 'AbortError'))
+      return
     }
 
-    const timer = setTimeout(resolve, ms);
+    const timer = setTimeout(resolve, ms)
 
     if (signal) {
       const onAbort = () => {
-        clearTimeout(timer);
-        reject(signal.reason ?? new DOMException('Aborted', 'AbortError'));
-      };
-      signal.addEventListener('abort', onAbort, { once: true });
+        clearTimeout(timer)
+        reject(signal.reason ?? new DOMException('Aborted', 'AbortError'))
+      }
+      signal.addEventListener('abort', onAbort, { once: true })
       // Clean up listener when timer fires normally.
-      const originalResolve = resolve;
+      const originalResolve = resolve
       resolve = () => {
-        signal.removeEventListener('abort', onAbort);
-        originalResolve();
-      };
+        signal.removeEventListener('abort', onAbort)
+        originalResolve()
+      }
     }
-  });
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -140,115 +137,110 @@ export async function resilientFetch(
   options?: RequestInit,
   retryConfig?: Partial<RetryConfig>,
 ): Promise<Response> {
-  const metric = recordHttpStart(url);
+  const metric = recordHttpStart(url)
 
   const config: RetryConfig = {
     ...DEFAULT_RETRY_CONFIG,
     ...retryConfig,
     retryOn: retryConfig?.retryOn ?? DEFAULT_RETRY_CONFIG.retryOn,
-  };
+  }
 
   // GET deduplication: if an identical GET is already in-flight, share it.
   if (isGET(options)) {
-    const existing = inflightGETs.get(url);
+    const existing = inflightGETs.get(url)
     if (existing) {
       // Return a clone so each consumer can independently read the body.
-      return existing.then((r) => r.clone());
+      return existing.then((r) => r.clone())
     }
   }
 
   const execute = async (): Promise<Response> => {
-    let lastError: unknown;
+    let lastError: unknown
 
     for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
       // Check for abort before each attempt.
       if (options?.signal?.aborted) {
-        throw (
-          options.signal.reason ??
-          new DOMException('Aborted', 'AbortError')
-        );
+        throw options.signal.reason ?? new DOMException('Aborted', 'AbortError')
       }
 
       try {
-        const response = await fetch(url, options);
+        const response = await fetch(url, options)
 
         // Success -- return immediately.
         if (response.ok) {
-          metric.end(response.status);
-          return response;
+          metric.end(response.status)
+          return response
         }
 
         // Non-retryable status -- throw immediately.
         if (!config.retryOn.has(response.status)) {
-          metric.end(response.status);
-          return response;
+          metric.end(response.status)
+          return response
         }
 
         // Retryable status -- decide how long to wait.
         if (attempt < config.maxRetries) {
-          let delay: number;
+          let delay: number
 
           if (response.status === 429) {
-            const retryAfter = parseRetryAfter(
-              response.headers.get('Retry-After'),
-            );
-            delay = retryAfter ?? computeDelay(attempt, config);
+            const retryAfter = parseRetryAfter(response.headers.get('Retry-After'))
+            delay = retryAfter ?? computeDelay(attempt, config)
           } else {
-            delay = computeDelay(attempt, config);
+            delay = computeDelay(attempt, config)
           }
 
           console.debug(
             `[resilientFetch] Retry ${attempt + 1}/${config.maxRetries} for ${url} ` +
               `(status ${response.status}, waiting ${Math.round(delay)}ms)`,
-          );
+          )
 
-          await wait(delay, options?.signal);
-          metric.retry();
-          continue;
+          await wait(delay, options?.signal)
+          metric.retry()
+          continue
         }
 
         // Max retries exceeded -- return the last response so the caller
         // can inspect the status.
-        metric.end(response.status);
-        return response;
+        metric.end(response.status)
+        return response
       } catch (error: unknown) {
         // Network errors (TypeError) are retryable.
         if (error instanceof TypeError && attempt < config.maxRetries) {
-          const delay = computeDelay(attempt, config);
+          const delay = computeDelay(attempt, config)
 
           console.debug(
             `[resilientFetch] Retry ${attempt + 1}/${config.maxRetries} for ${url} ` +
               `(network error: ${(error as Error).message}, waiting ${Math.round(delay)}ms)`,
-          );
+          )
 
-          await wait(delay, options?.signal);
-          lastError = error;
-          metric.retry();
-          continue;
+          await wait(delay, options?.signal)
+          lastError = error
+          metric.retry()
+          continue
         }
 
         // Abort errors and non-retryable errors propagate immediately.
-        metric.error(error instanceof Error ? error.name : 'UnknownError');
-        throw error;
+        metric.error(error instanceof Error ? error.name : 'UnknownError')
+        throw error
       }
     }
 
     // Should only be reached if all retries failed with network errors.
-    metric.error('MaxRetriesExceeded');
-    throw lastError;
-  };
+    metric.error('MaxRetriesExceeded')
+    throw lastError
+  }
 
   // For GET requests, store the in-flight promise for deduplication.
   if (isGET(options)) {
-    const promise = execute();
+    const promise = execute()
     // Suppress unhandled rejection on auxiliary chains -- the rejection
     // still propagates to callers via the .then() chain returned below.
-    promise.catch(() => {});
-    promise.finally(() => inflightGETs.delete(url)).catch(() => {});
-    inflightGETs.set(url, promise);
+    promise.catch(() => {})
+    promise.finally(() => inflightGETs.delete(url)).catch(() => {})
+    inflightGETs.set(url, promise)
     // Return a clone so the original stays consumable for other dedup callers.
-    return promise.then((r) => r.clone());
+    return promise.then((r) => r.clone())
   }
 
-  return execute();
+  return execute()
 }

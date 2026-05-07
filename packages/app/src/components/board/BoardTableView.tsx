@@ -6,69 +6,79 @@
  * Story Points, Components.
  */
 
-import { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import type { JiraIssue } from '@/lib/jira/types';
+import { ChevronDown, ChevronUp } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import type { JiraIssue } from '@/lib/jira/types'
 
 interface BoardTableViewProps {
-  issues: JiraIssue[];
-  onCardClick?: (issueKey: string) => void;
+  issues: JiraIssue[]
+  onCardClick?: (issueKey: string) => void
 }
 
-type SortField = 'key' | 'summary' | 'status' | 'priority' | 'assignee' | 'type';
-type SortDir = 'asc' | 'desc';
+type SortField = 'key' | 'summary' | 'status' | 'priority' | 'assignee' | 'type'
+type SortDir = 'asc' | 'desc'
 
 /** Extract story points from whichever custom field holds them. */
 function getStoryPoints(issue: JiraIssue): number | null {
   for (const [key, value] of Object.entries(issue.fields)) {
     if (key.startsWith('customfield_') && typeof value === 'number') {
-      return value;
+      return value
     }
   }
-  return null;
+  return null
 }
 
 /** Map status category keys to badge variants for visual distinction. */
-function statusVariant(
-  categoryKey: string,
-): 'default' | 'secondary' | 'outline' {
+function statusVariant(categoryKey: string): 'default' | 'secondary' | 'outline' {
   switch (categoryKey) {
     case 'done':
-      return 'default';
+      return 'default'
     case 'indeterminate':
-      return 'secondary';
+      return 'secondary'
     default:
-      return 'outline';
+      return 'outline'
   }
 }
 
 export function BoardTableView({ issues, onCardClick }: BoardTableViewProps) {
-  const [sortField, setSortField] = useState<SortField>('key');
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [sortField, setSortField] = useState<SortField>('key')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
 
   const sorted = useMemo(() => {
     return [...issues].sort((a, b) => {
-      let cmp = 0;
+      let cmp = 0
       switch (sortField) {
-        case 'key': cmp = a.key.localeCompare(b.key); break;
-        case 'summary': cmp = a.fields.summary.localeCompare(b.fields.summary); break;
-        case 'status': cmp = a.fields.status.name.localeCompare(b.fields.status.name); break;
-        case 'priority': cmp = a.fields.priority.name.localeCompare(b.fields.priority.name); break;
-        case 'assignee': cmp = (a.fields.assignee?.displayName ?? '').localeCompare(b.fields.assignee?.displayName ?? ''); break;
-        case 'type': cmp = a.fields.issuetype.name.localeCompare(b.fields.issuetype.name); break;
+        case 'key':
+          cmp = a.key.localeCompare(b.key)
+          break
+        case 'summary':
+          cmp = a.fields.summary.localeCompare(b.fields.summary)
+          break
+        case 'status':
+          cmp = a.fields.status.name.localeCompare(b.fields.status.name)
+          break
+        case 'priority':
+          cmp = a.fields.priority.name.localeCompare(b.fields.priority.name)
+          break
+        case 'assignee':
+          cmp = (a.fields.assignee?.displayName ?? '').localeCompare(b.fields.assignee?.displayName ?? '')
+          break
+        case 'type':
+          cmp = a.fields.issuetype.name.localeCompare(b.fields.issuetype.name)
+          break
       }
-      return sortDir === 'asc' ? cmp : -cmp;
-    });
-  }, [issues, sortField, sortDir]);
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [issues, sortField, sortDir])
 
   function handleSort(field: SortField) {
     if (sortField === field) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     } else {
-      setSortField(field);
-      setSortDir('asc');
+      setSortField(field)
+      setSortDir('asc')
     }
   }
 
@@ -81,14 +91,10 @@ export function BoardTableView({ issues, onCardClick }: BoardTableViewProps) {
         <span className="flex cursor-pointer select-none items-center gap-1">
           {label}
           {sortField === field &&
-            (sortDir === 'asc' ? (
-              <ChevronUp className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
-            ))}
+            (sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
         </span>
       </th>
-    );
+    )
   }
 
   return (
@@ -113,7 +119,7 @@ export function BoardTableView({ issues, onCardClick }: BoardTableViewProps) {
           </thead>
           <tbody>
             {sorted.map((issue, idx) => {
-              const points = getStoryPoints(issue);
+              const points = getStoryPoints(issue)
               return (
                 <tr
                   key={issue.key}
@@ -125,22 +131,15 @@ export function BoardTableView({ issues, onCardClick }: BoardTableViewProps) {
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onCardClick?.(issue.key);
+                      e.preventDefault()
+                      onCardClick?.(issue.key)
                     }
                   }}
                 >
-                  <td className="whitespace-nowrap px-4 py-2 font-medium text-primary">
-                    {issue.key}
-                  </td>
-                  <td className="max-w-xs truncate px-4 py-2 text-foreground">
-                    {issue.fields.summary}
-                  </td>
+                  <td className="whitespace-nowrap px-4 py-2 font-medium text-primary">{issue.key}</td>
+                  <td className="max-w-xs truncate px-4 py-2 text-foreground">{issue.fields.summary}</td>
                   <td className="whitespace-nowrap px-4 py-2">
-                    <Badge
-                      variant={statusVariant(issue.fields.status.statusCategory.key)}
-                      className="text-xs"
-                    >
+                    <Badge variant={statusVariant(issue.fields.status.statusCategory.key)} className="text-xs">
                       {issue.fields.status.name}
                     </Badge>
                   </td>
@@ -150,27 +149,19 @@ export function BoardTableView({ issues, onCardClick }: BoardTableViewProps) {
                     </Badge>
                   </td>
                   <td className="whitespace-nowrap px-4 py-2 text-muted-foreground">
-                    {issue.fields.assignee?.displayName ?? (
-                      <span className="italic">Unassigned</span>
-                    )}
+                    {issue.fields.assignee?.displayName ?? <span className="italic">Unassigned</span>}
                   </td>
                   <td className="whitespace-nowrap px-4 py-2">
                     <Badge variant="outline" className="text-xs">
                       {issue.fields.issuetype.name}
                     </Badge>
                   </td>
-                  <td className="whitespace-nowrap px-4 py-2 text-muted-foreground">
-                    {points ?? '—'}
-                  </td>
+                  <td className="whitespace-nowrap px-4 py-2 text-muted-foreground">{points ?? '—'}</td>
                   <td className="px-4 py-2">
                     {issue.fields.components.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {issue.fields.components.map((comp) => (
-                          <Badge
-                            key={comp.id}
-                            variant="outline"
-                            className="text-xs"
-                          >
+                          <Badge key={comp.id} variant="outline" className="text-xs">
                             {comp.name}
                           </Badge>
                         ))}
@@ -180,14 +171,11 @@ export function BoardTableView({ issues, onCardClick }: BoardTableViewProps) {
                     )}
                   </td>
                 </tr>
-              );
+              )
             })}
             {sorted.length === 0 && (
               <tr>
-                <td
-                  colSpan={8}
-                  className="px-4 py-8 text-center text-muted-foreground"
-                >
+                <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                   No issues to display
                 </td>
               </tr>
@@ -196,5 +184,5 @@ export function BoardTableView({ issues, onCardClick }: BoardTableViewProps) {
         </table>
       </div>
     </ScrollArea>
-  );
+  )
 }

@@ -5,9 +5,8 @@
  * dropdowns. Filter state is managed by the board Zustand store.
  */
 
-import { X, Search, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Filter, Search, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,43 +14,42 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useBoardStore } from '@/stores/board';
-import type { JiraIssue } from '@/lib/jira/types';
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import type { JiraIssue } from '@/lib/jira/types'
+import { useBoardStore } from '@/stores/board'
 
 interface FilterBarProps {
-  issues: JiraIssue[];
+  issues: JiraIssue[]
 }
 
 export function FilterBar({ issues }: FilterBarProps) {
-  const filters = useBoardStore((s) => s.filters);
-  const setFilter = useBoardStore((s) => s.setFilter);
-  const clearFilters = useBoardStore((s) => s.clearFilters);
+  const filters = useBoardStore((s) => s.filters)
+  const setFilter = useBoardStore((s) => s.setFilter)
+  const clearFilters = useBoardStore((s) => s.clearFilters)
 
   // Extract unique values from current issues for dropdown options
   const assignees = uniqueBy(
-    issues
-      .map((i) => i.fields.assignee)
-      .filter((a): a is NonNullable<typeof a> => a !== null),
+    issues.map((i) => i.fields.assignee).filter((a): a is NonNullable<typeof a> => a !== null),
     (a) => a.accountId,
-  );
+  )
 
   const components = uniqueBy(
     issues.flatMap((i) => i.fields.components),
     (c) => c.id,
-  );
+  )
 
   const priorities = uniqueBy(
     issues.map((i) => i.fields.priority),
     (p) => p.id,
-  );
+  )
 
   const issueTypes = uniqueBy(
     issues.map((i) => i.fields.issuetype),
     (t) => t.id,
-  );
+  )
 
-  const hasActiveFilters = Object.values(filters).some((v) => v !== null);
+  const hasActiveFilters = Object.values(filters).some((v) => v !== null)
 
   return (
     <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card px-4 py-2">
@@ -64,9 +62,7 @@ export function FilterBar({ issues }: FilterBarProps) {
           placeholder="Search issues..."
           aria-label="Search issues"
           value={filters.text ?? ''}
-          onChange={(e) =>
-            setFilter('text', e.target.value || null)
-          }
+          onChange={(e) => setFilter('text', e.target.value || null)}
           className="h-8 w-full pl-8 pr-8 text-xs md:w-48"
           data-shortcut-target="filter-bar"
         />
@@ -121,18 +117,13 @@ export function FilterBar({ issues }: FilterBarProps) {
 
       {/* Clear filters */}
       {hasActiveFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearFilters}
-          className="h-8 gap-1 text-xs text-muted-foreground"
-        >
+        <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 gap-1 text-xs text-muted-foreground">
           <X className="h-3.5 w-3.5" />
           Clear Filters
         </Button>
       )}
     </div>
-  );
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -140,26 +131,17 @@ export function FilterBar({ issues }: FilterBarProps) {
 // ---------------------------------------------------------------------------
 
 interface FilterDropdownProps {
-  label: string;
-  value: string | null;
-  options: Array<{ id: string; label: string }>;
-  onSelect: (value: string | null) => void;
+  label: string
+  value: string | null
+  options: Array<{ id: string; label: string }>
+  onSelect: (value: string | null) => void
 }
 
-function FilterDropdown({
-  label,
-  value,
-  options,
-  onSelect,
-}: FilterDropdownProps) {
+function FilterDropdown({ label, value, options, onSelect }: FilterDropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant={value ? 'secondary' : 'outline'}
-          size="sm"
-          className="h-8 gap-1 text-xs"
-        >
+        <Button variant={value ? 'secondary' : 'outline'} size="sm" className="h-8 gap-1 text-xs">
           {value ?? label}
         </Button>
       </DropdownMenuTrigger>
@@ -168,10 +150,7 @@ function FilterDropdown({
         <DropdownMenuSeparator />
         {value && (
           <>
-            <DropdownMenuItem
-              onClick={() => onSelect(null)}
-              className="text-xs text-muted-foreground"
-            >
+            <DropdownMenuItem onClick={() => onSelect(null)} className="text-xs text-muted-foreground">
               Clear selection
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -183,17 +162,13 @@ function FilterDropdown({
           </DropdownMenuItem>
         )}
         {options.map((option) => (
-          <DropdownMenuItem
-            key={option.id}
-            onClick={() => onSelect(option.id)}
-            className="text-xs"
-          >
+          <DropdownMenuItem key={option.id} onClick={() => onSelect(option.id)} className="text-xs">
             {option.label}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
-  );
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -201,11 +176,11 @@ function FilterDropdown({
 // ---------------------------------------------------------------------------
 
 function uniqueBy<T>(items: T[], keyFn: (item: T) => string): T[] {
-  const seen = new Set<string>();
+  const seen = new Set<string>()
   return items.filter((item) => {
-    const key = keyFn(item);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+    const key = keyFn(item)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 }

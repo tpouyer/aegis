@@ -7,8 +7,8 @@
  */
 
 import { ScrollArea } from '@/components/ui/scroll-area'
-import type { DiffResult } from '@/lib/vfs/types'
 import { cn } from '@/lib/utils'
+import type { DiffResult } from '@/lib/vfs/types'
 
 interface DiffViewProps {
   diff: DiffResult
@@ -16,11 +16,7 @@ interface DiffViewProps {
 
 export function DiffView({ diff }: DiffViewProps) {
   if (diff.hunks.length === 0) {
-    return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        No changes
-      </div>
-    )
+    return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No changes</div>
   }
 
   return (

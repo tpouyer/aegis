@@ -1,14 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
-import { Loading } from '@/components/shared/Loading'
+import { AlertTriangle } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { IDELayout } from '@/components/ide/IDELayout'
-import { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
+import { Loading } from '@/components/shared/Loading'
 import { githubClient } from '@/lib/github/client'
+import type { TreeEntry } from '@/lib/github/types'
+import { shortcutRegistry, useShortcuts } from '@/lib/shortcuts'
+import { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
 import { useIDEStore } from '@/stores/ide'
 import { useRecentStore } from '@/stores/recent'
-import { useShortcuts, shortcutRegistry } from '@/lib/shortcuts'
-import type { TreeEntry } from '@/lib/github/types'
-import { AlertTriangle } from 'lucide-react'
 
 export const Route = createFileRoute('/issue/$issueKey/ide')({
   component: IdePage,
@@ -37,7 +37,9 @@ function IdePage() {
   const { issueKey } = Route.useParams()
   const setActiveRepo = useIDEStore((s) => s.setActiveRepo)
 
-  useEffect(() => { document.title = `${issueKey} IDE — Aegis` }, [issueKey])
+  useEffect(() => {
+    document.title = `${issueKey} IDE — Aegis`
+  }, [issueKey])
 
   // Record visit for recent issues on landing page
   const recordVisit = useRecentStore((s) => s.recordVisit)
@@ -138,16 +140,13 @@ function IdePage() {
     }
 
     init()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [issueKey, setActiveRepo])
 
   if (isLoading) {
-    return (
-      <Loading
-        className="h-full"
-        message={`Initializing IDE for ${issueKey}...`}
-      />
-    )
+    return <Loading className="h-full" message={`Initializing IDE for ${issueKey}...`} />
   }
 
   if (error || !vfs) {
@@ -156,22 +155,13 @@ function IdePage() {
         <AlertTriangle className="h-12 w-12 text-destructive" />
         <div className="text-center">
           <h2 className="text-lg font-semibold text-foreground">IDE initialization failed</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {error ?? 'Unknown error'}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{error ?? 'Unknown error'}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <IDELayout
-      vfs={vfs}
-      repoKey={repoKey}
-      tree={tree}
-      issueKey={issueKey}
-      branch={branch}
-      baseBranch={baseBranch}
-    />
+    <IDELayout vfs={vfs} repoKey={repoKey} tree={tree} issueKey={issueKey} branch={branch} baseBranch={baseBranch} />
   )
 }
