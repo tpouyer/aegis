@@ -13,8 +13,8 @@
  * endpoint will need to be routed through such a proxy.
  */
 
-import { generateCodeChallenge, generateCodeVerifier, generateState } from './pkce'
 import { getWellKnownConfig } from '@/lib/telemetry/config'
+import { generateCodeChallenge, generateCodeVerifier, generateState } from './pkce'
 import type { GitHubOAuthConfig, TokenSet } from './types'
 
 const GITHUB_AUTH_URL = 'https://github.com/login/oauth/authorize'
