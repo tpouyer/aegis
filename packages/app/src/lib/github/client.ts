@@ -24,27 +24,27 @@ export class GitHubClient {
 
   // ── Helpers ──────────────────────────────────────────────────────
 
-  private async request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
+  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${path}`
-    const response = await resilientFetch(url, {
-      ...options,
-      headers: {
-        Accept: 'application/vnd.github+json',
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    })
+
+    const headers: Record<string, string> = {
+      Accept: 'application/vnd.github+json',
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    }
+
+    // Inject auth header directly from authManager (bypass SW)
+    const token = authManager.getState().tokens.github
+    if (token?.accessToken) {
+      headers.Authorization = `Bearer ${token.accessToken}`
+    }
+
+    const response = await resilientFetch(url, { ...options, headers })
 
     if (!response.ok) {
       if (response.status === 401) {
-        if (!isRetry && authManager.isConnected('github')) {
-          // Token exists but SW may not have it — re-sync and retry once
-          await authManager.syncAllTokensToSW()
-          return this.request<T>(path, options, true)
-        }
         authManager.disconnect('github').catch(() => {})
       }
-
       throw new Error(`GitHub API ${response.status}: ${response.statusText}`)
     }
 
