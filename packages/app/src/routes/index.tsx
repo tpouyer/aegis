@@ -12,6 +12,13 @@ import {
   ChevronRight,
   Settings,
   Cpu,
+  Zap,
+  ClipboardList,
+  TestTube2,
+  Blocks,
+  Users,
+  Headphones,
+  Search,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,6 +32,8 @@ import { initiateRedHatAuth } from '@/lib/auth/redhat-sso'
 import { getGitHubConfig, getRedHatConfig } from '@/lib/auth/config'
 import { useRecentStore } from '@/stores/recent'
 import type { RecentIssue } from '@/stores/recent'
+import { usePersonaStore, PERSONA_LABELS } from '@/stores/persona'
+import type { PersonaRole } from '@/stores/persona'
 
 export const Route = createFileRoute('/')({
   component: HomePage,
@@ -287,6 +296,101 @@ function RecentIssuesSection() {
 }
 
 // ---------------------------------------------------------------------------
+// Role-based widget
+// ---------------------------------------------------------------------------
+
+const ROLE_WIDGETS: Record<PersonaRole, {
+  icon: typeof Zap
+  title: string
+  description: string
+  linkTo: string
+  linkParams?: Record<string, string>
+  linkLabel: string
+}> = {
+  developer: {
+    icon: Zap,
+    title: 'Quick Actions',
+    description: 'Jump into your board, configure AI, or open settings',
+    linkTo: '/board/$boardId',
+    linkParams: { boardId: '1' },
+    linkLabel: 'Open Board',
+  },
+  pm: {
+    icon: ClipboardList,
+    title: 'Sprint Focus',
+    description: 'Open the board in table view for a detailed sprint overview',
+    linkTo: '/board/$boardId',
+    linkParams: { boardId: '1' },
+    linkLabel: 'View Board',
+  },
+  qa: {
+    icon: TestTube2,
+    title: 'Testing Focus',
+    description: 'Open AI Chat to generate test cases and review acceptance criteria',
+    linkTo: '/issue/$issueKey/chat',
+    linkParams: { issueKey: 'new' },
+    linkLabel: 'Open Chat',
+  },
+  architect: {
+    icon: Blocks,
+    title: 'Architecture Review',
+    description: 'Use general chat to discuss design patterns and system architecture',
+    linkTo: '/issue/$issueKey/chat',
+    linkParams: { issueKey: 'new' },
+    linkLabel: 'Open Chat',
+  },
+  manager: {
+    icon: Users,
+    title: 'Team Overview',
+    description: 'View the board in table mode to track progress by assignee',
+    linkTo: '/board/$boardId',
+    linkParams: { boardId: '1' },
+    linkLabel: 'View Board',
+  },
+  support: {
+    icon: Headphones,
+    title: 'Customer Issues',
+    description: 'Search for issues related to customer reports',
+    linkTo: '/search',
+    linkLabel: 'Search Issues',
+  },
+}
+
+function RoleWidgetSection() {
+  const role = usePersonaStore((s) => s.role)
+  const widget = ROLE_WIDGETS[role]
+  const Icon = widget.icon
+
+  // For developer role, the QuickActions component already covers this
+  if (role === 'developer') return null
+
+  return (
+    <div>
+      <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+        {PERSONA_LABELS[role]} Focus
+      </h2>
+      <Card>
+        <CardContent className="flex items-center gap-4 p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">{widget.title}</p>
+            <p className="text-xs text-muted-foreground">{widget.description}</p>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link to={widget.linkTo} params={widget.linkParams}>
+              {widget.linkLabel}
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Quick actions
 // ---------------------------------------------------------------------------
 
@@ -340,6 +444,9 @@ function AuthenticatedLanding({ authState }: { authState: AuthState }) {
 
       {/* Recent issues */}
       <RecentIssuesSection />
+
+      {/* Role-based widget */}
+      <RoleWidgetSection />
 
       {/* Quick actions */}
       <QuickActions />

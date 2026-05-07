@@ -10,6 +10,8 @@ import { commandRegistry } from './registry';
 import type { Command } from './types';
 import { useThemeStore } from '@/stores/theme';
 import { useSidebarStore } from '@/stores/sidebar';
+import { usePersonaStore, PERSONA_LABELS } from '@/stores/persona';
+import type { PersonaRole } from '@/stores/persona';
 
 // ---------------------------------------------------------------------------
 // Types for the navigate callback
@@ -48,6 +50,23 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
       keywords: ['board', 'kanban', 'issues', 'sprint'],
       shortcut: '⌘2',
       action: () => navigate({ to: '/board/$boardId', params: { boardId: '1' } }),
+    },
+    {
+      id: 'nav.go-to-chat',
+      label: 'Go to Chat',
+      description: 'Navigate to general chat',
+      category: 'navigation',
+      keywords: ['chat', 'ai', 'conversation', 'message'],
+      shortcut: '⌘3',
+      action: () => navigate({ to: '/chat' }),
+    },
+    {
+      id: 'nav.go-to-search',
+      label: 'Search Issues',
+      description: 'Navigate to issue search',
+      category: 'navigation',
+      keywords: ['search', 'find', 'jira', 'issues', 'query'],
+      action: () => navigate({ to: '/search' }),
     },
     {
       id: 'nav.go-to-settings',
@@ -92,6 +111,24 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
 
   for (const cmd of actionCommands) {
     disposers.push(commandRegistry.register(cmd));
+  }
+
+  // -- Persona switch commands -----------------------------------------------
+
+  const personaRoles = Object.entries(PERSONA_LABELS) as [PersonaRole, string][];
+  for (const [roleId, roleLabel] of personaRoles) {
+    disposers.push(
+      commandRegistry.register({
+        id: `action.switch-to-${roleId}`,
+        label: `Switch to ${roleLabel}`,
+        description: `Set your role to ${roleLabel}`,
+        category: 'action',
+        keywords: ['role', 'persona', 'switch', roleId, roleLabel.toLowerCase()],
+        action: () => {
+          usePersonaStore.getState().setRole(roleId);
+        },
+      }),
+    );
   }
 
   return () => {

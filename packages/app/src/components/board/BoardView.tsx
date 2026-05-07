@@ -16,8 +16,9 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd';
-import { AlertTriangle, RefreshCw, LayoutDashboard } from 'lucide-react';
+import { AlertTriangle, RefreshCw, LayoutDashboard, LayoutGrid, List } from 'lucide-react';
 import { BoardSkeleton } from './BoardSkeleton';
+import { BoardTableView } from './BoardTableView';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { Button } from '@/components/ui/button';
 import { useBoard, useIssues, useTransitionMutation } from '@/lib/jira/queries';
@@ -48,6 +49,7 @@ export function BoardView({ boardId }: BoardViewProps) {
 
   const [selectedIssueKey, setSelectedIssueKey] = useState<string | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
 
   // TransitionModal state
   const [transitionModalOpen, setTransitionModalOpen] = useState(false);
@@ -381,6 +383,26 @@ export function BoardView({ boardId }: BoardViewProps) {
             Last updated: {lastUpdated}
           </span>
         )}
+        <div className="flex items-center gap-0.5 rounded-md border border-border p-0.5">
+          <Button
+            variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={() => setViewMode('kanban')}
+            title="Kanban view"
+          >
+            <LayoutGrid className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={() => setViewMode('table')}
+            title="Table view"
+          >
+            <List className="h-3.5 w-3.5" />
+          </Button>
+        </div>
         <Button
           variant="ghost"
           size="sm"
@@ -395,7 +417,10 @@ export function BoardView({ boardId }: BoardViewProps) {
         </Button>
       </div>
 
-      {/* Board columns */}
+      {/* Board content — kanban or table */}
+      {viewMode === 'table' ? (
+        <BoardTableView issues={allIssues} onCardClick={handleCardClick} />
+      ) : (
       <DragDropContext
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
@@ -421,6 +446,7 @@ export function BoardView({ boardId }: BoardViewProps) {
           })()}
         </div>
       </DragDropContext>
+      )}
 
       {/* Issue detail panel */}
       <CardDetail

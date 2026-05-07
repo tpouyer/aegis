@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
-import { Settings, Moon, Sun, Link2, Link2Off, Bot, Palette, Info, Sparkles, Activity } from 'lucide-react'
+import { Settings, Moon, Sun, Link2, Link2Off, Bot, Palette, Info, Sparkles, Activity, User } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -55,6 +55,7 @@ function useAuthState(): AuthState {
 
 import { useThemeStore } from '@/stores/theme'
 import { useTelemetryStore } from '@/stores/telemetry'
+import { usePersonaStore, PERSONA_LABELS, PERSONA_DESCRIPTIONS, type PersonaRole } from '@/stores/persona'
 
 function useTheme() {
   const isDark = useThemeStore((s) => s.isDark)
@@ -250,6 +251,38 @@ function LLMProviderSection() {
   )
 }
 
+function RoleSection() {
+  const { role, setRole } = usePersonaStore()
+  const roles = Object.entries(PERSONA_LABELS) as [PersonaRole, string][]
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <User className="h-5 w-5" />
+          Role
+        </CardTitle>
+        <CardDescription>
+          Your role determines AI prompts, suggested actions, and dashboard widgets.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {roles.map(([id, label]) => (
+          <div key={id} className="flex items-center justify-between rounded-lg border border-border p-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">{label}</p>
+              <p className="text-xs text-muted-foreground">{PERSONA_DESCRIPTIONS[id]}</p>
+            </div>
+            <Button variant={role === id ? 'default' : 'outline'} size="sm" onClick={() => setRole(id)}>
+              {role === id ? 'Active' : 'Select'}
+            </Button>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
 function AppearanceSection() {
   const { isDark, toggle } = useTheme()
 
@@ -434,6 +467,8 @@ function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="preferences" className="space-y-6">
+          <RoleSection />
+          <Separator />
           <AppearanceSection />
           <Separator />
           <TelemetrySection />

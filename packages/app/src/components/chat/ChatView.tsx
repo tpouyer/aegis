@@ -28,6 +28,8 @@ import { providerRegistry } from '@/lib/llm/provider-registry'
 import { buildSystemPrompt } from '@/lib/llm/system-prompt'
 import { routeToolCall } from '@/lib/llm/tool-router'
 import { instrumentedChat } from '@/lib/telemetry/instruments/llm'
+import { usePersonaStore, PERSONA_LABELS } from '@/stores/persona'
+import { getSuggestedPrompts, PERSONA_SYSTEM_DESCRIPTIONS } from '@/lib/llm/persona-prompts'
 import type { ChatMessage, ChatChunk } from '@/lib/llm/types'
 
 interface ChatViewProps {
@@ -128,13 +130,17 @@ export function ChatView({
       }
       addMessage(issueKey, assistantMsg)
 
-      // Build system prompt
+      const personaRole = usePersonaStore.getState().role
       const systemPrompt = buildSystemPrompt({
-        issueKey,
+        issueKey: issueKey || undefined,
         issueSummary,
         issueDescription,
         acceptanceCriteria,
         supportsToolUse: provider.supportsToolUse,
+        persona: {
+          role: PERSONA_LABELS[personaRole],
+          description: PERSONA_SYSTEM_DESCRIPTIONS[personaRole],
+        },
       })
 
       // Start streaming
@@ -271,9 +277,9 @@ export function ChatView({
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5 text-primary" />
           <span className="text-sm font-medium text-foreground">
-            {issueKey}
+            {issueKey || 'General Chat'}
           </span>
-          <span className="text-sm text-muted-foreground">{issueSummary}</span>
+          {issueSummary && <span className="text-sm text-muted-foreground">{issueSummary}</span>}
         </div>
 
         {/* Model selector */}
@@ -345,34 +351,36 @@ export function ChatView({
 // Chat empty state with suggested prompts
 // ---------------------------------------------------------------------------
 
-const SUGGESTED_PROMPTS = [
-  'What are the acceptance criteria for this issue?',
-  'Suggest an implementation approach for this issue',
-  'What files in the codebase are most relevant?',
-  'Are there any potential edge cases I should consider?',
-]
-
 function ChatEmptyState({
   issueKey,
   onSend,
 }: {
-  issueKey: string
+  issueKey?: string
   onSend: (content: string) => void
 }) {
+  const role = usePersonaStore((s) => s.role)
+  const prompts = getSuggestedPrompts(role, issueKey)
+  const title = issueKey
+    ? `Start a conversation about ${issueKey}`
+    : 'Start a conversation'
+  const description = issueKey
+    ? `Ask questions about this issue from a ${PERSONA_LABELS[role]} perspective.`
+    : `Ask anything — org context, processes, or general questions as a ${PERSONA_LABELS[role]}.`
+
   return (
     <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
       <EmptyState
         variant="info"
         icon={MessageCircle}
-        title={`Start a conversation about ${issueKey}`}
-        description="Ask the AI assistant about implementation approaches, coding standards, or anything related to this issue."
+        title={title}
+        description={description}
       >
         <div className="mt-2 w-full space-y-2">
           <p className="text-xs font-medium text-muted-foreground">
             Suggested prompts
           </p>
           <ul className="space-y-1.5" role="list" aria-label="Suggested prompts">
-            {SUGGESTED_PROMPTS.map((prompt) => (
+            {prompts.map((prompt) => (
               <li key={prompt}>
                 <button
                   type="button"
