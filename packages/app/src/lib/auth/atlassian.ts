@@ -57,6 +57,7 @@ export async function initiateAtlassianAuth(
  */
 export async function handleAtlassianCallback(
   params: URLSearchParams,
+  config: AtlassianOAuthConfig,
 ): Promise<TokenSet> {
   const code = params.get('code');
   const state = params.get('state');
@@ -91,9 +92,9 @@ export async function handleAtlassianCallback(
     },
     body: JSON.stringify({
       grant_type: 'authorization_code',
-      client_id: params.get('client_id') || '',
+      client_id: config.clientId,
       code,
-      redirect_uri: params.get('redirect_uri') || '',
+      redirect_uri: config.redirectUri,
       code_verifier: verifier,
     }),
   });

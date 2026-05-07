@@ -56,6 +56,7 @@ export async function initiateGoogleAuth(config: GoogleOAuthConfig): Promise<voi
  */
 export async function handleGoogleCallback(
   params: URLSearchParams,
+  config: GoogleOAuthConfig,
 ): Promise<TokenSet> {
   const code = params.get('code');
   const state = params.get('state');
@@ -85,9 +86,9 @@ export async function handleGoogleCallback(
 
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
-    client_id: params.get('client_id') || '',
+    client_id: config.clientId,
     code,
-    redirect_uri: params.get('redirect_uri') || '',
+    redirect_uri: config.redirectUri,
     code_verifier: verifier,
   });
 

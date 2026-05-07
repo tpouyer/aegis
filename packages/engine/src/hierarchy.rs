@@ -46,7 +46,16 @@ pub fn resolve_hierarchy(
             let existing = content_map.get(content.name.as_str());
             let should_insert = match existing {
                 None => true,
-                Some(existing) => priority > existing.priority,
+                Some(existing) => {
+                    if priority > existing.priority {
+                        true
+                    } else if priority == existing.priority {
+                        // Deterministic tie-break: lexicographically later scope name wins
+                        content.scope > existing.source_scope
+                    } else {
+                        false
+                    }
+                }
             };
 
             if should_insert {
@@ -224,16 +233,12 @@ mod tests {
         );
 
         // RedHatSSO user sees the most specific (repo-specific) content.
-        // Both platform and internal are repo-specific with priority 1,
-        // the last one encountered wins.
+        // Both "platform" and "internal" are repo-specific with priority 1.
+        // Tie-break: lexicographically later scope name wins → "platform" > "internal"
         let result = resolve_hierarchy(&manifest, "awx", AuthLevel::RedhatSso);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].name, "security");
-        // Both platform and internal are repo-specific, so the last one
-        // iterated replaces the first.
-        assert!(
-            result[0].source_scope == "platform" || result[0].source_scope == "internal"
-        );
+        assert_eq!(result[0].source_scope, "platform");
     }
 
     #[test]

@@ -58,6 +58,7 @@ export async function initiateGitHubAuth(config: GitHubOAuthConfig): Promise<voi
  */
 export async function handleGitHubCallback(
   params: URLSearchParams,
+  config: GitHubOAuthConfig,
 ): Promise<TokenSet> {
   const code = params.get('code');
   const state = params.get('state');
@@ -89,7 +90,6 @@ export async function handleGitHubCallback(
 
   // Exchange authorization code for access token
   // NOTE: This endpoint requires a CORS proxy in production.
-  // The proxy should forward to https://github.com/login/oauth/access_token
   const response = await fetch(GITHUB_TOKEN_URL, {
     method: 'POST',
     headers: {
@@ -97,10 +97,10 @@ export async function handleGitHubCallback(
       Accept: 'application/json',
     },
     body: JSON.stringify({
-      client_id: params.get('client_id') || '',
+      client_id: config.clientId,
       code,
       code_verifier: verifier,
-      redirect_uri: params.get('redirect_uri') || '',
+      redirect_uri: config.redirectUri,
     }),
   });
 

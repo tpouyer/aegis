@@ -52,7 +52,7 @@ export class AuthManager {
   async requireAuth(provider: AuthProvider): Promise<TokenSet> {
     const token = this.state.tokens[provider];
 
-    if (!token) {
+    if (!token || !token.accessToken) {
       throw new Error(
         `Provider "${provider}" not connected. Initiate OAuth flow first.`,
       );
@@ -76,7 +76,7 @@ export class AuthManager {
    */
   isConnected(provider: AuthProvider): boolean {
     const token = this.state.tokens[provider];
-    return !!token && !this.isTokenExpired(token);
+    return !!token && !!token.accessToken && !this.isTokenExpired(token);
   }
 
   /**
