@@ -21,9 +21,7 @@ import type { ToolCall, ToolResult } from './types';
 // Debug logging
 // ---------------------------------------------------------------------------
 
-const DEBUG = typeof process !== 'undefined'
-  ? process.env.NODE_ENV !== 'production'
-  : true;
+const DEBUG = import.meta.env.DEV;
 
 function logToolCall(toolCall: ToolCall): void {
   if (!DEBUG) return;

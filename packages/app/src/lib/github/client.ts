@@ -51,9 +51,8 @@ export class GitHubClient {
         authManager.disconnect('github').catch(() => {});
       }
 
-      const body = await response.text().catch(() => '');
       throw new Error(
-        `GitHub API ${response.status}: ${response.statusText} — ${path}\n${body}`,
+        `GitHub API ${response.status}: ${response.statusText}`,
       );
     }
 

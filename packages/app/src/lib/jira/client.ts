@@ -69,9 +69,8 @@ export class JiraClient {
         authManager.disconnect('atlassian').catch(() => {});
       }
 
-      const text = await response.text().catch(() => '');
       throw new JiraClientError(
-        `Jira API error: ${response.status} ${response.statusText} — ${text}`,
+        `Jira API error: ${response.status} ${response.statusText}`,
         response.status,
         response.statusText,
       );
@@ -139,7 +138,7 @@ export class JiraClient {
   /** Get a single issue with all fields. */
   async getIssue(issueKey: string): Promise<JiraIssue> {
     return this.request<JiraIssue>(
-      this.apiUrl(`/api/3/issue/${issueKey}`),
+      this.apiUrl(`/api/3/issue/${encodeURIComponent(issueKey)}`),
     );
   }
 
@@ -185,7 +184,7 @@ export class JiraClient {
   /** Get available transitions for an issue. */
   async getTransitions(issueKey: string): Promise<JiraTransition[]> {
     const result = await this.request<JiraTransitionsResponse>(
-      this.apiUrl(`/api/3/issue/${issueKey}/transitions`),
+      this.apiUrl(`/api/3/issue/${encodeURIComponent(issueKey)}/transitions`),
     );
     return result.transitions;
   }
@@ -207,7 +206,7 @@ export class JiraClient {
     }
 
     await this.request<void>(
-      this.apiUrl(`/api/3/issue/${issueKey}/transitions`),
+      this.apiUrl(`/api/3/issue/${encodeURIComponent(issueKey)}/transitions`),
       {
         method: 'POST',
         body: JSON.stringify(body),
@@ -225,7 +224,7 @@ export class JiraClient {
     fields: Record<string, unknown>,
   ): Promise<void> {
     await this.request<void>(
-      this.apiUrl(`/api/3/issue/${issueKey}`),
+      this.apiUrl(`/api/3/issue/${encodeURIComponent(issueKey)}`),
       {
         method: 'PUT',
         body: JSON.stringify({ fields }),
@@ -239,7 +238,7 @@ export class JiraClient {
     body: unknown,
   ): Promise<void> {
     await this.request<void>(
-      this.apiUrl(`/api/3/issue/${issueKey}/comment`),
+      this.apiUrl(`/api/3/issue/${encodeURIComponent(issueKey)}/comment`),
       {
         method: 'POST',
         body: JSON.stringify({ body }),

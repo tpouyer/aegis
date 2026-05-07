@@ -4,9 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import { authManager } from './lib/auth/manager'
+import { CacheStore } from './lib/cache/indexeddb'
 import './app.css'
 
 authManager.clearExpiredTokens()
+new CacheStore('aegis-chat', 'sessions').evictExpired().catch(() => {})
+new CacheStore('aegis-jira', 'cache').evictExpired().catch(() => {})
 
 const queryClient = new QueryClient({
   defaultOptions: {
