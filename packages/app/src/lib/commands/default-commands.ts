@@ -8,6 +8,7 @@
 
 import { commandRegistry } from './registry';
 import type { Command } from './types';
+import { useThemeStore } from '@/stores/theme';
 
 // ---------------------------------------------------------------------------
 // Types for the navigate callback
@@ -45,7 +46,7 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
       category: 'navigation',
       keywords: ['board', 'kanban', 'issues', 'sprint'],
       shortcut: '⌘2',
-      action: () => navigate({ to: '/board/$boardId', params: { boardId: 'default' } }),
+      action: () => navigate({ to: '/board/$boardId', params: { boardId: '1' } }),
     },
     {
       id: 'nav.go-to-settings',
@@ -72,8 +73,7 @@ export function registerDefaultCommands(navigate: NavigateFn): () => void {
       category: 'action',
       keywords: ['theme', 'dark', 'light', 'mode', 'appearance'],
       action: () => {
-        const root = document.documentElement;
-        root.classList.toggle('dark');
+        useThemeStore.getState().toggle();
       },
     },
     {
@@ -120,7 +120,7 @@ export function registerIssueCommands(
         label: `Open ${issue.key}: ${issue.summary}`,
         category: 'issue',
         keywords: [issue.key, issue.summary],
-        action: () => navigate({ to: '/board/$boardId', params: { boardId: 'default' } }),
+        action: () => navigate({ to: '/board/$boardId', params: { boardId: '1' } }),
       }),
     );
   }

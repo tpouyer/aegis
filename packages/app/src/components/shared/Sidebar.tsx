@@ -16,7 +16,7 @@ export function Sidebar() {
         </Link>
         <Link
           to="/board/$boardId"
-          params={{ boardId: 'default' }}
+          params={{ boardId: '1' }}
           className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-accent"
           activeProps={{ className: 'bg-accent text-accent-foreground' }}
         >

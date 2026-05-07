@@ -24,9 +24,10 @@ interface IssueCardProps {
   issue: JiraIssue;
   index: number;
   onClick?: (issueKey: string) => void;
+  isFocused?: boolean;
 }
 
-export function IssueCard({ issue, index, onClick }: IssueCardProps) {
+export function IssueCard({ issue, index, onClick, isFocused }: IssueCardProps) {
   const { key, fields } = issue;
   const storyPoints = getStoryPoints(fields);
   const priorityColor = getPriorityColor(fields.priority.name);
@@ -44,8 +45,12 @@ export function IssueCard({ issue, index, onClick }: IssueCardProps) {
             className={`cursor-grab transition-shadow ${
               snapshot.isDragging
                 ? 'shadow-lg ring-2 ring-primary/30'
-                : 'hover:shadow-md'
+                : isFocused
+                  ? 'ring-2 ring-primary shadow-md'
+                  : 'hover:shadow-md'
             }`}
+            tabIndex={isFocused ? 0 : -1}
+            aria-selected={isFocused}
             onClick={() => onClick?.(key)}
           >
             <CardContent className="p-3">
@@ -54,10 +59,13 @@ export function IssueCard({ issue, index, onClick }: IssueCardProps) {
                 <span className="text-xs font-medium text-muted-foreground">
                   {key}
                 </span>
-                <span
-                  className={`inline-block h-2 w-2 rounded-full ${priorityColor}`}
-                  title={fields.priority.name}
-                />
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${priorityColor}`}
+                    aria-hidden="true"
+                  />
+                  {fields.priority.name}
+                </span>
               </div>
 
               {/* Summary */}

@@ -399,15 +399,24 @@ export function BoardView({ boardId }: BoardViewProps) {
         onDragEnd={handleDragEnd}
       >
         <div className="flex flex-1 gap-3 overflow-x-auto p-4">
-          {columns.map((column) => (
-            <Column
-              key={column.name}
-              columnId={column.name}
-              name={column.name}
-              issues={column.issues}
-              onCardClick={handleCardClick}
-            />
-          ))}
+          {(() => {
+            let runningIndex = 0;
+            return columns.map((column) => {
+              const colStartIndex = runningIndex;
+              runningIndex += column.issues.length;
+              return (
+                <Column
+                  key={column.name}
+                  columnId={column.name}
+                  name={column.name}
+                  issues={column.issues}
+                  onCardClick={handleCardClick}
+                  focusedGlobalIndex={focusedCardIndex}
+                  startIndex={colStartIndex}
+                />
+              );
+            });
+          })()}
         </div>
       </DragDropContext>
 

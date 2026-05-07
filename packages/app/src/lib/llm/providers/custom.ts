@@ -130,11 +130,12 @@ export class CustomProvider implements LLMProvider {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
+        signal: params.signal,
       });
     } catch (err) {
       yield {
         type: 'error',
-        error: `Cannot connect to ${this.endpoint}. Check the URL and try again.`,
+        error: `Cannot connect to ${this.relayUrl}. Check the URL and try again.`,
       };
       return;
     }

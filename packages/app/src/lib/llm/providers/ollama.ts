@@ -101,6 +101,7 @@ export class OllamaProvider implements LLMProvider {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: params.signal,
       });
     } catch (err) {
       yield {

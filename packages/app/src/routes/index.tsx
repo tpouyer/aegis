@@ -129,7 +129,7 @@ function QuickStartSection() {
             <p className="text-xs text-muted-foreground">Browse public docs</p>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link to="/board/$boardId" params={{ boardId: 'default' }}>
+            <Link to="/board/$boardId" params={{ boardId: '1' }}>
               Browse
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Link>
@@ -204,6 +204,8 @@ function AuthStatusSection() {
 
 function HomePage() {
   const authState = useAuthState()
+
+  useEffect(() => { document.title = 'Aegis — Home' }, [])
 
   return (
     <div className="mx-auto max-w-3xl p-6">

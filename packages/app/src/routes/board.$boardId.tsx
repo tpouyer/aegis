@@ -12,6 +12,8 @@ function BoardPage() {
   const { boardId } = Route.useParams()
   const numericBoardId = Number(boardId)
 
+  useEffect(() => { document.title = `Board ${boardId} — Aegis` }, [boardId])
+
   // Activate board-scope keyboard shortcut handling
   useShortcuts('board')
 

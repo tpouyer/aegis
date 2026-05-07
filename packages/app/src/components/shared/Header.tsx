@@ -1,25 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
 import { Moon, Sun, Shield } from 'lucide-react'
+import { useThemeStore } from '@/stores/theme'
 
 export function Header() {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof document !== 'undefined') {
-      return document.documentElement.classList.contains('dark')
-    }
-    return false
-  })
-
-  useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [isDark])
-
-  const toggleTheme = useCallback(() => {
-    setIsDark((prev) => !prev)
-  }, [])
+  const isDark = useThemeStore((s) => s.isDark)
+  const toggleTheme = useThemeStore((s) => s.toggle)
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-card px-4">

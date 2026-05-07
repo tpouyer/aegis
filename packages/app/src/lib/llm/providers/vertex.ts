@@ -144,6 +144,7 @@ export class VertexProvider implements LLMProvider {
         Authorization: `Bearer ${this.accessToken}`,
       },
       body: JSON.stringify(body),
+      signal: params.signal,
     });
 
     if (!response.ok) {

@@ -17,9 +17,11 @@ interface ColumnProps {
   name: string;
   issues: JiraIssue[];
   onCardClick?: (issueKey: string) => void;
+  focusedGlobalIndex?: number;
+  startIndex?: number;
 }
 
-export function Column({ columnId, name, issues, onCardClick }: ColumnProps) {
+export function Column({ columnId, name, issues, onCardClick, focusedGlobalIndex = -1, startIndex = 0 }: ColumnProps) {
   return (
     <div className="flex h-full w-72 flex-shrink-0 flex-col rounded-lg border border-border bg-muted/30">
       {/* Column header */}
@@ -49,6 +51,7 @@ export function Column({ columnId, name, issues, onCardClick }: ColumnProps) {
                   issue={issue}
                   index={index}
                   onClick={onCardClick}
+                  isFocused={focusedGlobalIndex === startIndex + index}
                 />
               ))}
               {provided.placeholder}

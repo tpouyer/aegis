@@ -73,10 +73,13 @@ function RootLayout() {
   return (
     <ErrorBoundary>
       <div className="flex h-screen flex-col">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-background focus:p-4 focus:text-foreground focus:shadow-lg">
+          Skip to main content
+        </a>
         <Header />
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
-          <main className="flex-1 overflow-auto bg-background">
+          <main id="main-content" className="flex-1 overflow-auto bg-background">
             <Outlet />
           </main>
         </div>

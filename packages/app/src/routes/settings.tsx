@@ -47,27 +47,11 @@ function useAuthState(): AuthState {
   return state
 }
 
+import { useThemeStore } from '@/stores/theme'
+
 function useTheme() {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof document !== 'undefined') {
-      return document.documentElement.classList.contains('dark')
-    }
-    return false
-  })
-
-  const toggle = useCallback(() => {
-    setIsDark((prev) => {
-      const next = !prev
-      if (next) {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
-      try { localStorage.setItem('aegis_theme', next ? 'dark' : 'light') } catch { /* noop in test */ }
-      return next
-    })
-  }, [])
-
+  const isDark = useThemeStore((s) => s.isDark)
+  const toggle = useThemeStore((s) => s.toggle)
   return { isDark, toggle }
 }
 
@@ -327,6 +311,8 @@ function AboutSection() {
 }
 
 function SettingsPage() {
+  useEffect(() => { document.title = 'Settings — Aegis' }, [])
+
   return (
     <div className="mx-auto max-w-3xl p-6">
       <div className="mb-6 flex items-center gap-3">

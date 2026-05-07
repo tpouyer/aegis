@@ -88,9 +88,14 @@ export function ChatView({
       if (!provider) return
 
       const defaultModel = provider.models[0]?.id ?? ''
-      createSession(issueKey, providerId, defaultModel)
+      if (sessions.has(issueKey)) {
+        switchModel(issueKey, defaultModel)
+        useChatStore.getState().switchProvider(issueKey, providerId)
+      } else {
+        createSession(issueKey, providerId, defaultModel)
+      }
     },
-    [issueKey, createSession],
+    [issueKey, sessions, createSession, switchModel],
   )
 
   // -----------------------------------------------------------------------
@@ -215,6 +220,12 @@ export function ChatView({
 
   const handleStop = useCallback(() => {
     abortRef.current?.abort()
+  }, [])
+
+  useEffect(() => {
+    const onStopStreaming = () => abortRef.current?.abort()
+    document.addEventListener('aegis:stop-streaming', onStopStreaming)
+    return () => document.removeEventListener('aegis:stop-streaming', onStopStreaming)
   }, [])
 
   const handleModelSwitch = useCallback(

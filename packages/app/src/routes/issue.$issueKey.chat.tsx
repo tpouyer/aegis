@@ -147,6 +147,8 @@ function ChatPage() {
   const { issueKey } = Route.useParams()
   const [contextOpen, setContextOpen] = useState(true)
 
+  useEffect(() => { document.title = `${issueKey} Chat — Aegis` }, [issueKey])
+
   // Activate chat-scope keyboard shortcut handling
   useShortcuts('chat')
 

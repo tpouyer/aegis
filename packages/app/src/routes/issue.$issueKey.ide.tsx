@@ -36,6 +36,8 @@ function IdePage() {
   const { issueKey } = Route.useParams()
   const setActiveRepo = useIDEStore((s) => s.setActiveRepo)
 
+  useEffect(() => { document.title = `${issueKey} IDE — Aegis` }, [issueKey])
+
   // Activate IDE-scope keyboard shortcut handling
   useShortcuts('ide')
 
