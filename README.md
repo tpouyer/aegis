@@ -105,8 +105,10 @@ aegis/
 │   └── engine/               # Rust WASM module
 │       └── src/              # Hierarchy resolution, config parsing, MCP protocol
 ├── config/                   # Scope definitions, component-to-repo mapping
+├── .github/workflows/        # CI, Publish (GitHub Pages), Release workflows
 ├── docs/                     # Design doc, user stories, API reference, threat model, security audits
 ├── arch/                     # Architecture Decision Records (ADRs)
+├── biome.json                # Biome linter/formatter config
 └── CLAUDE.md                 # AI assistant context (detailed architecture for Claude Code)
 ```
 
@@ -117,7 +119,9 @@ aegis/
 | `npm run dev` | Start dev server at localhost:5173 |
 | `npm run test` | Run all tests (313 JS + 37 Rust) |
 | `npm run build` | Build WASM engine + production bundle |
-| `npm run lint` | TypeScript type checking |
+| `npm run lint` | TypeScript type checking (API contract validation) |
+| `npm run lint:biome` | Biome lint + format check |
+| `npm run format` | Auto-format all source files with Biome |
 | `npm run build:engine` | Rebuild WASM engine only |
 
 ## Keyboard Shortcuts
@@ -145,6 +149,27 @@ aegis/
 - **Observability**: OpenTelemetry SDK (metrics)
 - **WASM**: Rust + wasm-pack + wasm-bindgen
 - **Auth**: OAuth 2.0 + PKCE for GitHub, Atlassian, Red Hat SSO, Google
+- **Linting**: Biome v2.4 (lint + format)
+- **CI/CD**: GitHub Actions (CI, Publish, Release)
+
+## CI/CD
+
+All pipelines are in `.github/workflows/`.
+
+| Workflow | Triggers | What it does |
+|----------|----------|-------------|
+| **CI** (`ci.yml`) | PR + push to main | TypeScript type check, Biome lint, 313 JS tests, 37 Rust tests, production build |
+| **Publish** (`publish.yml`) | Push to main | Builds and deploys to GitHub Pages |
+| **Release** (`release.yml`) | Tag push (`v*`) | Runs tests, builds, creates GitHub Release with tarball |
+
+### Creating a Release
+
+```bash
+git tag v0.2.0
+git push --tags
+```
+
+The release workflow builds, tests, and creates a GitHub Release with auto-generated notes.
 
 ## Documentation
 

@@ -28,7 +28,8 @@ wasm-pack build --target web --out-dir ../app/src/wasm
 npm run dev          # dev server
 npm run build        # tsc --noEmit + vite build
 npm run test         # vitest run (313 tests)
-npm run lint         # tsc --noEmit
+npm run lint         # tsc --noEmit (API contract validation)
+npm run lint:biome   # Biome lint + format check
 
 # Rust tests (from packages/engine/)
 cargo test           # 37 tests
@@ -36,6 +37,7 @@ cargo test           # 37 tests
 # Full build from root
 npm run build        # engine then app
 npm run test         # engine then app
+npm run format       # Biome auto-format all source files
 ```
 
 ## Tech Stack
@@ -51,6 +53,8 @@ npm run test         # engine then app
 | GitHub API | Custom `GitHubClient` REST client (`src/lib/github/client.ts`) with `resilientFetch` |
 | Jira API | Custom `JiraClient` REST client (`src/lib/jira/client.ts`) with `resilientFetch` |
 | HTTP resilience | `resilientFetch` wrapper — exponential backoff, Retry-After, GET deduplication (`src/lib/fetch/`) |
+| Linting | Biome v2.4 (lint + format), TypeScript strict mode (`tsc --noEmit`) |
+| CI/CD | GitHub Actions: CI (validate+test+build), Publish (GitHub Pages), Release (tag-based) |
 | WASM engine | Rust + wasm-pack + wasm-bindgen |
 | JS sandbox | rquickjs (compiled into WASM) — stub, not yet integrated |
 | TS transpile | oxc (compiled into WASM) — stub, not yet integrated |
@@ -182,6 +186,28 @@ cargo test             # 37 tests across 6 modules
 - GitHub API rate limit is 5,000 req/hr — rely on content-addressed caching and lazy file loading.
 - Bundle size target: ~5-6MB total (Monaco ~3MB lazy-loaded, WASM ~1-2MB, React app ~200KB), code-split by route.
 - Multi-repo issues get separate commits/PRs per repo — no cross-repo atomicity.
+
+## CI/CD
+
+Three GitHub Actions workflows in `.github/workflows/`:
+
+**`ci.yml`** — runs on every PR and push to main:
+- `validate`: TypeScript strict checking (`tsc --noEmit` — API contract enforcement) + Biome lint/format check
+- `test-app`: 313 vitest tests (runs in parallel with validate)
+- `test-engine`: 37 Rust/cargo tests (runs in parallel)
+- `build`: full WASM + app production build (only runs after all validation passes)
+
+**`publish.yml`** — deploys to GitHub Pages on push to main:
+- Triggers when `packages/app/` or `packages/engine/` files change
+- Builds full bundle (WASM engine → Vite app) and deploys via `actions/deploy-pages`
+- Manual trigger via `workflow_dispatch`
+
+**`release.yml`** — creates GitHub Release on tag push:
+- Triggers on `v*` tags (e.g., `git tag v0.2.0 && git push --tags`)
+- Runs full test suite, builds production bundle, packages as tarball
+- Creates GitHub Release with auto-generated notes from commits
+
+**Biome** (`biome.json`): Rust-based linter/formatter (v2.4). Enforces recommended lint rules, import organization, and consistent formatting. CI fails on lint violations or formatting drift. Run `npm run format` to auto-fix locally.
 
 ## Security
 
