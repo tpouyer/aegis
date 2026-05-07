@@ -24,6 +24,7 @@ import { AnthropicProvider } from '@/lib/llm/providers/anthropic'
 import { CustomProvider } from '@/lib/llm/providers/custom'
 import { OllamaProvider } from '@/lib/llm/providers/ollama'
 import { OpenAIProvider } from '@/lib/llm/providers/openai'
+import { VertexProvider } from '@/lib/llm/providers/vertex'
 import { cn } from '@/lib/utils'
 
 // ---------------------------------------------------------------------------
@@ -75,6 +76,16 @@ const PROVIDER_OPTIONS: ProviderOption[] = [
     defaultEndpoint: 'http://localhost:11434',
   },
   {
+    id: 'vertex',
+    name: 'Vertex AI (Claude)',
+    description: 'Claude via Google Cloud. Requires Google auth and a GCP project.',
+    icon: <Cloud className="h-5 w-5" />,
+    toolUse: true,
+    streaming: true,
+    requiresApiKey: false,
+    requiresEndpoint: false,
+  },
+  {
     id: 'custom',
     name: 'Custom Endpoint',
     description: 'Any OpenAI-compatible API (vLLM, text-generation-inference, etc.).',
@@ -101,6 +112,8 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
   const [apiKey, setApiKey] = useState('')
   const [endpoint, setEndpoint] = useState('')
   const [model, setModel] = useState('')
+  const [gcpProject, setGcpProject] = useState('')
+  const [gcpRegion, setGcpRegion] = useState('us-east5')
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
   const [testError, setTestError] = useState('')
@@ -111,6 +124,8 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
     setApiKey('')
     setEndpoint('')
     setModel('')
+    setGcpProject('')
+    setGcpRegion('us-east5')
     setTesting(false)
     setTestResult(null)
     setTestError('')
@@ -212,6 +227,15 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
       case 'ollama':
         providerRegistry.register(new OllamaProvider({ endpoint }))
         break
+      case 'vertex':
+        providerRegistry.register(
+          new VertexProvider({
+            project: gcpProject,
+            region: gcpRegion,
+            accessToken: '',
+          }),
+        )
+        break
       case 'custom':
         providerRegistry.register(
           new CustomProvider({
@@ -225,10 +249,13 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
     providerRegistry.setDefaultProvider(selected.id)
     onProviderSelected(selected.id)
     onOpenChange(false)
-  }, [selected, apiKey, endpoint, model, onProviderSelected, onOpenChange])
+  }, [selected, apiKey, endpoint, model, gcpProject, gcpRegion, onProviderSelected, onOpenChange])
 
   const canSave =
-    selected && (!selected.requiresApiKey || apiKey.trim()) && (!selected.requiresEndpoint || endpoint.trim())
+    selected &&
+    (!selected.requiresApiKey || apiKey.trim()) &&
+    (!selected.requiresEndpoint || endpoint.trim()) &&
+    (selected.id !== 'vertex' || gcpProject.trim())
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -298,6 +325,25 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
                   onChange={(e) => setEndpoint(e.target.value)}
                 />
               </div>
+            )}
+            {selected.id === 'vertex' && (
+              <>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">GCP Project ID</label>
+                  <Input
+                    placeholder="my-project-123"
+                    value={gcpProject}
+                    onChange={(e) => setGcpProject(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Region</label>
+                  <Input placeholder="us-east5" value={gcpRegion} onChange={(e) => setGcpRegion(e.target.value)} />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Must be a region where Claude is available on Vertex AI
+                  </p>
+                </div>
+              </>
             )}
             {selected.id === 'custom' && (
               <div>
