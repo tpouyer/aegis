@@ -31,6 +31,7 @@ export interface ChatParams {
   maxTokens?: number;
   temperature?: number;
   stream?: boolean;
+  signal?: AbortSignal;
 }
 
 export interface ChatMessage {

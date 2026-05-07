@@ -6,9 +6,35 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { getLanguageFromPath } from '../MonacoEditor'
 import { useIDEStore } from '@/stores/ide'
+
+// ── Mock @radix-ui/react-scroll-area ─────────────────────────────
+// Radix ScrollArea uses ResizeObserver internally, which triggers
+// asynchronous React state updates that cause act() warnings in jsdom.
+// Replace with a simple div wrapper for tests.
+
+vi.mock('@radix-ui/react-scroll-area', () => {
+  const React = require('react')
+  return {
+    Root: React.forwardRef(({ children, ...props }: any, ref: any) =>
+      React.createElement('div', { ref, 'data-testid': 'scroll-area-root', ...props }, children),
+    ),
+    Viewport: React.forwardRef(({ children, ...props }: any, ref: any) =>
+      React.createElement('div', { ref, ...props }, children),
+    ),
+    ScrollAreaScrollbar: React.forwardRef(({ children, ...props }: any, ref: any) =>
+      React.createElement('div', { ref, ...props }, children),
+    ),
+    ScrollAreaThumb: React.forwardRef((props: any, ref: any) =>
+      React.createElement('div', { ref, ...props }),
+    ),
+    Corner: React.forwardRef((props: any, ref: any) =>
+      React.createElement('div', { ref, ...props }),
+    ),
+  }
+})
 
 // ── Mock @monaco-editor/react ─────────────────────────────────────
 // Monaco cannot load in jsdom, so we provide lightweight stubs.
@@ -317,15 +343,17 @@ describe('SourceControl', () => {
   it('disables commit button when there are no changes', async () => {
     const { SourceControl } = await import('../SourceControl')
 
-    render(
-      <SourceControl
-        changes={[]}
-        repoKey="org/repo"
-        onCommit={vi.fn().mockResolvedValue('sha')}
-        onCreatePR={vi.fn().mockResolvedValue('url')}
-        onFileClick={vi.fn()}
-      />,
-    )
+    await act(async () => {
+      render(
+        <SourceControl
+          changes={[]}
+          repoKey="org/repo"
+          onCommit={vi.fn().mockResolvedValue('sha')}
+          onCreatePR={vi.fn().mockResolvedValue('url')}
+          onFileClick={vi.fn()}
+        />,
+      )
+    })
 
     expect(screen.getByText('No changes')).toBeInTheDocument()
   })
@@ -333,17 +361,19 @@ describe('SourceControl', () => {
   it('disables commit button when commit message is empty', async () => {
     const { SourceControl } = await import('../SourceControl')
 
-    render(
-      <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
-        repoKey="org/repo"
-        onCommit={vi.fn().mockResolvedValue('sha')}
-        onCreatePR={vi.fn().mockResolvedValue('url')}
-        onFileClick={vi.fn()}
-      />,
-    )
+    await act(async () => {
+      render(
+        <SourceControl
+          changes={[
+            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+          ]}
+          repoKey="org/repo"
+          onCommit={vi.fn().mockResolvedValue('sha')}
+          onCreatePR={vi.fn().mockResolvedValue('url')}
+          onFileClick={vi.fn()}
+        />,
+      )
+    })
 
     const commitBtn = screen.getByRole('button', { name: /Commit/ })
     expect(commitBtn).toBeDisabled()
@@ -355,17 +385,19 @@ describe('SourceControl', () => {
     // Set commit message in the store
     useIDEStore.setState({ commitMessage: 'fix: update logic' })
 
-    render(
-      <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
-        repoKey="org/repo"
-        onCommit={vi.fn().mockResolvedValue('sha')}
-        onCreatePR={vi.fn().mockResolvedValue('url')}
-        onFileClick={vi.fn()}
-      />,
-    )
+    await act(async () => {
+      render(
+        <SourceControl
+          changes={[
+            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+          ]}
+          repoKey="org/repo"
+          onCommit={vi.fn().mockResolvedValue('sha')}
+          onCreatePR={vi.fn().mockResolvedValue('url')}
+          onFileClick={vi.fn()}
+        />,
+      )
+    })
 
     const commitBtn = screen.getByRole('button', { name: /Commit/ })
     expect(commitBtn).not.toBeDisabled()
@@ -378,17 +410,19 @@ describe('SourceControl', () => {
 
     const onCommit = vi.fn().mockResolvedValue('abc1234def5678')
 
-    render(
-      <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
-        repoKey="org/repo"
-        onCommit={onCommit}
-        onCreatePR={vi.fn().mockResolvedValue('url')}
-        onFileClick={vi.fn()}
-      />,
-    )
+    await act(async () => {
+      render(
+        <SourceControl
+          changes={[
+            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+          ]}
+          repoKey="org/repo"
+          onCommit={onCommit}
+          onCreatePR={vi.fn().mockResolvedValue('url')}
+          onFileClick={vi.fn()}
+        />,
+      )
+    })
 
     const commitBtn = screen.getByRole('button', { name: /Commit/ })
     fireEvent.click(commitBtn)
@@ -405,17 +439,19 @@ describe('SourceControl', () => {
 
     const onCommit = vi.fn().mockRejectedValue(new Error('Network error'))
 
-    render(
-      <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
-        repoKey="org/repo"
-        onCommit={onCommit}
-        onCreatePR={vi.fn().mockResolvedValue('url')}
-        onFileClick={vi.fn()}
-      />,
-    )
+    await act(async () => {
+      render(
+        <SourceControl
+          changes={[
+            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+          ]}
+          repoKey="org/repo"
+          onCommit={onCommit}
+          onCreatePR={vi.fn().mockResolvedValue('url')}
+          onFileClick={vi.fn()}
+        />,
+      )
+    })
 
     const commitBtn = screen.getByRole('button', { name: /Commit/ })
     fireEvent.click(commitBtn)
@@ -430,17 +466,19 @@ describe('SourceControl', () => {
 
     const onCreatePR = vi.fn().mockResolvedValue('https://github.com/org/repo/pull/42')
 
-    render(
-      <SourceControl
-        changes={[
-          { path: 'file.ts', status: 'modified', repo: 'org/repo' },
-        ]}
-        repoKey="org/repo"
-        onCommit={vi.fn().mockResolvedValue('sha')}
-        onCreatePR={onCreatePR}
-        onFileClick={vi.fn()}
-      />,
-    )
+    await act(async () => {
+      render(
+        <SourceControl
+          changes={[
+            { path: 'file.ts', status: 'modified', repo: 'org/repo' },
+          ]}
+          repoKey="org/repo"
+          onCommit={vi.fn().mockResolvedValue('sha')}
+          onCreatePR={onCreatePR}
+          onFileClick={vi.fn()}
+        />,
+      )
+    })
 
     const prBtn = screen.getByRole('button', { name: /Create PR/ })
     fireEvent.click(prBtn)
@@ -458,19 +496,21 @@ describe('SourceControl', () => {
   it('displays file change status badges correctly', async () => {
     const { SourceControl } = await import('../SourceControl')
 
-    render(
-      <SourceControl
-        changes={[
-          { path: 'new-file.ts', status: 'added', repo: 'org/repo' },
-          { path: 'changed.ts', status: 'modified', repo: 'org/repo' },
-          { path: 'removed.ts', status: 'deleted', repo: 'org/repo' },
-        ]}
-        repoKey="org/repo"
-        onCommit={vi.fn().mockResolvedValue('sha')}
-        onCreatePR={vi.fn().mockResolvedValue('url')}
-        onFileClick={vi.fn()}
-      />,
-    )
+    await act(async () => {
+      render(
+        <SourceControl
+          changes={[
+            { path: 'new-file.ts', status: 'added', repo: 'org/repo' },
+            { path: 'changed.ts', status: 'modified', repo: 'org/repo' },
+            { path: 'removed.ts', status: 'deleted', repo: 'org/repo' },
+          ]}
+          repoKey="org/repo"
+          onCommit={vi.fn().mockResolvedValue('sha')}
+          onCreatePR={vi.fn().mockResolvedValue('url')}
+          onFileClick={vi.fn()}
+        />,
+      )
+    })
 
     expect(screen.getByText('A')).toBeInTheDocument()
     expect(screen.getByText('M')).toBeInTheDocument()

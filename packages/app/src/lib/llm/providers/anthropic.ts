@@ -118,7 +118,6 @@ export class AnthropicProvider implements LLMProvider {
       }));
     }
 
-    // Route through SW relay — the SW injects the x-api-key header
     const response = await fetch(`${this.relayUrl}/v1/messages`, {
       method: 'POST',
       headers: {
@@ -126,6 +125,7 @@ export class AnthropicProvider implements LLMProvider {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify(body),
+      signal: params.signal,
     });
 
     if (!response.ok) {

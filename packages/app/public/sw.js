@@ -193,12 +193,18 @@ async function handleLLMRelay(request, url) {
     }
     case 'anthropic': {
       targetUrl = `https://api.anthropic.com/${remainingPath}`;
-      authProvider = null; // API key handled differently
+      authProvider = 'anthropic';
       break;
     }
     case 'openai': {
       targetUrl = `https://api.openai.com/${remainingPath}`;
-      authProvider = null;
+      authProvider = 'openai';
+      break;
+    }
+    case 'custom': {
+      // Custom provider: remaining path is the full URL
+      targetUrl = decodeURIComponent(remainingPath);
+      authProvider = 'custom';
       break;
     }
     default: {
@@ -214,7 +220,11 @@ async function handleLLMRelay(request, url) {
   if (authProvider) {
     const token = tokens.get(authProvider);
     if (token) {
-      headers.set('Authorization', `Bearer ${token.accessToken}`);
+      if (authProvider === 'anthropic') {
+        headers.set('x-api-key', token.accessToken);
+      } else {
+        headers.set('Authorization', `Bearer ${token.accessToken}`);
+      }
     }
   }
 

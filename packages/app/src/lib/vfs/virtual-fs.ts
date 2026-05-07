@@ -326,15 +326,16 @@ export class VirtualFileSystem {
       message,
     );
 
-    // Update state to reflect the new head
+    // Fetch the new commit to get the correct tree SHA
+    const newCommit = await this.github.getCommit(state.owner, state.repo, commitSha);
     state.headCommitSha = commitSha;
+    state.treeSha = newCommit.tree.sha;
     state.changes.clear();
 
-    // Refresh the tree
     const newTree = await this.github.getTree(
       state.owner,
       state.repo,
-      commitSha,
+      newCommit.tree.sha,
       true,
     );
     state.tree = newTree;

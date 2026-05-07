@@ -184,6 +184,138 @@ component_repos:
     }
 
     #[test]
+    fn test_parse_deeply_nested_yaml() {
+        // Scopes with nested sources containing deep paths
+        let yaml = r#"
+scopes:
+  - name: deep-scope
+    visibility: github
+    repos: [awx, receptor, eda-server]
+    sources:
+      - type: git
+        url: https://github.com/ansible/awx
+        path: docs/dev/architecture/decisions/
+      - type: git
+        url: https://github.com/ansible/awx
+        path: docs/dev/api/v3/serializers/
+      - type: confluence
+        url: https://internal.atlassian.net/wiki
+        path: spaces/PLATFORM/pages/deep/nested/path/
+"#;
+        let scopes = parse_scopes(yaml).unwrap();
+        assert_eq!(scopes.len(), 1);
+        assert_eq!(scopes[0].name, "deep-scope");
+        assert_eq!(scopes[0].repos.len(), 3);
+        assert_eq!(scopes[0].sources.len(), 3);
+        assert_eq!(
+            scopes[0].sources[2].path,
+            "spaces/PLATFORM/pages/deep/nested/path/"
+        );
+        assert_eq!(scopes[0].sources[2].source_type, "confluence");
+    }
+
+    #[test]
+    fn test_parse_components_deeply_nested_yaml() {
+        let yaml = r#"
+component_repos:
+  "API Gateway":
+    - org: ansible
+      repo: awx
+      path: awx/api/gateway/v3/endpoints/
+    - org: ansible
+      repo: receptor
+      path: receptor/api/
+  "Frontend > Dashboard > Charts":
+    - org: ansible
+      repo: awx
+      path: awx/ui/src/components/dashboard/charts/
+"#;
+        let map = parse_components(yaml).unwrap();
+        assert_eq!(map.len(), 2);
+
+        let api = &map["API Gateway"];
+        assert_eq!(api.len(), 2);
+        assert_eq!(api[0].path, Some("awx/api/gateway/v3/endpoints/".to_string()));
+
+        let frontend = &map["Frontend > Dashboard > Charts"];
+        assert_eq!(frontend.len(), 1);
+        assert_eq!(
+            frontend[0].path,
+            Some("awx/ui/src/components/dashboard/charts/".to_string())
+        );
+    }
+
+    #[test]
+    fn test_parse_missing_required_visibility_field() {
+        let yaml = r#"
+scopes:
+  - name: bad-scope
+    visibility: unknown-level
+"#;
+        let result = parse_scopes(yaml);
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("unknown visibility"));
+        assert!(err_msg.contains("unknown-level"));
+        assert!(err_msg.contains("bad-scope"));
+    }
+
+    #[test]
+    fn test_parse_missing_name_field() {
+        // YAML scope entry missing the required 'name' field
+        let yaml = r#"
+scopes:
+  - visibility: public
+    repos: [awx]
+"#;
+        let result = parse_scopes(yaml);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_missing_visibility_field() {
+        // YAML scope entry missing the required 'visibility' field
+        let yaml = r#"
+scopes:
+  - name: orphan-scope
+    repos: [awx]
+"#;
+        let result = parse_scopes(yaml);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_completely_empty_yaml_string() {
+        // An empty string is valid YAML (null document). serde_yaml may
+        // deserialize it to a struct with default fields or return an error,
+        // depending on version. Either outcome is acceptable — the important
+        // thing is no panic. If parse succeeds, the result should be empty.
+        match parse_scopes("") {
+            Ok(scopes) => assert!(scopes.is_empty()),
+            Err(_) => {} // Also acceptable
+        }
+
+        match parse_components("") {
+            Ok(map) => assert!(map.is_empty()),
+            Err(_) => {} // Also acceptable
+        }
+    }
+
+    #[test]
+    fn test_parse_scope_with_no_sources() {
+        let yaml = r#"
+scopes:
+  - name: minimal
+    visibility: public
+"#;
+        let scopes = parse_scopes(yaml).unwrap();
+        assert_eq!(scopes.len(), 1);
+        assert_eq!(scopes[0].name, "minimal");
+        assert!(scopes[0].repos.is_empty());
+        assert!(scopes[0].sources.is_empty());
+    }
+
+    #[test]
     fn test_parse_malformed_yaml_returns_error() {
         let bad_yaml = "scopes:\n  - name: [invalid\n    broken";
         let result = parse_scopes(bad_yaml);

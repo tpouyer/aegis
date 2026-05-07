@@ -301,6 +301,134 @@ mod tests {
     }
 
     #[test]
+    fn test_empty_manifest_returns_empty() {
+        let manifest = make_manifest(vec![], vec![]);
+        let result = resolve_hierarchy(&manifest, "awx", AuthLevel::RedhatSso);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_empty_manifest_no_scopes_no_content() {
+        // Even with the highest auth level, an empty manifest yields nothing
+        let manifest = Manifest {
+            scopes: vec![],
+            contents: vec![],
+            tools: vec![],
+        };
+        let result = resolve_hierarchy(&manifest, "any-repo", AuthLevel::RedhatSso);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_scope_with_empty_repos_is_global() {
+        // A scope with an empty repos list is global and matches any repo
+        let manifest = make_manifest(
+            vec![Scope {
+                name: "global-scope".into(),
+                visibility: AuthLevel::Public,
+                repos: vec![],
+                sources: vec![],
+            }],
+            vec![Content {
+                name: "doc".into(),
+                scope: "global-scope".into(),
+                body: "Global doc".into(),
+                metadata: HashMap::new(),
+            }],
+        );
+
+        // Should match any arbitrary repo name
+        let result = resolve_hierarchy(&manifest, "totally-random-repo", AuthLevel::Public);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "doc");
+        assert_eq!(result[0].source_scope, "global-scope");
+    }
+
+    #[test]
+    fn test_same_content_name_from_two_global_scopes_uses_lexicographic_tiebreak() {
+        // Two global scopes (empty repos) with same-named content at equal priority.
+        // The lexicographically later scope name should win the tie-break.
+        let manifest = make_manifest(
+            vec![
+                Scope {
+                    name: "alpha".into(),
+                    visibility: AuthLevel::Public,
+                    repos: vec![],
+                    sources: vec![],
+                },
+                Scope {
+                    name: "beta".into(),
+                    visibility: AuthLevel::Public,
+                    repos: vec![],
+                    sources: vec![],
+                },
+            ],
+            vec![
+                Content {
+                    name: "shared_doc".into(),
+                    scope: "alpha".into(),
+                    body: "From alpha".into(),
+                    metadata: HashMap::new(),
+                },
+                Content {
+                    name: "shared_doc".into(),
+                    scope: "beta".into(),
+                    body: "From beta".into(),
+                    metadata: HashMap::new(),
+                },
+            ],
+        );
+
+        let result = resolve_hierarchy(&manifest, "any-repo", AuthLevel::Public);
+        assert_eq!(result.len(), 1);
+        // Both are global (priority 0), tie-break is lexicographic: "beta" > "alpha"
+        assert_eq!(result[0].source_scope, "beta");
+        assert_eq!(result[0].body, "From beta");
+    }
+
+    #[test]
+    fn test_same_content_name_from_two_global_scopes_reverse_order() {
+        // Same test with content listed in reverse order, to confirm insertion
+        // order does not affect the deterministic result.
+        let manifest = make_manifest(
+            vec![
+                Scope {
+                    name: "alpha".into(),
+                    visibility: AuthLevel::Public,
+                    repos: vec![],
+                    sources: vec![],
+                },
+                Scope {
+                    name: "beta".into(),
+                    visibility: AuthLevel::Public,
+                    repos: vec![],
+                    sources: vec![],
+                },
+            ],
+            vec![
+                Content {
+                    name: "shared_doc".into(),
+                    scope: "beta".into(),
+                    body: "From beta".into(),
+                    metadata: HashMap::new(),
+                },
+                Content {
+                    name: "shared_doc".into(),
+                    scope: "alpha".into(),
+                    body: "From alpha".into(),
+                    metadata: HashMap::new(),
+                },
+            ],
+        );
+
+        let result = resolve_hierarchy(&manifest, "any-repo", AuthLevel::Public);
+        assert_eq!(result.len(), 1);
+        // Deterministic: "beta" still wins regardless of insertion order
+        assert_eq!(result[0].source_scope, "beta");
+        assert_eq!(result[0].body, "From beta");
+    }
+
+    #[test]
     fn test_merge_content_replaces_body_merges_metadata() {
         let mut base_meta = HashMap::new();
         base_meta.insert("author".into(), "alice".into());

@@ -7,7 +7,7 @@
  * to EditorPlaceholder if Monaco fails to load.
  */
 
-import { Component, Suspense, lazy, useCallback, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
+import { Component, Suspense, lazy, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
 import type { OnMount, OnChange } from '@monaco-editor/react'
 import type * as monacoNs from 'monaco-editor'
 import { useIDEStore } from '@/stores/ide'
@@ -104,6 +104,20 @@ export function MonacoEditor({
     },
     [],
   )
+
+  // Dispose Monaco model on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      const editor = editorRef.current
+      if (editor) {
+        const model = editor.getModel()
+        if (model) {
+          model.dispose()
+        }
+        editorRef.current = null
+      }
+    }
+  }, [modelUri])
 
   const handleChange: OnChange = useCallback(
     (value) => {

@@ -124,6 +124,83 @@ mod tests {
     }
 
     #[test]
+    fn test_filter_empty_manifest() {
+        let manifest = Manifest {
+            scopes: vec![],
+            contents: vec![],
+            tools: vec![],
+        };
+
+        // Filtering an empty manifest at any auth level should produce empty results
+        let public_filtered = filter_by_auth(&manifest, AuthLevel::Public);
+        assert!(public_filtered.scopes.is_empty());
+        assert!(public_filtered.contents.is_empty());
+        assert!(public_filtered.tools.is_empty());
+
+        let github_filtered = filter_by_auth(&manifest, AuthLevel::Github);
+        assert!(github_filtered.scopes.is_empty());
+        assert!(github_filtered.contents.is_empty());
+
+        let sso_filtered = filter_by_auth(&manifest, AuthLevel::RedhatSso);
+        assert!(sso_filtered.scopes.is_empty());
+        assert!(sso_filtered.contents.is_empty());
+    }
+
+    #[test]
+    fn test_filter_manifest_with_only_tools() {
+        // A manifest with tools but no scopes/contents should preserve tools
+        let manifest = Manifest {
+            scopes: vec![],
+            contents: vec![],
+            tools: vec![crate::types::Tool {
+                name: "test_tool".into(),
+                description: "A test tool".into(),
+                input_schema: serde_json::json!({"type": "object"}),
+            }],
+        };
+
+        let filtered = filter_by_auth(&manifest, AuthLevel::Public);
+        assert!(filtered.scopes.is_empty());
+        assert!(filtered.contents.is_empty());
+        assert_eq!(filtered.tools.len(), 1);
+        assert_eq!(filtered.tools[0].name, "test_tool");
+    }
+
+    #[test]
+    fn test_filter_content_with_orphaned_scope_reference() {
+        // Content referencing a scope that doesn't exist should be filtered out
+        let manifest = Manifest {
+            scopes: vec![Scope {
+                name: "community".into(),
+                visibility: AuthLevel::Public,
+                repos: vec![],
+                sources: vec![],
+            }],
+            contents: vec![
+                Content {
+                    name: "valid_doc".into(),
+                    scope: "community".into(),
+                    body: "Valid content".into(),
+                    metadata: HashMap::new(),
+                },
+                Content {
+                    name: "orphan_doc".into(),
+                    scope: "nonexistent_scope".into(),
+                    body: "Orphaned content".into(),
+                    metadata: HashMap::new(),
+                },
+            ],
+            tools: vec![],
+        };
+
+        let filtered = filter_by_auth(&manifest, AuthLevel::RedhatSso);
+        assert_eq!(filtered.scopes.len(), 1);
+        // Only the valid doc should be included; the orphan is filtered out
+        assert_eq!(filtered.contents.len(), 1);
+        assert_eq!(filtered.contents[0].name, "valid_doc");
+    }
+
+    #[test]
     fn test_filter_preserves_only_visible_scope_contents() {
         let manifest = make_test_manifest();
         let filtered = filter_by_auth(&manifest, AuthLevel::Public);

@@ -39,6 +39,7 @@ export type ToastStore = ToastState & ToastActions;
 // ---------------------------------------------------------------------------
 
 let toastCounter = 0;
+const timeoutMap = new Map<string, ReturnType<typeof setTimeout>>();
 
 export const useToastStore = create<ToastStore>((set) => ({
   toasts: [],
@@ -51,23 +52,36 @@ export const useToastStore = create<ToastStore>((set) => ({
       toasts: [...state.toasts, newToast],
     }));
 
-    // Auto-dismiss after duration
     const duration = toast.duration ?? 5000;
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
+      timeoutMap.delete(id);
       set((state) => ({
         toasts: state.toasts.filter((t) => t.id !== id),
       }));
     }, duration);
+    timeoutMap.set(id, timeoutId);
 
     return id;
   },
 
-  removeToast: (id) =>
+  removeToast: (id) => {
+    const timeoutId = timeoutMap.get(id);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutMap.delete(id);
+    }
     set((state) => ({
       toasts: state.toasts.filter((t) => t.id !== id),
-    })),
+    }));
+  },
 
-  clearToasts: () => set({ toasts: [] }),
+  clearToasts: () => {
+    for (const timeoutId of timeoutMap.values()) {
+      clearTimeout(timeoutId);
+    }
+    timeoutMap.clear();
+    set({ toasts: [] });
+  },
 }));
 
 // ---------------------------------------------------------------------------

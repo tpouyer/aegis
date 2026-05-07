@@ -80,13 +80,12 @@ export class CustomProvider implements LLMProvider {
   readonly supportsStreaming = true;
   readonly maxContextWindow = 128_000;
 
-  private endpoint: string;
-  private apiKey?: string;
+  private relayUrl: string;
 
   constructor(config: CustomProviderConfig) {
     this.name = config.name ?? 'Custom Endpoint';
-    this.endpoint = config.endpoint;
-    this.apiKey = config.apiKey;
+    // Route through SW relay — SW injects API key from secure storage
+    this.relayUrl = `/_aegis/llm/custom/${encodeURIComponent(config.endpoint)}`;
     this.supportsToolUse = config.supportsToolUse ?? false;
     this.models = [
       {
@@ -125,13 +124,9 @@ export class CustomProvider implements LLMProvider {
       'Content-Type': 'application/json',
     };
 
-    if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
-    }
-
     let response: Response;
     try {
-      response = await fetch(this.endpoint, {
+      response = await fetch(this.relayUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
