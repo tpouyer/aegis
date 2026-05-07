@@ -300,6 +300,19 @@ export class AuthManager {
   }
 
   /**
+   * Re-sync all stored tokens to the Service Worker.
+   * Called on startup after restoring tokens from localStorage so the SW
+   * can inject Authorization headers on API requests.
+   */
+  async syncAllTokensToSW(): Promise<void> {
+    for (const [provider, token] of Object.entries(this.state.tokens)) {
+      if (token?.accessToken && !this.isTokenExpired(token)) {
+        await this.syncTokenToSW(provider as AuthProvider, token)
+      }
+    }
+  }
+
+  /**
    * Persist full tokens to localStorage so they survive page reloads.
    * This includes access tokens — acceptable for a dev tool where
    * the tokens are already accessible to page JS during the session.
