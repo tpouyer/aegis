@@ -15,6 +15,10 @@ import type { ChatMessage, ToolCall, ToolResult } from '@/lib/llm/types'
 // Types
 // ---------------------------------------------------------------------------
 
+export function sessionKey(issueKey: string, providerId: string, modelId: string): string {
+  return `${issueKey}|${providerId}|${modelId}`
+}
+
 export interface ChatSession {
   issueKey: string
   messages: ChatMessage[]

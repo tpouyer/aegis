@@ -6,7 +6,7 @@
  * the chat store to the active LLM provider.
  */
 
-import { Bot, ChevronDown, MessageCircle } from 'lucide-react'
+import { Bot, ChevronDown, MessageCircle, Trash2 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Loading } from '@/components/shared/Loading'
@@ -237,13 +237,6 @@ export function ChatView({ issueKey, issueSummary, issueDescription, acceptanceC
     return () => document.removeEventListener('aegis:stop-streaming', onStopStreaming)
   }, [])
 
-  const handleModelSwitch = useCallback(
-    (modelId: string) => {
-      switchModel(issueKey, modelId)
-    },
-    [issueKey, switchModel],
-  )
-
   // -----------------------------------------------------------------------
   // Render
   // -----------------------------------------------------------------------
@@ -264,39 +257,76 @@ export function ChatView({ issueKey, issueSummary, issueDescription, acceptanceC
           {issueSummary && <span className="text-sm text-muted-foreground">{issueSummary}</span>}
         </div>
 
-        {/* Model selector / provider switch */}
-        <div className="flex items-center gap-2">
+        {/* Model selector + clear chat */}
+        <div className="flex items-center gap-1">
+          {session && session.messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              title="Clear chat"
+              onClick={() => {
+                useChatStore.getState().clearSession(issueKey)
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
           {!provider && (
             <Button variant="outline" size="sm" onClick={() => setShowProviderPicker(true)}>
               Configure AI Provider
             </Button>
           )}
-          {provider && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1">
-                  {session?.currentModel ?? provider.models[0]?.name ?? 'Model'}
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{provider.name}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {provider.models.map((model) => (
-                  <DropdownMenuItem key={model.id} onClick={() => handleModelSwitch(model.id)}>
-                    <span className="flex-1">{model.name}</span>
-                    {model.supportsToolUse && (
-                      <Badge variant="secondary" className="ml-2 text-[10px]">
-                        Tools
-                      </Badge>
-                    )}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowProviderPicker(true)}>Change provider...</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {(() => {
+            const allProviders = providerRegistry.listProviders()
+            if (allProviders.length === 0) return null
+            return (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    {session?.currentModel ?? provider?.models[0]?.name ?? 'Model'}
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
+                  {allProviders.map((p, idx) => (
+                    <div key={p.id}>
+                      {idx > 0 && <DropdownMenuSeparator />}
+                      <DropdownMenuLabel className="text-xs">{p.name}</DropdownMenuLabel>
+                      {p.models.map((m) => {
+                        const isActive = session?.providerId === p.id && session?.currentModel === m.id
+                        return (
+                          <DropdownMenuItem
+                            key={`${p.id}-${m.id}`}
+                            onClick={() => {
+                              if (session?.providerId !== p.id) {
+                                useChatStore.getState().switchProvider(issueKey, p.id)
+                              }
+                              switchModel(issueKey, m.id)
+                            }}
+                          >
+                            <span className={`flex-1 ${isActive ? 'font-medium' : ''}`}>{m.name}</span>
+                            {isActive && (
+                              <Badge variant="default" className="ml-2 text-[10px]">
+                                Active
+                              </Badge>
+                            )}
+                            {m.supportsToolUse && !isActive && (
+                              <Badge variant="secondary" className="ml-2 text-[10px]">
+                                Tools
+                              </Badge>
+                            )}
+                          </DropdownMenuItem>
+                        )
+                      })}
+                    </div>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowProviderPicker(true)}>Add provider...</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )
+          })()}
         </div>
       </div>
 

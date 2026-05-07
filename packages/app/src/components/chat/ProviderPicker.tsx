@@ -259,6 +259,18 @@ export function ProviderPicker({ open, onOpenChange, onProviderSelected }: Provi
     }
 
     providerRegistry.setDefaultProvider(selected.id)
+
+    // Persist provider config so it survives page reload
+    const { useLLMConfigStore } = await import('@/stores/llm-config')
+    useLLMConfigStore.getState().addProvider({
+      id: selected.id,
+      apiKey: apiKey || undefined,
+      endpoint: endpoint || undefined,
+      model: model || undefined,
+      gcpProject: gcpProject || undefined,
+      gcpRegion: gcpRegion || undefined,
+    })
+
     onProviderSelected(selected.id)
     onOpenChange(false)
   }, [selected, apiKey, endpoint, model, gcpProject, gcpRegion, onProviderSelected, onOpenChange])

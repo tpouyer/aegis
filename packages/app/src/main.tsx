@@ -4,6 +4,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { authManager } from './lib/auth/manager'
 import { CacheStore } from './lib/cache/indexeddb'
+import { restoreProviders } from './lib/llm/restore-providers'
 import { initTelemetry } from './lib/telemetry/init'
 import { instrumentNavigation } from './lib/telemetry/instruments/navigation'
 import { routeTree } from './routeTree.gen'
@@ -42,6 +43,7 @@ async function bootstrap() {
     navigator.serviceWorker.register(swUrl, { scope: import.meta.env.BASE_URL || '/' }).catch(() => {})
   }
 
+  restoreProviders()
   await initTelemetry()
   instrumentNavigation(router)
 

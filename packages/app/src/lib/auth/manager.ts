@@ -25,6 +25,8 @@ interface TokenMetadata {
   provider: AuthProvider
   expiresAt: number
   hasRefreshToken: boolean
+  accessToken?: string
+  refreshToken?: string
 }
 
 export class AuthManager {
@@ -298,9 +300,9 @@ export class AuthManager {
   }
 
   /**
-   * Persist token metadata (NOT actual tokens) to localStorage.
-   * This allows the UI to render auth state on page reload before
-   * tokens are re-synced to the Service Worker.
+   * Persist full tokens to localStorage so they survive page reloads.
+   * This includes access tokens — acceptable for a dev tool where
+   * the tokens are already accessible to page JS during the session.
    */
   private persistTokenMetadata(): void {
     const metadata: TokenMetadata[] = []
@@ -311,6 +313,8 @@ export class AuthManager {
           provider: provider as AuthProvider,
           expiresAt: token.expiresAt,
           hasRefreshToken: !!token.refreshToken,
+          accessToken: token.accessToken,
+          refreshToken: token.refreshToken,
         })
       }
     }
@@ -335,8 +339,8 @@ export class AuthManager {
 
       for (const meta of metadata) {
         this.state.tokens[meta.provider] = {
-          accessToken: '',
-          refreshToken: meta.hasRefreshToken ? '' : undefined,
+          accessToken: meta.accessToken || '',
+          refreshToken: meta.refreshToken || (meta.hasRefreshToken ? '' : undefined),
           expiresAt: meta.expiresAt,
           provider: meta.provider,
         }
