@@ -12,6 +12,7 @@ interface WellKnownConfig {
     rhSsoIssuerUrl?: string | null
     rhSsoClientId?: string | null
     googleClientId?: string | null
+    githubTokenProxyUrl?: string | null
   }
 }
 

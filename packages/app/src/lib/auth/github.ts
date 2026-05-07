@@ -14,10 +14,11 @@
  */
 
 import { generateCodeChallenge, generateCodeVerifier, generateState } from './pkce'
+import { getWellKnownConfig } from '@/lib/telemetry/config'
 import type { GitHubOAuthConfig, TokenSet } from './types'
 
 const GITHUB_AUTH_URL = 'https://github.com/login/oauth/authorize'
-const GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
+const GITHUB_TOKEN_URL_DIRECT = 'https://github.com/login/oauth/access_token'
 
 const SESSION_KEY_VERIFIER = 'aegis_github_pkce_verifier'
 const SESSION_KEY_STATE = 'aegis_github_oauth_state'
@@ -85,9 +86,9 @@ export async function handleGitHubCallback(params: URLSearchParams, config: GitH
   sessionStorage.removeItem(SESSION_KEY_STATE)
   sessionStorage.removeItem(SESSION_KEY_VERIFIER)
 
-  // Exchange authorization code for access token
-  // NOTE: This endpoint requires a CORS proxy in production.
-  const response = await fetch(GITHUB_TOKEN_URL, {
+  const proxyUrl = getWellKnownConfig().auth?.githubTokenProxyUrl
+  const tokenUrl = proxyUrl || GITHUB_TOKEN_URL_DIRECT
+  const response = await fetch(tokenUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

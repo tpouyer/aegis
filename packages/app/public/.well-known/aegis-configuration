@@ -5,10 +5,11 @@
     "enabled": true
   },
   "auth": {
-    "githubClientId": null,
-    "atlassianClientId": null,
+    "githubClientId": "Ov23ctF7916GXt3jxzpg",
+    "atlassianClientId": "kmhKJ25ICrrAZTJyXNYZkPNU3N8kfJFs",
     "rhSsoIssuerUrl": null,
     "rhSsoClientId": null,
-    "googleClientId": null
+    "googleClientId": "480122918692-n2dc7fdum6ubpfft70sa04gh6lf0uueq.apps.googleusercontent.com",
+    "githubTokenProxyUrl": null
   }
 }
