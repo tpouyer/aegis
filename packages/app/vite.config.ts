@@ -5,7 +5,7 @@ import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
 import path from 'path'
 import fs from 'node:fs'
 
-const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://api.github.com https://*.atlassian.net https://*.atlassian.com https://auth.atlassian.com https://api.anthropic.com https://api.openai.com https://*.googleapis.com https://accounts.google.com https://github.com; img-src 'self' https: data:; font-src 'self' https://fonts.gstatic.com; frame-src 'none';" />`
+const cspMeta = `<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; connect-src 'self' https://api.github.com https://*.atlassian.net https://*.atlassian.com https://auth.atlassian.com https://api.anthropic.com https://api.openai.com https://*.googleapis.com https://accounts.google.com https://github.com https://*.workers.dev; img-src 'self' https: data:; font-src 'self' https://fonts.gstatic.com; frame-src 'none';" />`
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? (process.env.VITE_BASE_PATH || '/') : '/',
