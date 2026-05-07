@@ -19,8 +19,8 @@ Aegis is a single-page application running entirely in the browser. There is no 
 | Service Worker | SW scope (isolated from main thread) | Token storage, API proxying, auth header injection, LLM relay |
 | WASM Engine | WASM sandbox | Content resolution, config parsing, tool aggregation |
 | IndexedDB | Browser storage (per-origin) | Chat session persistence, Jira response caching |
-| localStorage | Browser storage (per-origin) | Token metadata (expiry timestamps, not actual tokens), theme preference |
-| sessionStorage | Browser storage (per-origin) | PKCE verifiers and OAuth state during auth flows |
+| localStorage | Browser storage (per-origin) | OAuth tokens (full, including accessToken), LLM provider configs (including API keys), Jira API token credentials, theme preference, persona role |
+| sessionStorage | Browser storage (per-origin) | Not used (PKCE verifiers and OAuth state moved to localStorage to survive SPA redirects) |
 | `.well-known/aegis-configuration` | Static file (same origin) | Runtime deployment config: OTLP endpoint, OAuth client IDs |
 
 External dependencies (APIs the app communicates with):
@@ -212,6 +212,28 @@ External dependencies (APIs the app communicates with):
 | **Residual risk** | **Low**. Short exposure window + attacker also needs the authorization code |
 | **Severity** | Low |
 
+### T13: Jira API Token Stored in localStorage (Information Disclosure)
+
+| Field | Value |
+|-------|-------|
+| **Attack vector** | XSS or malicious browser extension reads `aegis_jira_config` from localStorage, which contains `email`, `baseUrl`, and plaintext `apiToken` |
+| **Impact** | Attacker obtains Jira API credentials and can make authenticated Jira API calls as the user (read/write issues, transition cards, add comments) |
+| **Affected components** | `stores/jira-config.ts`, `lib/jira/client.ts` |
+| **Current mitigations** | CSP restricts script sources. API tokens are scoped to the user's Jira permissions. localStorage is per-origin isolated |
+| **Residual risk** | **Medium**. Tokens are long-lived and provide full Jira API access. Unlike OAuth tokens, there is no expiry or refresh mechanism |
+| **Severity** | Medium |
+
+### T14: LLM API Keys Stored in localStorage (Information Disclosure)
+
+| Field | Value |
+|-------|-------|
+| **Attack vector** | XSS or malicious browser extension reads `aegis_llm_providers` from localStorage, which contains plaintext API keys for configured LLM providers (OpenAI, Anthropic, etc.) |
+| **Impact** | Attacker obtains LLM API keys and can make API calls billed to the user's account |
+| **Affected components** | `stores/llm-config.ts`, `lib/llm/restore-providers.ts` |
+| **Current mitigations** | CSP restricts script sources. Keys are also sent to the Service Worker for API calls, but the source of truth for persistence is localStorage |
+| **Residual risk** | **Medium**. API keys can incur direct financial cost. Users should set spending limits on their provider accounts |
+| **Severity** | Medium |
+
 ---
 
 ## 4. Risk Summary
@@ -228,6 +250,8 @@ External dependencies (APIs the app communicates with):
 | **T7**: SSRF via custom endpoint | Medium | Low | P3 |
 | **T2**: OAuth CSRF | Medium | Low | P3 |
 | **T5**: Open redirect | Low | Low | P4 |
+| **T13**: Jira API token in localStorage | Medium | Medium | P2 |
+| **T14**: LLM API keys in localStorage | Medium | Medium | P2 |
 | **T9**: Monaco code injection | Low | Low | P4 |
 | **T12**: PKCE verifier exposure | Low | Low | P4 |
 
@@ -245,6 +269,7 @@ External dependencies (APIs the app communicates with):
 ### P2 (Fix in next iteration)
 4. **T8**: Introduce a proper `LLMProviderKey` type distinct from `AuthProvider` for the SW token storage of LLM API keys.
 5. **T6**: Consider encrypting sensitive chat content in IndexedDB using a per-session key derived from the user's auth token.
+6. **T13/T14**: Consider migrating Jira API tokens and LLM API keys from localStorage to Service Worker memory or an encrypted storage layer. Document risk: recommend users set spending limits on LLM provider accounts and use scoped Jira tokens.
 
 ### P3 (Track for future)
 6. **T10**: Add max message count and max total content size limits to chat sessions.

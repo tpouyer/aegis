@@ -16,7 +16,7 @@ This is a monorepo with two packages:
 - **`packages/engine/`** — Rust WASM module (compiled via `wasm-pack`)
 - **`config/`** — scope definitions (`scopes.yml`) and component-to-repo mapping (`components.yml`)
 - **`packages/app/public/.well-known/aegis-configuration`** — runtime deployment config (see Configuration section)
-- **`workers/github-oauth-proxy/`** — Cloudflare Worker for OAuth token exchange (GitHub + Google client_secret injection)
+- **`workers/github-oauth-proxy/`** — Cloudflare Worker for OAuth token exchange (GitHub + Google client_secret injection) and Jira API CORS proxy (`/jira/*`)
 
 ## Build Commands
 
@@ -136,6 +136,12 @@ API keys are stored in the Service Worker's memory (not page JS). Provider `fetc
 
 All five providers pass `AbortSignal` to `fetch()` for stream cancellation (Escape key or Stop button). Chat errors are displayed as distinct UI banners (not inline markdown) with a Retry button. Provider switching mid-session uses the store's `switchProvider` action to preserve chat history.
 
+Configured providers persist to `localStorage` via `useLLMConfigStore` (`src/stores/llm-config.ts`). On startup, `restoreProviders()` (`src/lib/llm/restore-providers.ts`) re-registers all saved providers before the React tree renders. This ensures the chat view can resolve its persisted `providerId` immediately.
+
+### Jira API Proxy
+
+Jira Cloud blocks browser CORS. Two auth paths: (1) Atlassian OAuth with cloudId-based URLs via Service Worker, or (2) API token auth routed through the Cloudflare Worker at `workers/github-oauth-proxy/` (route `/jira/*`). The worker forwards requests with Basic Auth credentials from `X-Jira-Auth` and adds CORS headers. Jira API token config persists in `useJiraConfigStore` (`src/stores/jira-config.ts`).
+
 ### WASM Engine Modules
 
 The Rust engine (`packages/engine/src/`) contains modules ported from two existing projects:
@@ -157,7 +163,11 @@ Phases 1–5 of the design are implemented. Phase 6 (Tool Aggregation with Quick
 | Service Worker | Done | `public/sw.js` (caching, auth injection, token expiry, LLM relay) |
 | Kanban Board | Done | `src/components/board/`, `src/lib/jira/`, `src/stores/board.ts` |
 | AI Chat (5 providers) | Done | `src/components/chat/`, `src/lib/llm/`, `src/stores/chat.ts` |
+| Chat session persistence | Done | `src/stores/chat.ts` — IndexedDB with providerId/currentModel, 7-day TTL, clear chat button |
 | Chat error recovery | Done | Error banners with Retry button, structured error display (not inline markdown) |
+| LLM provider persistence | Done | `src/stores/llm-config.ts`, `src/lib/llm/restore-providers.ts` — survives reload |
+| Multi-provider dropdown | Done | `src/components/chat/ChatView.tsx` — all registered providers grouped in dropdown |
+| Jira API token auth | Done | `src/stores/jira-config.ts` — alternative to OAuth, via Cloudflare Worker proxy |
 | Web IDE + Monaco | Done | `src/components/ide/`, `src/lib/vfs/`, `src/lib/github/` |
 | Landing (launchpad) | Done | `src/routes/index.tsx` — context-aware: recent issues grid + quick actions for auth users, auth CTA for guests |
 | Settings (3 tabs) | Done | `src/routes/settings.tsx` — Integrations (auth + LLM), Preferences (theme + telemetry), About |
@@ -221,7 +231,7 @@ Three GitHub Actions workflows in `.github/workflows/`:
 
 ## Security
 
-The threat model (`docs/security/threat-model.md`) documents 12 attack vectors analyzed via STRIDE. Three rounds of security audit (`docs/security/audit-{1,2,3}/`) resolved all critical and high-severity issues:
+The threat model (`docs/security/threat-model.md`) documents 14 attack vectors analyzed via STRIDE. Three rounds of security audit (`docs/security/audit-{1,2,3}/`) resolved all critical and high-severity issues:
 
 - **LLM relay hardening**: Custom and Vertex AI relay endpoints restricted to configured/validated URLs only
 - **XSS prevention**: SafeLink component filters `javascript:`/`data:` URIs in all ReactMarkdown rendering; CSP meta tag restricts script sources (injected only in production builds via Vite plugin; dev mode has no CSP to allow HMR)

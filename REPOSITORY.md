@@ -65,9 +65,23 @@ The `llm-config` Zustand store (`src/stores/llm-config.ts`) persists configured 
 
 The dropdown in the chat header lists every registered provider's models, grouped by provider name. Users switch providers with one click. If you change the provider registry or add new provider types, the dropdown picks them up automatically.
 
+### Chat sessions persist provider and model
+
+Each chat session stores `providerId` and `currentModel`. When the user revisits a chat, the session is loaded from IndexedDB with its original provider/model. The `sessionKey()` helper in `stores/chat.ts` creates a composite key (`issueKey|providerId|modelId`) for future multi-provider session scoping. A "Clear Chat" button (trash icon) in the chat header deletes the session from memory and IndexedDB.
+
+## Jira
+
+### API token auth as alternative to OAuth
+
+Jira OAuth requires admin-approved Atlassian OAuth apps. As an alternative, users can configure API token auth via Settings > Integrations > Atlassian > Configure. This stores `baseUrl`, `email`, and `apiToken` in the `jira-config` Zustand store (persisted to localStorage).
+
+When API token auth is active, the Jira client routes requests through the Cloudflare Worker at `workers/github-oauth-proxy/` (route: `/jira/*`). The worker receives `X-Jira-Base-URL` and `X-Jira-Auth` headers, forwards to Jira with Basic Auth, and adds CORS headers. The proxy URL comes from `auth.githubTokenProxyUrl` in `.well-known/aegis-configuration`.
+
+If you add new Jira API endpoints, they automatically route through the proxy when token auth is configured — no per-endpoint changes needed.
+
 ## Zustand Stores
 
-There are 9 stores. All use the same pattern: Zustand `create()`, optional `localStorage` persistence via manual `getItem`/`setItem` in a `try/catch`.
+There are 11 stores. All use the same pattern: Zustand `create()`, optional `localStorage` persistence via manual `getItem`/`setItem` in a `try/catch`.
 
 | Store | localStorage key | What it persists |
 |-------|-----------------|-----------------|
@@ -80,6 +94,8 @@ There are 9 stores. All use the same pattern: Zustand `create()`, optional `loca
 | `recent.ts` | `aegis_recent_issues` | Last 8 visited issues |
 | `persona.ts` | `aegis_persona` | Selected role |
 | `llm-config.ts` | `aegis_llm_providers` | Provider configs + API keys |
+| `jira-config.ts` | `aegis_jira_config` | Jira API token credentials (baseUrl, email, apiToken) |
+| `toast.ts` | none | Transient toast notifications |
 
 When adding a new store: use `try/catch` around all `localStorage` calls (tests use jsdom where localStorage may not behave like a browser). Apply initial state from localStorage in the store factory function, not in a `useEffect`.
 
@@ -89,7 +105,7 @@ The theme store must **apply** the `dark` class to `document.documentElement` du
 
 ## Testing
 
-- **317 tests** across 26 suites. Never let the count go down.
+- **313 tests** across 25 suites. Never let the count go down.
 - Tests run in **jsdom** — `localStorage.getItem` may throw `TypeError` instead of returning `null`. Always wrap in `try/catch`.
 - **OTEL is no-op in tests** — no `MeterProvider` is registered, so all meter calls are zero-cost no-ops.
 - The **pre-commit hook** runs TypeScript type checking, Biome lint, and all tests. Don't skip it (`--no-verify`).

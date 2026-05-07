@@ -291,7 +291,9 @@ Jira's REST API enforces security levels based on the authenticated user's token
    - Org context (coding standards, testing guidelines, architecture) from WASM engine, resolved for the issue's component/repo
 3. User types a prompt; AI responds with full awareness of the issue AND the team's conventions
 4. AI can call MCP tools: content tools (instant, from cache), upstream tools (live, via Service Worker)
-5. Chat history persists in IndexedDB per issue
+5. Chat history persists in IndexedDB per issue, including `providerId` and `currentModel`
+6. On revisit, session loads from IndexedDB with the same provider/model
+7. "Clear Chat" button (trash icon) deletes the session from memory and IndexedDB
 
 ### 6.2 System Prompt Assembly
 
@@ -623,6 +625,23 @@ First-time AI use shows a provider picker:
 
 API keys stored in Service Worker scope (origin-isolated, not accessible to page JS). Keys sent directly to provider — never through Aegis infrastructure.
 
+### 8.6 Provider Persistence
+
+Provider configurations are persisted to `localStorage` via `useLLMConfigStore` (`src/stores/llm-config.ts`). Each config stores: `id`, `apiKey`, `endpoint`, `model`, `gcpProject`, `gcpRegion`.
+
+On app startup, `restoreProviders()` (`src/lib/llm/restore-providers.ts`) iterates saved configs and re-registers each provider with `providerRegistry`. This runs in `main.tsx` before the React tree renders, ensuring the chat view can immediately resolve its persisted `providerId`.
+
+The chat model dropdown in `ChatView.tsx` lists ALL registered providers, grouped by provider name, with all their models. Selecting a model from a different provider switches both provider and model in one click. An "Add provider..." option at the bottom opens `ProviderPicker` for configuring new providers.
+
+### 8.7 Jira Authentication
+
+Two authentication modes for Jira:
+
+1. **Atlassian OAuth** — PKCE flow via Atlassian identity, uses cloudId-based REST URLs
+2. **API Token** — user enters email + API token from id.atlassian.com, stored in `useJiraConfigStore` (`src/stores/jira-config.ts`)
+
+API token auth routes through the Cloudflare Worker at `workers/github-oauth-proxy/` (route `/jira/*`) to bypass CORS. The worker receives `X-Jira-Base-URL` and `X-Jira-Auth` headers, forwards to Jira with the credentials, and returns the response with CORS headers.
+
 ---
 
 ## 9. Build Pipeline
@@ -861,7 +880,7 @@ aegis/
           llm/             ← LLMProvider interface, 5 providers, stream parsers, system prompt, tool router
           shortcuts/       ← Keyboard shortcut registry + React hook
           vfs/             ← VirtualFileSystem, content-addressed cache
-        stores/            ← Zustand stores (board, chat, ide, toast)
+        stores/            ← Zustand stores (board, chat, ide, toast, theme, sidebar, telemetry, recent, persona, llm-config, jira-config)
       public/
         sw.js              ← Service Worker (caching, auth injection, LLM relay)
       index.html

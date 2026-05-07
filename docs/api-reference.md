@@ -61,15 +61,19 @@ interface ChatState {
   setStreaming(issueKey: string, streaming: boolean): void;
   switchModel(issueKey: string, model: string): void;
   switchProvider(issueKey: string, providerId: string): void;
-  clearSession(issueKey: string): void;
+  clearSession(issueKey: string): void;   // deletes from memory + IndexedDB
   getSession(issueKey: string): ChatSession | undefined;
-  loadSession(issueKey: string): Promise<void>;
+  loadSession(issueKey: string): Promise<void>;     // restores from IndexedDB (no-op if already in memory)
   persistSession(issueKey: string): Promise<void>;  // strips error field before IndexedDB write
 }
 
+function sessionKey(issueKey: string, providerId: string, modelId: string): string;
+// Returns `${issueKey}|${providerId}|${modelId}` — composite key for future multi-provider session scoping.
+// Currently sessions are keyed by issueKey only; this helper is available for migration.
+
 function exportChatAsMarkdown(session: ChatSession): string;
 ```
-Persistence: IndexedDB (`aegis-chat` db, `sessions` store), 7-day TTL.
+Persistence: IndexedDB (`aegis-chat` db, `sessions` store), 7-day TTL. Each persisted session includes `providerId` and `currentModel` so the correct provider/model is restored on reload.
 
 ### IDE (`src/stores/ide.ts`)
 ```typescript
@@ -149,6 +153,44 @@ interface TelemetryConfig {
 }
 ```
 Persistence: `localStorage` key `aegis_telemetry`.
+
+### LLM Config (`src/stores/llm-config.ts`)
+```typescript
+interface LLMProviderConfig {
+  id: string;                   // 'openai', 'anthropic', 'vertex', 'ollama', 'custom'
+  apiKey?: string;              // for OpenAI, Anthropic
+  endpoint?: string;            // for Ollama, Custom
+  model?: string;               // for Custom
+  gcpProject?: string;          // for Vertex AI
+  gcpRegion?: string;           // for Vertex AI
+}
+
+interface LLMConfigStore {
+  providers: LLMProviderConfig[];
+  defaultProviderId: string | null;
+  addProvider(config: LLMProviderConfig): void;   // upserts by id, sets as default
+  removeProvider(id: string): void;
+  setDefault(id: string): void;
+}
+```
+Persistence: `localStorage` key `aegis_llm_providers`. On startup, `restoreProviders()` (`src/lib/llm/restore-providers.ts`) reads this store and re-registers all saved providers with the `providerRegistry`.
+
+### Jira Config (`src/stores/jira-config.ts`)
+```typescript
+interface JiraConnectionConfig {
+  baseUrl: string;              // e.g. https://your-domain.atlassian.net
+  email: string;                // Atlassian account email
+  apiToken: string;             // API token from id.atlassian.com
+}
+
+interface JiraConfigStore {
+  config: JiraConnectionConfig | null;
+  setConfig(config: JiraConnectionConfig): void;
+  clearConfig(): void;
+  isConfigured(): boolean;
+}
+```
+Persistence: `localStorage` key `aegis_jira_config`. Used as an alternative to Atlassian OAuth — the Jira client routes requests through the Cloudflare Worker proxy with `X-Jira-Base-URL` and `X-Jira-Auth` headers to avoid CORS.
 
 ### Toast (`src/stores/toast.ts`)
 ```typescript
@@ -329,6 +371,8 @@ function getJiraClient(): JiraClient;  // throws if not initialized
 function initJiraClient(config: JiraConfig): JiraClient;
 ```
 401 responses call `authManager.disconnect('atlassian')`.
+
+**Two auth modes:** OAuth (cloudId-based URLs via `*.atlassian.net`) or API token (direct URLs proxied through Cloudflare Worker). When API token auth is active, the client sends requests to the worker with `X-Jira-Base-URL` and `X-Jira-Auth` (Basic Auth) headers — the worker forwards to Jira and adds CORS headers. Proxy URL is read from `.well-known/aegis-configuration`.
 
 ### Query Hooks (`queries.ts`)
 ```typescript
