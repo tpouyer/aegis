@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
-import { Settings, Moon, Sun, Link2, Link2Off, Bot, Palette, Info, Sparkles } from 'lucide-react'
+import { Settings, Moon, Sun, Link2, Link2Off, Bot, Palette, Info, Sparkles, Activity } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -53,6 +53,7 @@ function useAuthState(): AuthState {
 }
 
 import { useThemeStore } from '@/stores/theme'
+import { useTelemetryStore } from '@/stores/telemetry'
 
 function useTheme() {
   const isDark = useThemeStore((s) => s.isDark)
@@ -294,6 +295,83 @@ function AppearanceSection() {
   )
 }
 
+function TelemetrySection() {
+  const { enabled, otlpEndpoint, exportIntervalMs, localStorageEnabled,
+    setEnabled, setOtlpEndpoint, setExportInterval, setLocalStorageEnabled } = useTelemetryStore()
+  const [endpointInput, setEndpointInput] = useState(otlpEndpoint ?? '')
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          Telemetry
+        </CardTitle>
+        <CardDescription>
+          OpenTelemetry metrics collection and export configuration.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Enable Metrics</p>
+            <p className="text-xs text-muted-foreground">Collect performance and usage metrics</p>
+          </div>
+          <Button variant={enabled ? 'default' : 'outline'} size="sm" onClick={() => setEnabled(!enabled)}>
+            {enabled ? 'Enabled' : 'Disabled'}
+          </Button>
+        </div>
+
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">OTLP Endpoint</p>
+            <p className="text-xs text-muted-foreground mb-2">Send metrics to an OpenTelemetry collector</p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="https://otel-collector.example.com/v1/metrics"
+                value={endpointInput}
+                onChange={(e) => setEndpointInput(e.target.value)}
+                className="text-sm"
+                aria-label="OTLP endpoint URL"
+              />
+              <Button size="sm" variant="outline" onClick={() => setOtlpEndpoint(endpointInput || null)}>
+                Save
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-foreground">Export Interval</p>
+            <div className="flex gap-1">
+              {[15000, 30000, 60000, 300000].map((ms) => (
+                <Button
+                  key={ms}
+                  size="sm"
+                  variant={exportIntervalMs === ms ? 'default' : 'outline'}
+                  className="text-xs"
+                  onClick={() => setExportInterval(ms)}
+                >
+                  {ms < 60000 ? `${ms / 1000}s` : `${ms / 60000}m`}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Local Metrics Storage</p>
+            <p className="text-xs text-muted-foreground">Store metrics in IndexedDB for local analysis</p>
+          </div>
+          <Button variant={localStorageEnabled ? 'default' : 'outline'} size="sm" onClick={() => setLocalStorageEnabled(!localStorageEnabled)}>
+            {localStorageEnabled ? 'Enabled' : 'Disabled'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 function AboutSection() {
   return (
     <Card>
@@ -346,6 +424,7 @@ function SettingsPage() {
           <TabsTrigger value="connections">Connections</TabsTrigger>
           <TabsTrigger value="llm">LLM</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
           <TabsTrigger value="about">About</TabsTrigger>
         </TabsList>
 
@@ -359,6 +438,10 @@ function SettingsPage() {
 
         <TabsContent value="appearance">
           <AppearanceSection />
+        </TabsContent>
+
+        <TabsContent value="telemetry">
+          <TelemetrySection />
         </TabsContent>
 
         <TabsContent value="about">

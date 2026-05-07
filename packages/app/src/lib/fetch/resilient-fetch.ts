@@ -33,6 +33,8 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
 // In-flight GET deduplication map
 // ---------------------------------------------------------------------------
 
+import { recordHttpStart } from '@/lib/telemetry/instruments/http';
+
 const inflightGETs = new Map<string, Promise<Response>>();
 
 // ---------------------------------------------------------------------------
@@ -138,6 +140,8 @@ export async function resilientFetch(
   options?: RequestInit,
   retryConfig?: Partial<RetryConfig>,
 ): Promise<Response> {
+  const metric = recordHttpStart(url);
+
   const config: RetryConfig = {
     ...DEFAULT_RETRY_CONFIG,
     ...retryConfig,
@@ -170,11 +174,13 @@ export async function resilientFetch(
 
         // Success -- return immediately.
         if (response.ok) {
+          metric.end(response.status);
           return response;
         }
 
         // Non-retryable status -- throw immediately.
         if (!config.retryOn.has(response.status)) {
+          metric.end(response.status);
           return response;
         }
 
@@ -197,11 +203,13 @@ export async function resilientFetch(
           );
 
           await wait(delay, options?.signal);
+          metric.retry();
           continue;
         }
 
         // Max retries exceeded -- return the last response so the caller
         // can inspect the status.
+        metric.end(response.status);
         return response;
       } catch (error: unknown) {
         // Network errors (TypeError) are retryable.
@@ -215,15 +223,18 @@ export async function resilientFetch(
 
           await wait(delay, options?.signal);
           lastError = error;
+          metric.retry();
           continue;
         }
 
         // Abort errors and non-retryable errors propagate immediately.
+        metric.error(error instanceof Error ? error.name : 'UnknownError');
         throw error;
       }
     }
 
     // Should only be reached if all retries failed with network errors.
+    metric.error('MaxRetriesExceeded');
     throw lastError;
   };
 

@@ -5,11 +5,14 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import { authManager } from './lib/auth/manager'
 import { CacheStore } from './lib/cache/indexeddb'
+import { initTelemetry } from './lib/telemetry/init'
+import { instrumentNavigation } from './lib/telemetry/instruments/navigation'
 import './app.css'
 
 authManager.clearExpiredTokens()
 new CacheStore('aegis-chat', 'sessions').evictExpired().catch(() => {})
 new CacheStore('aegis-jira', 'cache').evictExpired().catch(() => {})
+initTelemetry()
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +27,7 @@ const queryClient = new QueryClient({
 ;(window as any).__aegis_queryClient = queryClient
 
 const router = createRouter({ routeTree })
+instrumentNavigation(router)
 
 declare module '@tanstack/react-router' {
   interface Register {

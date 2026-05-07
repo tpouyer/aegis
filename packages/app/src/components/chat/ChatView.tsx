@@ -27,6 +27,7 @@ import { useChatStore } from '@/stores/chat'
 import { providerRegistry } from '@/lib/llm/provider-registry'
 import { buildSystemPrompt } from '@/lib/llm/system-prompt'
 import { routeToolCall } from '@/lib/llm/tool-router'
+import { instrumentedChat } from '@/lib/telemetry/instruments/llm'
 import type { ChatMessage, ChatChunk } from '@/lib/llm/types'
 
 interface ChatViewProps {
@@ -145,12 +146,13 @@ export function ChatView({
         const currentSession = useChatStore.getState().sessions.get(issueKey)
         if (!currentSession) return
 
-        const stream = provider.chat({
+        const rawStream = provider.chat({
           model: currentSession.currentModel,
-          messages: currentSession.messages.slice(0, -1), // exclude empty assistant msg
+          messages: currentSession.messages.slice(0, -1),
           systemPrompt,
           stream: true,
         })
+        const stream = instrumentedChat(session.providerId, currentSession.currentModel, rawStream)
 
         for await (const chunk of stream) {
           if (controller.signal.aborted) break

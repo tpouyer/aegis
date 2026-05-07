@@ -25,6 +25,7 @@ export default defineConfig({
           'react-vendor': ['react', 'react-dom'],
           'router': ['@tanstack/react-router'],
           'query': ['@tanstack/react-query'],
+          'otel': ['@opentelemetry/api', '@opentelemetry/sdk-metrics', '@opentelemetry/resources'],
         },
       },
     },
