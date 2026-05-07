@@ -40,7 +40,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
   const toggleStar = useBoardPrefsStore((s) => s.toggleStar)
   const [showAll, setShowAll] = useState(false)
   const [textFilter, setTextFilter] = useState('')
-  const [projectFilter, setProjectFilter] = useState<string | null>(null)
+  const [spaceFilter, setSpaceFilter] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
   const [projectTypeFilter, setProjectTypeFilter] = useState<string | null>(null)
 
@@ -48,7 +48,8 @@ export function BoardPicker({ boards }: BoardPickerProps) {
   const recentIdMap = useMemo(() => new Map(recentBoards.map((r) => [r.id, r.lastVisited])), [recentBoards])
 
   // Extract unique filter options from available boards
-  const projects = useMemo(() => {
+  // "Space" = the Jira project where the board is located (matches Jira's projectLocation filter)
+  const spaces = useMemo(() => {
     const seen = new Map<string, string>()
     for (const b of boards) {
       if (b.location?.projectKey && !seen.has(b.location.projectKey)) {
@@ -86,8 +87,8 @@ export function BoardPicker({ boards }: BoardPickerProps) {
           b.location?.displayName?.toLowerCase().includes(lower),
       )
     }
-    if (projectFilter) {
-      result = result.filter((b) => b.location?.projectKey === projectFilter)
+    if (spaceFilter) {
+      result = result.filter((b) => b.location?.projectKey === spaceFilter)
     }
     if (typeFilter) {
       result = result.filter((b) => b.type === typeFilter)
@@ -96,9 +97,9 @@ export function BoardPicker({ boards }: BoardPickerProps) {
       result = result.filter((b) => b.location?.projectTypeKey === projectTypeFilter)
     }
     return result
-  }, [boards, textFilter, projectFilter, typeFilter, projectTypeFilter])
+  }, [boards, textFilter, spaceFilter, typeFilter, projectTypeFilter])
 
-  const hasActiveFilters = textFilter || projectFilter || typeFilter || projectTypeFilter
+  const hasActiveFilters = textFilter || spaceFilter || typeFilter || projectTypeFilter
 
   // Split filtered boards into sections
   const starred = useMemo(() => filtered.filter((b) => starredSet.has(b.id)), [filtered, starredSet])
@@ -123,7 +124,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
 
   const clearAllFilters = () => {
     setTextFilter('')
-    setProjectFilter(null)
+    setSpaceFilter(null)
     setTypeFilter(null)
     setProjectTypeFilter(null)
   }
@@ -149,12 +150,12 @@ export function BoardPicker({ boards }: BoardPickerProps) {
           />
         </div>
 
-        {projects.length > 1 && (
+        {spaces.length > 1 && (
           <FilterDropdown
-            label="Project"
-            value={projectFilter}
-            options={projects.map((p) => ({ id: p.key, label: p.name, detail: p.key }))}
-            onSelect={setProjectFilter}
+            label="Space"
+            value={spaceFilter}
+            options={spaces.map((s) => ({ id: s.key, label: s.name, detail: s.key }))}
+            onSelect={setSpaceFilter}
           />
         )}
 
