@@ -28,6 +28,7 @@ import type {
 export const jiraKeys = {
   all: ['jira'] as const,
   boards: () => [...jiraKeys.all, 'boards'] as const,
+  boardSearch: (name: string, projectKey: string) => [...jiraKeys.all, 'boardSearch', name, projectKey] as const,
   board: (boardId: number) => [...jiraKeys.all, 'board', boardId] as const,
   issues: (boardId: number, filters?: BoardFilters) => [...jiraKeys.all, 'issues', boardId, filters] as const,
   issue: (issueKey: string) => [...jiraKeys.all, 'issue', issueKey] as const,
@@ -181,6 +182,27 @@ export function useBoards(options?: Partial<UseQueryOptions<JiraBoard[]>>) {
     },
     staleTime: 60 * 60 * 1000,
     ...options,
+  })
+}
+
+/**
+ * Search boards by name and/or space (project).
+ * Debounced at the component level; cached for 5 minutes.
+ * Fires when name has 2+ chars OR a projectKey is set.
+ */
+export function useBoardSearch(name: string, projectKey: string) {
+  return useQuery<JiraBoard[]>({
+    queryKey: jiraKeys.boardSearch(name, projectKey),
+    queryFn: async () => {
+      const client = getJiraClient()
+      const response = await client.getBoards({
+        name: name || undefined,
+        projectLocation: projectKey || undefined,
+      })
+      return response.values
+    },
+    staleTime: 5 * 60 * 1000,
+    enabled: name.length >= 2 || projectKey.length > 0,
   })
 }
 

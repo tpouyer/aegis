@@ -47,7 +47,7 @@ describe('JiraClient', () => {
   // getBoards
   // -----------------------------------------------------------------------
 
-  it('getBoards builds correct URL with pagination params', async () => {
+  it('getBoards builds correct URL with filters', async () => {
     mockFetch.mockReturnValue(
       jsonResponse({
         startAt: 0,
@@ -57,12 +57,11 @@ describe('JiraClient', () => {
       }),
     )
 
-    await client.getBoards(0, 25)
+    await client.getBoards({ name: 'Test', projectLocation: 'AAP' })
 
     const calledUrl = mockFetch.mock.calls[0][0] as string
-    expect(calledUrl).toBe(
-      'https://test.atlassian.net/ex/jira/test-cloud-id/rest/agile/1.0/board?startAt=0&maxResults=25',
-    )
+    expect(calledUrl).toContain('name=Test')
+    expect(calledUrl).toContain('projectKeyOrId=AAP')
   })
 
   // -----------------------------------------------------------------------

@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { useProjectSearch } from '@/lib/jira/queries'
+import { useBoardSearch, useProjectSearch } from '@/lib/jira/queries'
 import type { JiraBoard } from '@/lib/jira/types'
 import { useBoardPrefsStore } from '@/stores/board-prefs'
 
@@ -35,50 +35,73 @@ const PROJECT_TYPE_LABELS: Record<string, string> = {
 
 const INITIAL_LIMIT = 6
 
+function useDebouncedValue(value: string, delayMs: number): string {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delayMs)
+    return () => clearTimeout(timer)
+  }, [value, delayMs])
+  return debounced
+}
+
 export function BoardPicker({ boards }: BoardPickerProps) {
   const recentBoards = useBoardPrefsStore((s) => s.recentBoards)
   const starredIds = useBoardPrefsStore((s) => s.starredBoardIds)
   const toggleStar = useBoardPrefsStore((s) => s.toggleStar)
   const [showAll, setShowAll] = useState(false)
-  const [textFilter, setTextFilter] = useState('')
+
+  // Filter state
+  const [boardNameInput, setBoardNameInput] = useState('')
   const [spaceFilter, setSpaceFilter] = useState<string | null>(null)
   const [spaceFilterName, setSpaceFilterName] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState<string | null>(null)
   const [projectTypeFilter, setProjectTypeFilter] = useState<string | null>(null)
 
+  // Debounced board name for API search
+  const debouncedBoardName = useDebouncedValue(boardNameInput, 400)
+
+  // Search boards from API when user types a name or selects a space
+  const isSearching = debouncedBoardName.length >= 2 || !!spaceFilter
+  const { data: searchResults, isLoading: searchLoading } = useBoardSearch(debouncedBoardName, spaceFilter ?? '')
+
+  // Board name search dropdown state
+  const [boardSearchOpen, setBoardSearchOpen] = useState(false)
+  const boardSearchRef = useRef<HTMLDivElement>(null)
+  const boardInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (boardSearchRef.current && !boardSearchRef.current.contains(e.target as Node)) {
+        setBoardSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // When searching, use API results; otherwise use the initial boards prop
+  const sourceBoards = isSearching ? (searchResults ?? []) : boards
+
   const starredSet = useMemo(() => new Set(starredIds), [starredIds])
   const recentIdMap = useMemo(() => new Map(recentBoards.map((r) => [r.id, r.lastVisited])), [recentBoards])
 
-  // Extract unique filter options from available boards
+  // Extract filter options from current source boards
   const boardTypes = useMemo(() => {
-    const types = new Set(boards.map((b) => b.type))
+    const types = new Set(sourceBoards.map((b) => b.type))
     return Array.from(types).sort()
-  }, [boards])
+  }, [sourceBoards])
 
   const projectTypes = useMemo(() => {
     const types = new Set<string>()
-    for (const b of boards) {
+    for (const b of sourceBoards) {
       if (b.location?.projectTypeKey) types.add(b.location.projectTypeKey)
     }
     return Array.from(types).sort()
-  }, [boards])
+  }, [sourceBoards])
 
-  // Apply filters
+  // Apply client-side filters (type, project type) on top of API results
   const filtered = useMemo(() => {
-    let result = boards
-    if (textFilter) {
-      const lower = textFilter.toLowerCase()
-      result = result.filter(
-        (b) =>
-          b.name.toLowerCase().includes(lower) ||
-          b.location?.projectName.toLowerCase().includes(lower) ||
-          b.location?.projectKey.toLowerCase().includes(lower) ||
-          b.location?.displayName?.toLowerCase().includes(lower),
-      )
-    }
-    if (spaceFilter) {
-      result = result.filter((b) => b.location?.projectKey === spaceFilter)
-    }
+    let result = sourceBoards
     if (typeFilter) {
       result = result.filter((b) => b.type === typeFilter)
     }
@@ -86,9 +109,9 @@ export function BoardPicker({ boards }: BoardPickerProps) {
       result = result.filter((b) => b.location?.projectTypeKey === projectTypeFilter)
     }
     return result
-  }, [boards, textFilter, spaceFilter, typeFilter, projectTypeFilter])
+  }, [sourceBoards, typeFilter, projectTypeFilter])
 
-  const hasActiveFilters = textFilter || spaceFilter || typeFilter || projectTypeFilter
+  const hasActiveFilters = boardNameInput || spaceFilter || typeFilter || projectTypeFilter
 
   // Split filtered boards into sections
   const starred = useMemo(() => filtered.filter((b) => starredSet.has(b.id)), [filtered, starredSet])
@@ -112,12 +135,16 @@ export function BoardPicker({ boards }: BoardPickerProps) {
   const hasMore = !hasActiveFilters && remaining.length > INITIAL_LIMIT
 
   const clearAllFilters = () => {
-    setTextFilter('')
+    setBoardNameInput('')
     setSpaceFilter(null)
     setSpaceFilterName(null)
     setTypeFilter(null)
     setProjectTypeFilter(null)
+    setBoardSearchOpen(false)
   }
+
+  // Show dropdown when user types in board name filter and results come back
+  const showBoardDropdown = boardSearchOpen && debouncedBoardName.length >= 2
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
@@ -129,18 +156,68 @@ export function BoardPicker({ boards }: BoardPickerProps) {
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2">
         <Filter className="h-4 w-4 text-muted-foreground" />
-        <div className="relative">
+
+        {/* Board name search (API-backed with dropdown) */}
+        <div ref={boardSearchRef} className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
+            ref={boardInputRef}
             placeholder="Filter boards..."
-            value={textFilter}
-            onChange={(e) => setTextFilter(e.target.value)}
+            value={boardNameInput}
+            onChange={(e) => {
+              setBoardNameInput(e.target.value)
+              setBoardSearchOpen(true)
+            }}
+            onFocus={() => {
+              if (boardNameInput.length >= 2) setBoardSearchOpen(true)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setBoardSearchOpen(false)
+                boardInputRef.current?.blur()
+              }
+            }}
             className="h-8 w-48 pl-8 text-xs"
             aria-label="Filter boards by name"
           />
+          {showBoardDropdown && (
+            <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-md border border-border bg-card shadow-lg">
+              {searchLoading && (
+                <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Searching...
+                </div>
+              )}
+              {!searchLoading && searchResults && searchResults.length > 0 && (
+                <div className="max-h-48 overflow-y-auto">
+                  {searchResults.map((board) => (
+                    <Link
+                      key={board.id}
+                      to="/board/$boardId"
+                      params={{ boardId: String(board.id) }}
+                      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+                      onClick={() => setBoardSearchOpen(false)}
+                    >
+                      <span className="flex-1 truncate font-medium">{board.name}</span>
+                      {board.location?.projectKey && (
+                        <span className="text-[10px] text-muted-foreground">{board.location.projectKey}</span>
+                      )}
+                      <Badge variant="outline" className="text-[9px] capitalize">
+                        {board.type}
+                      </Badge>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              {!searchLoading && searchResults && searchResults.length === 0 && (
+                <div className="px-3 py-2 text-xs text-muted-foreground">No boards found</div>
+              )}
+            </div>
+          )}
         </div>
 
-        <SearchableFilter
+        {/* Space filter (API-backed project search) */}
+        <SpaceFilter
           value={spaceFilter}
           selectedName={spaceFilterName}
           onSelect={(key, name) => {
@@ -183,12 +260,21 @@ export function BoardPicker({ boards }: BoardPickerProps) {
           </Button>
         )}
         <span className="text-xs text-muted-foreground">
-          {filtered.length} of {boards.length} boards
+          {filtered.length}
+          {isSearching ? '' : ` of ${boards.length}`} boards
         </span>
       </div>
 
+      {/* Loading state for API search */}
+      {isSearching && searchLoading && (
+        <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading boards...
+        </div>
+      )}
+
       {/* Board sections */}
-      {filtered.length === 0 && (
+      {!searchLoading && filtered.length === 0 && hasActiveFilters && (
         <div className="py-12 text-center text-sm text-muted-foreground">No boards match your filters</div>
       )}
 
@@ -222,7 +308,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Filter dropdown (reusable)
+// Filter dropdown (static options)
 // ---------------------------------------------------------------------------
 
 function FilterDropdown({
@@ -273,19 +359,10 @@ function FilterDropdown({
 }
 
 // ---------------------------------------------------------------------------
-// Searchable space filter (debounced API search)
+// Space filter (debounced API project search)
 // ---------------------------------------------------------------------------
 
-function useDebouncedValue(value: string, delayMs: number): string {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delayMs)
-    return () => clearTimeout(timer)
-  }, [value, delayMs])
-  return debounced
-}
-
-function SearchableFilter({
+function SpaceFilter({
   value,
   selectedName,
   onSelect,

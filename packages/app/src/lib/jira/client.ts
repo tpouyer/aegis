@@ -119,12 +119,19 @@ export class JiraClient {
   // Boards
   // -----------------------------------------------------------------------
 
-  /** List boards visible to the authenticated user. */
-  async getBoards(startAt = 0, maxResults = 50): Promise<JiraPaginatedResponse<JiraBoard>> {
+  /** List boards visible to the authenticated user, with optional server-side filters. */
+  async getBoards(options?: {
+    startAt?: number
+    maxResults?: number
+    name?: string
+    projectLocation?: string
+  }): Promise<JiraPaginatedResponse<JiraBoard>> {
     const params = new URLSearchParams({
-      startAt: String(startAt),
-      maxResults: String(maxResults),
+      startAt: String(options?.startAt ?? 0),
+      maxResults: String(options?.maxResults ?? 50),
     })
+    if (options?.name) params.set('name', options.name)
+    if (options?.projectLocation) params.set('projectKeyOrId', options.projectLocation)
     return this.request<JiraPaginatedResponse<JiraBoard>>(this.agileUrl(`/board?${params}`))
   }
 
