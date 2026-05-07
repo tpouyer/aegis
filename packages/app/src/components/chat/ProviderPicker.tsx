@@ -197,13 +197,20 @@ export function ProviderPicker({
   const handleSave = useCallback(async () => {
     if (!selected) return
 
-    // Send API key to Service Worker for secure storage (not held in page JS)
     if (apiKey && (selected.id === 'anthropic' || selected.id === 'openai' || selected.id === 'custom')) {
       await sendTokenToSW(selected.id as 'github', {
         accessToken: apiKey,
         expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
         provider: selected.id as 'github',
-      });
+        endpoint: selected.id === 'custom' ? endpoint : undefined,
+      } as any);
+    } else if (selected.id === 'ollama') {
+      await sendTokenToSW('github' as any, {
+        accessToken: '',
+        expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+        provider: 'ollama' as any,
+        endpoint,
+      } as any);
     }
 
     switch (selected.id) {

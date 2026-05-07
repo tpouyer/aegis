@@ -10,6 +10,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { SafeLink } from '@/components/shared/SafeLink'
 import { Copy, Check, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -106,6 +107,7 @@ function MessageBubble({
               remarkPlugins={[remarkGfm]}
               components={{
                 code: CodeBlock,
+                a: SafeLink,
               }}
             >
               {message.content}

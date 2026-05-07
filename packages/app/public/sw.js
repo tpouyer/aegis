@@ -113,6 +113,10 @@ self.addEventListener('fetch', (event) => {
 // ─── Message ────────────────────────────────────────────────────────────────
 
 self.addEventListener('message', (event) => {
+  if (event.source && event.source.type !== 'window') {
+    return;
+  }
+
   const { data } = event;
   const port = event.ports[0];
 
@@ -220,8 +224,14 @@ async function handleLLMRelay(request, url) {
 
   switch (provider) {
     case 'vertex': {
-      // Vertex AI — rewrite to Google Cloud endpoint
-      targetUrl = `https://${remainingPath}`;
+      const vertexUrl = `https://${remainingPath}`;
+      if (!vertexUrl.match(/^https:\/\/[a-z0-9-]+-aiplatform\.googleapis\.com\//)) {
+        return new Response(
+          JSON.stringify({ error: 'Vertex AI relay restricted to *-aiplatform.googleapis.com' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      targetUrl = vertexUrl;
       authProvider = 'google';
       break;
     }
@@ -236,8 +246,15 @@ async function handleLLMRelay(request, url) {
       break;
     }
     case 'custom': {
-      // Custom provider: remaining path is the full URL
-      targetUrl = decodeURIComponent(remainingPath);
+      const customConfig = tokens.get('custom');
+      const decoded = decodeURIComponent(remainingPath);
+      if (!customConfig?.endpoint || !decoded.startsWith(customConfig.endpoint)) {
+        return new Response(
+          JSON.stringify({ error: 'Relay URL does not match configured custom endpoint' }),
+          { status: 403, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      targetUrl = decoded;
       authProvider = 'custom';
       break;
     }

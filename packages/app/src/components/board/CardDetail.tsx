@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Link } from '@tanstack/react-router';
 import { ExternalLink, User, Tag, GitBranch, MessageCircle, MessageSquare, Code2 } from 'lucide-react';
+import { SafeLink } from '@/components/shared/SafeLink';
 import {
   Sheet,
   SheetContent,
@@ -274,7 +275,7 @@ function DescriptionRenderer({ content }: { content: unknown }) {
   const text = extractText(content);
 
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: SafeLink }}>
       {text}
     </ReactMarkdown>
   );
