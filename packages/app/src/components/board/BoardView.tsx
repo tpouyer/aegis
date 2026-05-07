@@ -31,6 +31,7 @@ import { getJiraClient } from '@/lib/jira/client'
 import { useBoard, useBoards, useIssues, useTransitionMutation } from '@/lib/jira/queries'
 import type { BoardColumn, JiraTransition } from '@/lib/jira/types'
 import { useBoardStore } from '@/stores/board'
+import { useBoardPrefsStore } from '@/stores/board-prefs'
 import { toast } from '@/stores/toast'
 import { BoardSkeleton } from './BoardSkeleton'
 import { BoardTableView } from './BoardTableView'
@@ -77,7 +78,14 @@ function BoardSwitcher({ currentBoardId }: { currentBoardId: number }) {
           </div>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => navigate({ to: '/board' })}>All boards...</DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            useBoardPrefsStore.getState().clearLastBoard()
+            navigate({ to: '/board' })
+          }}
+        >
+          All boards...
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
@@ -119,6 +127,15 @@ export function BoardView({ boardId }: BoardViewProps) {
   } = useIssues(boardId, filters)
 
   const transitionMutation = useTransitionMutation(boardId)
+
+  const { data: allBoards } = useBoards()
+
+  // Persist this board as the last-used board (with name + project key for the recent list)
+  useEffect(() => {
+    if (!boardConfig) return
+    const board = allBoards?.find((b) => b.id === boardId)
+    useBoardPrefsStore.getState().setLastBoard(boardId, boardConfig.name, board?.location?.projectKey)
+  }, [boardId, boardConfig, allBoards])
 
   // Build columns from board config and issues
   const columns = useMemo<BoardColumn[]>(() => {
