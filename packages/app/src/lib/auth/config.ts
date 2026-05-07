@@ -1,7 +1,8 @@
 import { getWellKnownConfig } from '@/lib/telemetry/config'
 import type { AtlassianOAuthConfig, GitHubOAuthConfig, GoogleOAuthConfig, RedHatSSOConfig } from './types'
 
-const redirectUri = (provider: string) => `${window.location.origin}/auth/callback?provider=${provider}`
+const base = import.meta.env.BASE_URL || '/'
+const redirectUri = (provider: string) => `${window.location.origin}${base}auth/callback?provider=${provider}`
 
 export function getGitHubConfig(): GitHubOAuthConfig {
   const wk = getWellKnownConfig().auth
