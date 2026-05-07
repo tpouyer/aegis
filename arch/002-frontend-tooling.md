@@ -48,6 +48,7 @@ We selected the following stack:
 - **Typography**: Red Hat Display (headings), Red Hat Text (body), Red Hat Mono (code) loaded via Google Fonts with `preconnect` hints.
 - **Sidebar**: Always-dark (`#151515`) matching PatternFly's masthead/navigation convention (console.redhat.com pattern).
 - **Border radii**: Slightly rounder than defaults (md: 0.5rem, lg: 0.75rem, xl: 1rem) per PF6.
-- **Zustand stores**: Now 7 stores — board, chat, IDE, theme, sidebar, telemetry, recent (recent issues for launchpad).
+- **Zustand stores**: 8 stores — board, chat, IDE, theme, sidebar, telemetry, recent, persona. The persona store (`src/stores/persona.ts`) tracks the user's active role across 6 options (Developer, PM, QA, Architect, Manager, Support) and drives role-aware AI prompts, landing page widgets, and system prompt context.
+- **Multi-persona UX**: The app adapts to non-developer personas. The system prompt, suggested chat prompts, and landing page widgets all vary by active role. A general chat route (`/chat`) serves users who need AI assistance without a specific issue context. A board table view offers PMs and managers a sortable, data-dense alternative to the kanban layout.
 
 **Webpack** — Slower development feedback loop, more complex configuration, and no first-class Tailwind v4 or WASM support. Vite is the standard choice for new React projects.

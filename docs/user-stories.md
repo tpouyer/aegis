@@ -17,6 +17,21 @@ Uses keyboard-only navigation and a screen reader (VoiceOver/NVDA). Needs all fe
 ### P5: Mobile Developer (Sam)
 Frequently reviews and triages issues on a phone or tablet while away from their desk. Needs the core board and chat features to work on mobile viewports.
 
+### P6: Product Manager (Diana)
+Manages backlog, writes acceptance criteria, tracks sprint progress. Uses board in table view for sorting and filtering. Needs AI help with scoping and stakeholder updates.
+
+### P7: QA Engineer (Raj)
+Verifies acceptance criteria, writes test plans, tracks regression risk. Uses AI chat to generate test cases and review edge cases.
+
+### P8: Architect (Elena)
+Reviews design decisions, ensures implementations follow patterns. Needs AI chat for cross-cutting architectural questions not tied to a single issue.
+
+### P9: Development Manager (Carlos)
+Tracks team velocity, identifies blockers, reports status upward. Needs board table view for progress tracking and AI for sprint summaries.
+
+### P10: Customer Support (Fatima)
+Triages customer-reported bugs, checks fix status, finds related issues. Needs search and AI chat for quick answers.
+
 ---
 
 ## User Stories
@@ -267,3 +282,93 @@ Frequently reviews and triages issues on a phone or tablet while away from their
 5. Local storage metrics toggle
 6. Changes persist to localStorage and take effect without page reload
 7. Console metrics appear in dev mode (browser console, 15s interval)
+
+---
+
+### US-16: Persona/Role Selection
+**As** any user  
+**I want to** select my role (Developer, PM, QA, Architect, Manager, Support) in Settings  
+**So that** the AI prompts, landing page widgets, and system prompt adapt to my perspective.
+
+**Acceptance Criteria:**
+1. Settings > Preferences tab shows a Role section with 6 roles
+2. Each role displays a name and one-line description
+3. Clicking "Select" switches the active role
+4. Active role shows "Active" button state
+5. Role persists to localStorage across page reloads
+6. Command palette supports "Switch to PM", "Switch to QA", etc.
+
+---
+
+### US-17: Role-Aware AI Chat
+**As** Diana (PM)  
+**I want to** get AI suggestions relevant to product management  
+**So that** I can scope issues, draft stakeholder updates, and assess dependencies.
+
+**Acceptance Criteria:**
+1. System prompt includes persona context ("You are an AI assistant helping a Product Manager...")
+2. Suggested prompts change based on active role (PM sees "Is this issue well-scoped?", QA sees "Generate test cases")
+3. Issue-scoped chat and general chat both use persona-aware prompts
+4. Switching personas updates suggested prompts without page reload
+
+---
+
+### US-18: General Chat (Non-Issue-Scoped)
+**As** Elena (Architect)  
+**I want to** ask AI questions about the system architecture without referencing a specific issue  
+**So that** I can discuss cross-cutting concerns, review patterns, and explore design options.
+
+**Acceptance Criteria:**
+1. `/chat` route accessible via sidebar "Chat" nav item
+2. Chat works without an issue key — uses "general" as session key
+3. System prompt includes persona context but no issue-specific fields
+4. Suggested prompts are role-appropriate for general discussion
+5. Chat session persists across page navigation
+6. Accessible via Cmd+3 keyboard shortcut
+
+---
+
+### US-19: Board Table View
+**As** Carlos (Dev Manager)  
+**I want to** see all issues in a sortable table format  
+**So that** I can quickly assess sprint progress by assignee, priority, and status.
+
+**Acceptance Criteria:**
+1. Board header has kanban/table view toggle buttons
+2. Table view shows columns: Key, Summary, Status, Priority, Assignee, Type, Story Points, Components
+3. All columns are sortable (click header to toggle asc/desc)
+4. Clicking a row opens the card detail sheet
+5. Table rows have alternating background colors for readability
+6. Rows are keyboard accessible (tab + Enter to open)
+7. Empty state shows "No issues to display"
+
+---
+
+### US-20: Role-Based Landing Widgets
+**As** Diana (PM)  
+**I want to** see sprint-relevant information on the landing page  
+**So that** I can quickly access the views most useful for my role.
+
+**Acceptance Criteria:**
+1. Landing page shows a role-specific widget card below recent issues
+2. Developer: standard quick actions (no change)
+3. PM: "Sprint Focus" with link to board table view
+4. QA: "Testing Focus" with link to general chat
+5. Architect: "Architecture Review" with link to general chat
+6. Manager: "Team Overview" with link to board table view
+7. Support: "Customer Issues" with link to search
+8. Widget changes when the user switches roles
+
+---
+
+### US-21: Global Issue Search
+**As** Fatima (Support)  
+**I want to** search for Jira issues by keyword  
+**So that** I can quickly find related issues for customer-reported problems.
+
+**Acceptance Criteria:**
+1. `/search` route accessible via sidebar "Search" nav item
+2. Search input is autofocused on page load
+3. Search input has accessible label
+4. Results area shows placeholder when Jira not connected
+5. Command palette includes "Search Issues" command

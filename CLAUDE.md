@@ -162,7 +162,7 @@ Phases 1–5 of the design are implemented. Phase 6 (Tool Aggregation with Quick
 | General chat | Done | `src/routes/chat.tsx` — non-issue-scoped chat with persona-aware prompts |
 | Global search | Done | `src/routes/search.tsx` — issue search page (Jira integration placeholder) |
 | Onboarding wizard | Built | `src/components/shared/OnboardingWizard.tsx` — exists but not yet triggered on first visit |
-| User stories | Defined | `docs/user-stories.md` — 15 stories, 5 personas |
+| User stories | Defined | `docs/user-stories.md` — 21 stories, 10 personas |
 | OTEL metrics | Done | `src/lib/telemetry/` — HTTP, LLM, navigation, Web Vitals. Console + OTLP exporters. Settings UI |
 
 ## Testing

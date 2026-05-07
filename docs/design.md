@@ -54,10 +54,12 @@ Each transition loses context. The AI has no awareness of team standards. The ID
 │  ┌────────────────────────────────────────────────────────────────────┐ │
 │  │  React SPA                                                         │ │
 │  │                                                                    │ │
-│  │  /board/:id     — Kanban board (Jira-backed)                       │ │
-│  │  /issue/:key/chat — AI chat session                                │ │
-│  │  /issue/:key/ide  — Web IDE (Monaco + AI + Git)                    │ │
-│  │  /settings        — Integrations, Preferences, About                │ │
+│  │  /board/:id     — Kanban board + table view (Jira-backed)           │ │
+│  │  /issue/:key/chat — Issue-scoped AI chat                           │ │
+│  │  /issue/:key/ide  — Web IDE (Monaco + Git)                         │ │
+│  │  /chat            — General AI chat (non-issue-scoped)             │ │
+│  │  /search          — Global issue search                            │ │
+│  │  /settings        — Integrations, Preferences, About               │ │
 │  │  /auth/callback   — OAuth code exchange handler                    │ │
 │  └──────────────────────────┬─────────────────────────────────────────┘ │
 │                             │                                           │

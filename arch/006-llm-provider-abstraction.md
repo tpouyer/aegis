@@ -122,3 +122,7 @@ This ensures page JavaScript **never** holds API keys after initial setup. An XS
 3. **Provider switching mid-session**: The `ChatView.handleProviderSelected` callback now correctly uses `switchProvider()` and `switchModel()` when a session already exists, rather than silently failing via `createSession()`'s early return.
 
 4. **Custom provider error fix**: The `CustomProvider` error message was referencing `this.endpoint` (undefined) — corrected to `this.relayUrl`.
+
+5. **Persona-aware system prompt**: `buildSystemPrompt()` accepts an optional `persona` param with `role` and `description`. When set, the LLM is addressed as "an AI assistant helping a {role}" with role-specific focus (e.g., "Focus on test coverage" for QA, "Focus on scope and dependencies" for PM). Suggested prompts in the chat empty state are also role-specific via `getSuggestedPrompts()` in `src/lib/llm/persona-prompts.ts`.
+
+6. **Non-issue-scoped chat**: The `/chat` route provides a general AI chat surface without issue context. `issueKey` and `issueSummary` are now optional in `SystemPromptParams`. When absent, the system prompt omits issue fields and uses broader organizational context.
