@@ -84,7 +84,7 @@ export async function handleGitHubCallback(params: URLSearchParams, config: GitH
   return {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
-    expiresAt: data.expires_in ? Date.now() + data.expires_in * 1000 : Date.now() + 8 * 60 * 60 * 1000,
+    expiresAt: data.expires_in ? Date.now() + data.expires_in * 1000 : Number.MAX_SAFE_INTEGER,
     provider: 'github',
   }
 }

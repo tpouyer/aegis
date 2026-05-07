@@ -97,7 +97,14 @@ function IdePage() {
   }, [])
 
   const navigate = useNavigate()
-  const isGitHubConnected = authManager.isConnected('github')
+
+  // Subscribe to auth state changes so the IDE re-renders when GitHub is connected
+  const [isGitHubConnected, setIsGitHubConnected] = useState(() => authManager.isConnected('github'))
+  useEffect(() => {
+    return authManager.onAuthChange(() => {
+      setIsGitHubConnected(authManager.isConnected('github'))
+    })
+  }, [])
 
   const [vfs, setVfs] = useState<VirtualFileSystem | null>(null)
   const [tree, setTree] = useState<TreeEntry[]>([])
