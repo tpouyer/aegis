@@ -9,6 +9,7 @@
 
 import { authManager } from '../auth/manager'
 import { resilientFetch } from '../fetch/resilient-fetch'
+import { getWellKnownConfig } from '../telemetry/config'
 import type {
   JiraBoard,
   JiraBoardConfig,
@@ -33,16 +34,19 @@ export class JiraClientError extends Error {
 }
 
 export class JiraClient {
-  private baseUrl: string
+  private jiraBaseUrl: string
   private cloudId: string | undefined
   private authHeader: string | undefined
+  private proxyUrl: string | undefined
 
   constructor(config: JiraConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, '')
+    this.jiraBaseUrl = config.baseUrl.replace(/\/$/, '')
     this.cloudId = config.cloudId
 
     if (config.email && config.apiToken) {
       this.authHeader = `Basic ${btoa(`${config.email}:${config.apiToken}`)}`
+      const wk = getWellKnownConfig()
+      this.proxyUrl = wk?.auth?.githubTokenProxyUrl?.replace(/\/$/, '')
     }
   }
 
@@ -52,16 +56,22 @@ export class JiraClient {
 
   private apiUrl(path: string): string {
     if (this.cloudId) {
-      return `${this.baseUrl}/ex/jira/${this.cloudId}/rest${path}`
+      return `${this.jiraBaseUrl}/ex/jira/${this.cloudId}/rest${path}`
     }
-    return `${this.baseUrl}/rest${path}`
+    if (this.proxyUrl) {
+      return `${this.proxyUrl}/jira/rest${path}`
+    }
+    return `${this.jiraBaseUrl}/rest${path}`
   }
 
   private agileUrl(path: string): string {
     if (this.cloudId) {
-      return `${this.baseUrl}/ex/jira/${this.cloudId}/rest/agile/1.0${path}`
+      return `${this.jiraBaseUrl}/ex/jira/${this.cloudId}/rest/agile/1.0${path}`
     }
-    return `${this.baseUrl}/rest/agile/1.0${path}`
+    if (this.proxyUrl) {
+      return `${this.proxyUrl}/jira/rest/agile/1.0${path}`
+    }
+    return `${this.jiraBaseUrl}/rest/agile/1.0${path}`
   }
 
   private async request<T>(url: string, init?: RequestInit): Promise<T> {
@@ -71,7 +81,10 @@ export class JiraClient {
       ...(init?.headers as Record<string, string>),
     }
 
-    if (this.authHeader) {
+    if (this.proxyUrl && this.authHeader) {
+      headers['X-Jira-Base-URL'] = this.jiraBaseUrl
+      headers['X-Jira-Auth'] = this.authHeader
+    } else if (this.authHeader) {
       headers.Authorization = this.authHeader
     }
 
