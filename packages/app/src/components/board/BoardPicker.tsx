@@ -15,7 +15,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { useBoardSearch, useProjectSearch } from '@/lib/jira/queries'
 import type { JiraBoard } from '@/lib/jira/types'
+import type { StarredBoard } from '@/stores/board-prefs'
 import { useBoardPrefsStore } from '@/stores/board-prefs'
+import { StarredQuickAccess } from './StarredQuickAccess'
 
 interface BoardPickerProps {
   boards: JiraBoard[]
@@ -47,15 +49,21 @@ function useDebouncedValue(value: string, delayMs: number): string {
 export function BoardPicker({ boards }: BoardPickerProps) {
   const recentBoards = useBoardPrefsStore((s) => s.recentBoards)
   const starredIds = useBoardPrefsStore((s) => s.starredBoardIds)
+  const starredBoardData = useBoardPrefsStore((s) => s.starredBoards)
   const toggleStar = useBoardPrefsStore((s) => s.toggleStar)
+  const pickerFilters = useBoardPrefsStore((s) => s.pickerFilters)
+  const setPickerFilters = useBoardPrefsStore((s) => s.setPickerFilters)
+  const clearPickerFilters = useBoardPrefsStore((s) => s.clearPickerFilters)
   const [showAll, setShowAll] = useState(false)
 
-  // Filter state
+  // Board name search is transient — not persisted
   const [boardNameInput, setBoardNameInput] = useState('')
-  const [spaceFilter, setSpaceFilter] = useState<string | null>(null)
-  const [spaceFilterName, setSpaceFilterName] = useState<string | null>(null)
-  const [typeFilter, setTypeFilter] = useState<string | null>(null)
-  const [projectTypeFilter, setProjectTypeFilter] = useState<string | null>(null)
+
+  // Persisted filter state
+  const spaceFilter = pickerFilters.spaceFilter
+  const spaceFilterName = pickerFilters.spaceFilterName
+  const typeFilter = pickerFilters.typeFilter
+  const projectTypeFilter = pickerFilters.projectTypeFilter
 
   // Debounced board name for API search
   const debouncedBoardName = useDebouncedValue(boardNameInput, 400)
@@ -113,8 +121,25 @@ export function BoardPicker({ boards }: BoardPickerProps) {
 
   const hasActiveFilters = boardNameInput || spaceFilter || typeFilter || projectTypeFilter
 
-  // Split filtered boards into sections
-  const starred = useMemo(() => filtered.filter((b) => starredSet.has(b.id)), [filtered, starredSet])
+  // Starred boards rendered directly from persisted store data
+  const starred: JiraBoard[] = useMemo(
+    () =>
+      starredBoardData.map((sb) => ({
+        id: sb.id,
+        name: sb.name,
+        type: sb.type as JiraBoard['type'],
+        self: '',
+        location: sb.projectKey
+          ? {
+              projectId: 0,
+              projectKey: sb.projectKey,
+              projectName: sb.projectName ?? '',
+              projectTypeKey: sb.projectTypeKey,
+            }
+          : undefined,
+      })),
+    [starredBoardData],
+  )
   const recentOnly = useMemo(
     () =>
       filtered
@@ -136,21 +161,36 @@ export function BoardPicker({ boards }: BoardPickerProps) {
 
   const clearAllFilters = () => {
     setBoardNameInput('')
-    setSpaceFilter(null)
-    setSpaceFilterName(null)
-    setTypeFilter(null)
-    setProjectTypeFilter(null)
+    clearPickerFilters()
     setBoardSearchOpen(false)
   }
+
+  const handleToggleStar = useCallback(
+    (board: JiraBoard) => {
+      const data: StarredBoard = {
+        id: board.id,
+        name: board.name,
+        type: board.type,
+        projectKey: board.location?.projectKey,
+        projectName: board.location?.projectName,
+        projectTypeKey: board.location?.projectTypeKey,
+      }
+      toggleStar(board.id, data)
+    },
+    [toggleStar],
+  )
 
   // Show dropdown when user types in board name filter and results come back
   const showBoardDropdown = boardSearchOpen && debouncedBoardName.length >= 2
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <div>
-        <h1 className="text-lg font-semibold text-foreground">Select a Board</h1>
-        <p className="text-sm text-muted-foreground">Choose a board to view. Star boards to keep them at the top.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold text-foreground">Select a Board</h1>
+          <p className="text-sm text-muted-foreground">Choose a board to view. Star boards to keep them at the top.</p>
+        </div>
+        <StarredQuickAccess />
       </div>
 
       {/* Filter bar */}
@@ -221,8 +261,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
           value={spaceFilter}
           selectedName={spaceFilterName}
           onSelect={(key, name) => {
-            setSpaceFilter(key)
-            setSpaceFilterName(name)
+            setPickerFilters({ spaceFilter: key, spaceFilterName: name })
           }}
         />
 
@@ -231,7 +270,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
             label="Board Type"
             value={typeFilter}
             options={boardTypes.map((t) => ({ id: t, label: t }))}
-            onSelect={setTypeFilter}
+            onSelect={(v) => setPickerFilters({ typeFilter: v })}
             capitalize
           />
         )}
@@ -244,7 +283,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
               id: t,
               label: PROJECT_TYPE_LABELS[t] ?? t,
             }))}
-            onSelect={setProjectTypeFilter}
+            onSelect={(v) => setPickerFilters({ projectTypeFilter: v })}
           />
         )}
 
@@ -279,11 +318,11 @@ export function BoardPicker({ boards }: BoardPickerProps) {
       )}
 
       {starred.length > 0 && (
-        <BoardSection title="Starred" boards={starred} starredSet={starredSet} onToggleStar={toggleStar} />
+        <BoardSection title="Starred" boards={starred} starredSet={starredSet} onToggleStar={handleToggleStar} />
       )}
 
       {recentOnly.length > 0 && !showAll && !hasActiveFilters && (
-        <BoardSection title="Recent" boards={recentOnly} starredSet={starredSet} onToggleStar={toggleStar} />
+        <BoardSection title="Recent" boards={recentOnly} starredSet={starredSet} onToggleStar={handleToggleStar} />
       )}
 
       {limitedRemaining.length > 0 && (
@@ -291,7 +330,7 @@ export function BoardPicker({ boards }: BoardPickerProps) {
           title={starred.length > 0 || (recentOnly.length > 0 && !hasActiveFilters) ? 'Other Boards' : 'Boards'}
           boards={limitedRemaining}
           starredSet={starredSet}
-          onToggleStar={toggleStar}
+          onToggleStar={handleToggleStar}
         />
       )}
 
@@ -476,7 +515,7 @@ function BoardSection({
   title: string
   boards: JiraBoard[]
   starredSet: Set<number>
-  onToggleStar: (id: number) => void
+  onToggleStar: (board: JiraBoard) => void
 }) {
   return (
     <div>
@@ -497,7 +536,7 @@ function BoardCard({
 }: {
   board: JiraBoard
   isStarred: boolean
-  onToggleStar: (id: number) => void
+  onToggleStar: (board: JiraBoard) => void
 }) {
   const Icon = BOARD_TYPE_ICONS[board.type] ?? LayoutDashboard
   return (
@@ -532,7 +571,7 @@ function BoardCard({
         className="absolute right-3 top-3 rounded p-1 transition-colors hover:bg-accent"
         onClick={(e) => {
           e.preventDefault()
-          onToggleStar(board.id)
+          onToggleStar(board)
         }}
         title={isStarred ? 'Unstar board' : 'Star board'}
       >

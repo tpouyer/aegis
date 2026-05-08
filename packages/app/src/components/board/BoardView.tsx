@@ -15,7 +15,7 @@
 
 import { DragDropContext, type DropResult } from '@hello-pangea/dnd'
 import { useNavigate } from '@tanstack/react-router'
-import { AlertTriangle, ChevronDown, LayoutDashboard, LayoutGrid, List, RefreshCw, Star } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ChevronDown, LayoutDashboard, LayoutGrid, List, RefreshCw, Star } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
@@ -39,6 +39,7 @@ import { CardDetail } from './CardDetail'
 import { Column } from './Column'
 import { FilterBar } from './FilterBar'
 import { JiraSearch } from './JiraSearch'
+import { StarredQuickAccess } from './StarredQuickAccess'
 import { TransitionModal } from './TransitionModal'
 
 function BoardSwitcher({ currentBoardId }: { currentBoardId: number }) {
@@ -458,9 +459,22 @@ export function BoardView({ boardId }: BoardViewProps) {
       {/* Filter bar with refresh controls */}
       <FilterBar issues={allIssues} />
 
-      {/* Board header with board switcher, refresh button, and timestamp */}
+      {/* Board header with back button, board switcher, starred quick-access, refresh, and timestamp */}
       <div className="flex items-center gap-3 border-b border-border bg-card px-4 py-1.5">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          title="Back to boards"
+          onClick={() => {
+            useBoardPrefsStore.getState().clearLastBoard()
+            navigate({ to: '/board' })
+          }}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
         <BoardSwitcher currentBoardId={boardId} />
+        <StarredQuickAccess currentBoardId={boardId} />
         <JiraSearch boardId={boardId} />
         <div className="flex-1" />
         {lastUpdated && <span className="text-xs text-muted-foreground">Last updated: {lastUpdated}</span>}

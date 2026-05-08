@@ -6,7 +6,6 @@ import { BoardSkeleton } from '@/components/board/BoardSkeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { authManager } from '@/lib/auth/manager'
 import { useBoards } from '@/lib/jira/queries'
-import { useBoardPrefsStore } from '@/stores/board-prefs'
 
 export const Route = createFileRoute('/board/')({
   component: BoardIndexPage,
@@ -14,26 +13,12 @@ export const Route = createFileRoute('/board/')({
 
 function BoardIndexPage() {
   const navigate = useNavigate()
-  const lastBoardId = useBoardPrefsStore((s) => s.lastBoardId)
 
   useEffect(() => {
     document.title = 'Boards — Aegis'
   }, [])
 
-  // Redirect to last-used board immediately
-  useEffect(() => {
-    if (lastBoardId !== null) {
-      navigate({ to: '/board/$boardId', params: { boardId: String(lastBoardId) }, replace: true })
-    }
-  }, [lastBoardId, navigate])
-
-  // Only fetch boards if we don't have a lastBoardId (otherwise we're redirecting)
-  const { data: boards, isLoading, error } = useBoards({ enabled: lastBoardId === null })
-
-  // While redirecting, show skeleton
-  if (lastBoardId !== null) {
-    return <BoardSkeleton />
-  }
+  const { data: boards, isLoading, error } = useBoards()
 
   if (isLoading) {
     return <BoardSkeleton />
