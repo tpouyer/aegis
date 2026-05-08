@@ -1,5 +1,20 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Activity, Bot, Info, Link2, Link2Off, Moon, Palette, Settings, Sparkles, Sun, User } from 'lucide-react'
+import {
+  Activity,
+  Bot,
+  Info,
+  Link2,
+  Link2Off,
+  Moon,
+  Palette,
+  Plus,
+  Settings,
+  Sparkles,
+  Sun,
+  Trash2,
+  User,
+  Wrench,
+} from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Badge } from '@/components/ui/badge'
@@ -54,7 +69,10 @@ function useAuthState(): AuthState {
 }
 
 import { initJiraClient } from '@/lib/jira/client'
+import { mcpManager } from '@/lib/mcp/manager'
+import type { MCPConnection } from '@/lib/mcp/types'
 import { useJiraConfigStore } from '@/stores/jira-config'
+import { type MCPServerConfig, useMCPConfigStore } from '@/stores/mcp-config'
 import { PERSONA_DESCRIPTIONS, PERSONA_LABELS, type PersonaRole, usePersonaStore } from '@/stores/persona'
 import { useTelemetryStore } from '@/stores/telemetry'
 import { useThemeStore } from '@/stores/theme'
@@ -248,6 +266,200 @@ function AuthConnectionsSection() {
             </div>
           )
         })}
+      </CardContent>
+    </Card>
+  )
+}
+
+function MCPServersSection() {
+  const { servers, addServer, removeServer, toggleServer } = useMCPConfigStore()
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const [url, setUrl] = useState('')
+  const [authType, setAuthType] = useState<MCPServerConfig['authType']>('none')
+  const [authToken, setAuthToken] = useState('')
+  const [statuses, setStatuses] = useState<Map<string, MCPConnection>>(mcpManager.getConnectionStatus())
+
+  useEffect(() => {
+    const interval = setInterval(() => setStatuses(mcpManager.getConnectionStatus()), 3000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleAdd = useCallback(() => {
+    if (!name.trim() || !url.trim()) return
+    const id = name.trim().toLowerCase().replace(/\s+/g, '-')
+    const server: MCPServerConfig = {
+      id,
+      name: name.trim(),
+      url: url.trim(),
+      authType,
+      authToken: authType !== 'none' ? authToken.trim() : undefined,
+      enabled: true,
+      isDefault: false,
+    }
+    addServer(server)
+    mcpManager
+      .connect(id)
+      .then(() => setStatuses(mcpManager.getConnectionStatus()))
+      .catch(() => {})
+    setName('')
+    setUrl('')
+    setAuthType('none')
+    setAuthToken('')
+    setAdding(false)
+  }, [name, url, authType, authToken, addServer])
+
+  const handleToggle = useCallback(
+    (server: MCPServerConfig) => {
+      toggleServer(server.id)
+      if (server.enabled) {
+        mcpManager
+          .disconnect(server.id)
+          .then(() => setStatuses(mcpManager.getConnectionStatus()))
+          .catch(() => {})
+      } else {
+        mcpManager
+          .connect(server.id)
+          .then(() => setStatuses(mcpManager.getConnectionStatus()))
+          .catch(() => {})
+      }
+    },
+    [toggleServer],
+  )
+
+  const handleRemove = useCallback(
+    (id: string) => {
+      mcpManager.disconnect(id).catch(() => {})
+      removeServer(id)
+      setStatuses(mcpManager.getConnectionStatus())
+    },
+    [removeServer],
+  )
+
+  function statusIndicator(serverId: string) {
+    const conn = statuses.get(serverId)
+    if (!conn) return 'bg-muted-foreground/40'
+    switch (conn.status) {
+      case 'connected':
+        return 'bg-green-500'
+      case 'connecting':
+        return 'bg-yellow-500'
+      case 'error':
+        return 'bg-red-500'
+      default:
+        return 'bg-muted-foreground/40'
+    }
+  }
+
+  function statusLabel(serverId: string) {
+    const conn = statuses.get(serverId)
+    if (!conn) return 'Disconnected'
+    switch (conn.status) {
+      case 'connected':
+        return `Connected · ${conn.tools.length} tool${conn.tools.length !== 1 ? 's' : ''}`
+      case 'connecting':
+        return 'Connecting...'
+      case 'error':
+        return conn.error ?? 'Connection error'
+      default:
+        return 'Disconnected'
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Wrench className="h-5 w-5" />
+          MCP Servers
+        </CardTitle>
+        <CardDescription>Connect to external tool servers using the Model Context Protocol.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {servers.length === 0 && !adding && <p className="text-sm text-muted-foreground">No MCP servers configured.</p>}
+
+        {servers.map((server) => (
+          <div key={server.id} className="flex items-center justify-between rounded-lg border border-border p-4">
+            <div className="flex items-center gap-3">
+              <div
+                className={`h-2.5 w-2.5 rounded-full ${statusIndicator(server.id)}`}
+                aria-label={statusLabel(server.id)}
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground">{server.name}</p>
+                <p className="max-w-xs truncate text-xs text-muted-foreground">{server.url}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{statusLabel(server.id)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant={server.enabled ? 'default' : 'outline'} size="sm" onClick={() => handleToggle(server)}>
+                {server.enabled ? 'Enabled' : 'Disabled'}
+              </Button>
+              {!server.isDefault && (
+                <Button variant="ghost" size="sm" onClick={() => handleRemove(server.id)} aria-label="Remove server">
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              )}
+            </div>
+          </div>
+        ))}
+
+        {adding && (
+          <div className="space-y-3 rounded-md border border-border bg-muted/30 p-4">
+            <Input
+              placeholder="Server name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              aria-label="MCP server name"
+              className="text-sm"
+            />
+            <Input
+              placeholder="https://mcp-server.example.com/mcp"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              aria-label="MCP server URL"
+              className="text-sm"
+            />
+            <div className="flex gap-2">
+              {(['none', 'bearer', 'api-key'] as const).map((t) => (
+                <Button
+                  key={t}
+                  size="sm"
+                  variant={authType === t ? 'default' : 'outline'}
+                  className="text-xs"
+                  onClick={() => setAuthType(t)}
+                >
+                  {t === 'none' ? 'No Auth' : t === 'bearer' ? 'Bearer' : 'API Key'}
+                </Button>
+              ))}
+            </div>
+            {authType !== 'none' && (
+              <Input
+                type="password"
+                placeholder={authType === 'bearer' ? 'Bearer token' : 'API key'}
+                value={authToken}
+                onChange={(e) => setAuthToken(e.target.value)}
+                aria-label="Auth token"
+                className="text-sm"
+              />
+            )}
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleAdd} disabled={!name.trim() || !url.trim()}>
+                Add Server
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setAdding(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!adding && (
+          <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            Add Server
+          </Button>
+        )}
       </CardContent>
     </Card>
   )
@@ -538,6 +750,8 @@ function SettingsPage() {
 
         <TabsContent value="integrations" className="space-y-6">
           <AuthConnectionsSection />
+          <Separator />
+          <MCPServersSection />
           <Separator />
           <LLMProviderSection />
         </TabsContent>

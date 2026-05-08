@@ -71,4 +71,41 @@ describe('buildSystemPrompt', () => {
 
     expect(prompt).toContain('No description provided.')
   })
+
+  it('lists MCP tools when provided', () => {
+    const prompt = buildSystemPrompt({
+      issueKey: 'AAP-1000',
+      issueSummary: 'Test MCP',
+      supportsToolUse: true,
+      mcpTools: [
+        { name: 'search_issues', description: 'Search Jira issues', serverName: 'AAP SDLC' },
+        { name: 'get_standards', description: 'Get coding standards', serverName: 'AAP SDLC' },
+      ],
+    })
+
+    expect(prompt).toContain('## Available Tools')
+    expect(prompt).toContain('**search_issues** (AAP SDLC)')
+    expect(prompt).toContain('**get_standards** (AAP SDLC)')
+  })
+
+  it('omits Available Tools section when no MCP tools', () => {
+    const prompt = buildSystemPrompt({
+      issueKey: 'AAP-1001',
+      issueSummary: 'No tools',
+      supportsToolUse: true,
+    })
+
+    expect(prompt).not.toContain('## Available Tools')
+  })
+
+  it('omits Available Tools section when mcpTools is empty array', () => {
+    const prompt = buildSystemPrompt({
+      issueKey: 'AAP-1002',
+      issueSummary: 'Empty tools',
+      supportsToolUse: true,
+      mcpTools: [],
+    })
+
+    expect(prompt).not.toContain('## Available Tools')
+  })
 })

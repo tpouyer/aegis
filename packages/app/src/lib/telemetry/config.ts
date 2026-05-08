@@ -1,5 +1,13 @@
 import { type TelemetryConfig, useTelemetryStore } from '@/stores/telemetry'
 
+export interface MCPDefaultServer {
+  id: string
+  name: string
+  url: string
+  authType: 'none' | 'bearer' | 'api-key'
+  authProvider?: string
+}
+
 interface WellKnownConfig {
   telemetry?: {
     otlpEndpoint?: string | null
@@ -13,6 +21,9 @@ interface WellKnownConfig {
     rhSsoClientId?: string | null
     googleClientId?: string | null
     githubTokenProxyUrl?: string | null
+  }
+  mcp?: {
+    defaultServers?: MCPDefaultServer[]
   }
 }
 

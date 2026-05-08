@@ -14,6 +14,7 @@ export interface SystemPromptParams {
   orgContext?: Array<{ name: string; body: string }>
   supportsToolUse: boolean
   persona?: { role: string; description: string }
+  mcpTools?: Array<{ name: string; description: string; serverName: string }>
 }
 
 export function buildSystemPrompt(params: SystemPromptParams): string {
@@ -64,6 +65,14 @@ export function buildSystemPrompt(params: SystemPromptParams): string {
     parts.push(
       "You have access to tools for looking up coding standards, testing guidelines, and other organizational knowledge. Use them when relevant to give advice that follows the team's conventions.",
     )
+    parts.push('')
+  }
+
+  if (params.mcpTools && params.mcpTools.length > 0) {
+    parts.push('## Available Tools')
+    for (const tool of params.mcpTools) {
+      parts.push(`- **${tool.name}** (${tool.serverName}): ${tool.description}`)
+    }
     parts.push('')
   }
 

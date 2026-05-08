@@ -5,16 +5,15 @@
  * Tool categories:
  *   - Content tools (coding_standards, testing_guidelines, architecture, etc.)
  *     -> Resolved from the WASM engine's manifest cache (instant, no network).
- *     -> Currently stubbed; will be wired to the ProxyEngine when available.
  *
  *   - org_context — returns sample organizational context for the current issue.
  *     -> Mock implementation for development and testing.
  *
- *   - Search / execute tools
- *     -> Routed through the Service Worker to upstream MCP servers.
- *     -> Currently stubbed; will be implemented in the Tool Aggregation phase.
+ *   - MCP tools — any tool exposed by a connected external MCP server.
+ *     -> Routed through the MCP client to the appropriate server.
  */
 
+import { mcpManager } from '@/lib/mcp/manager'
 import type { ToolCall, ToolResult } from './types'
 
 // ---------------------------------------------------------------------------
@@ -108,7 +107,7 @@ export async function routeToolCall(toolCall: ToolCall): Promise<ToolResult> {
       result = await resolveOrgContext(toolCall)
     } else if (CONTENT_TOOLS.has(toolCall.name)) {
       result = await resolveContentTool(toolCall)
-    } else if (toolCall.name === 'search' || toolCall.name === 'execute') {
+    } else if (mcpManager.findServerForTool(toolCall.name)) {
       result = await routeToMCP(toolCall)
     } else {
       result = {
@@ -184,16 +183,7 @@ async function resolveContentTool(toolCall: ToolCall): Promise<ToolResult> {
   }
 }
 
-/**
- * Route a search/execute tool call through the Service Worker to
- * upstream MCP servers.
- * Stub: returns a placeholder until the SW MCP proxy is implemented.
- */
 async function routeToMCP(toolCall: ToolCall): Promise<ToolResult> {
-  // TODO: postMessage to Service Worker with MCP tool call
-  // SW will route to the appropriate upstream MCP server.
-  return {
-    toolCallId: toolCall.id,
-    content: `[${toolCall.name}] MCP tool execution is not yet available. The Service Worker MCP proxy will be implemented in the Tool Aggregation phase.`,
-  }
+  const result = await mcpManager.callTool(toolCall.name, toolCall.arguments)
+  return { ...result, toolCallId: toolCall.id }
 }

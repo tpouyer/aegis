@@ -24,7 +24,8 @@ import { getSuggestedPrompts, PERSONA_SYSTEM_DESCRIPTIONS } from '@/lib/llm/pers
 import { providerRegistry } from '@/lib/llm/provider-registry'
 import { buildSystemPrompt } from '@/lib/llm/system-prompt'
 import { routeToolCall } from '@/lib/llm/tool-router'
-import type { ChatMessage } from '@/lib/llm/types'
+import type { ChatMessage, ToolDefinition } from '@/lib/llm/types'
+import { mcpManager } from '@/lib/mcp/manager'
 import { instrumentedChat } from '@/lib/telemetry/instruments/llm'
 import { useChatStore } from '@/stores/chat'
 import { PERSONA_LABELS, usePersonaStore } from '@/stores/persona'
@@ -117,6 +118,13 @@ export function ChatView({ issueKey, issueSummary, issueDescription, acceptanceC
       }
       addMessage(issueKey, assistantMsg)
 
+      const mcpTools = mcpManager.getAvailableTools()
+      const toolDefinitions: ToolDefinition[] = mcpTools.map((t) => ({
+        name: t.name,
+        description: t.description,
+        inputSchema: t.inputSchema,
+      }))
+
       const personaRole = usePersonaStore.getState().role
       const systemPrompt = buildSystemPrompt({
         issueKey: issueKey || undefined,
@@ -128,6 +136,7 @@ export function ChatView({ issueKey, issueSummary, issueDescription, acceptanceC
           role: PERSONA_LABELS[personaRole],
           description: PERSONA_SYSTEM_DESCRIPTIONS[personaRole],
         },
+        mcpTools: mcpTools.map((t) => ({ name: t.name, description: t.description, serverName: t.serverName })),
       })
 
       // Start streaming
@@ -143,6 +152,7 @@ export function ChatView({ issueKey, issueSummary, issueDescription, acceptanceC
           model: currentSession.currentModel,
           messages: currentSession.messages.slice(0, -1),
           systemPrompt,
+          tools: toolDefinitions.length > 0 ? toolDefinitions : undefined,
           stream: true,
         })
         const stream = instrumentedChat(session.providerId, currentSession.currentModel, rawStream)

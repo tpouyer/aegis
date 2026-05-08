@@ -6,11 +6,13 @@ import { authManager } from './lib/auth/manager'
 import { CacheStore } from './lib/cache/indexeddb'
 import { initJiraClient } from './lib/jira/client'
 import { restoreProviders } from './lib/llm/restore-providers'
-import { loadWellKnownConfig } from './lib/telemetry/config'
+import { mcpManager } from './lib/mcp/manager'
+import { getWellKnownConfig, loadWellKnownConfig } from './lib/telemetry/config'
 import { initTelemetry } from './lib/telemetry/init'
 import { instrumentNavigation } from './lib/telemetry/instruments/navigation'
 import { routeTree } from './routeTree.gen'
 import { useJiraConfigStore } from './stores/jira-config'
+import { useMCPConfigStore } from './stores/mcp-config'
 import './app.css'
 
 authManager.clearExpiredTokens()
@@ -56,6 +58,15 @@ async function bootstrap() {
   await loadWellKnownConfig()
 
   restoreProviders()
+
+  const mcpDefaults = getWellKnownConfig().mcp?.defaultServers ?? []
+  const mcpStore = useMCPConfigStore.getState()
+  for (const server of mcpDefaults) {
+    if (!mcpStore.hasServer(server.id)) {
+      mcpStore.addServer({ ...server, enabled: true, isDefault: true })
+    }
+  }
+  mcpManager.connectAll().catch(() => {})
 
   const jiraConfig = useJiraConfigStore.getState().config
   if (jiraConfig) {

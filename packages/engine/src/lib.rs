@@ -1,23 +1,18 @@
 use wasm_bindgen::prelude::*;
 
 mod auth_filter;
-mod catalog;
 mod config;
 mod hierarchy;
-mod mcp;
-mod sandbox;
 mod types;
 
-use catalog::ToolCatalog;
 use types::{AuthLevel, Manifest};
 
-/// The main WASM entry point. ProxyEngine holds the parsed manifest and tool
-/// catalog in WASM linear memory, providing synchronous resolution of content
-/// hierarchy, auth filtering, and MCP protocol handling.
+/// The main WASM entry point. ProxyEngine holds the parsed manifest in WASM
+/// linear memory, providing synchronous resolution of content hierarchy and
+/// auth-level filtering.
 #[wasm_bindgen]
 pub struct ProxyEngine {
     manifest: Manifest,
-    catalog: ToolCatalog,
 }
 
 #[wasm_bindgen]
@@ -31,8 +26,7 @@ impl ProxyEngine {
     pub fn new(manifest_json: &str) -> Result<ProxyEngine, JsError> {
         let manifest: Manifest = serde_json::from_str(manifest_json)
             .map_err(|e| JsError::new(&format!("Failed to parse manifest: {}", e)))?;
-        let catalog = ToolCatalog::new(manifest.tools.clone());
-        Ok(ProxyEngine { manifest, catalog })
+        Ok(ProxyEngine { manifest })
     }
 
     /// Resolve content hierarchy for a given repo and auth level.
@@ -54,46 +48,6 @@ impl ProxyEngine {
         let level = parse_auth_level(auth_level)?;
         let filtered = auth_filter::filter_by_auth(&self.manifest, level);
         serde_json::to_string(&filtered)
-            .map_err(|e| JsError::new(&format!("Serialization error: {}", e)))
-    }
-
-    /// Handle an MCP `tools/list` request.
-    ///
-    /// Returns a JSON string with a `tools` array containing all tools
-    /// visible at the given auth level.
-    pub fn tools_list(&self, auth_level: &str) -> Result<String, JsError> {
-        let level = parse_auth_level(auth_level)?;
-        let result = mcp::handle_tools_list(&self.manifest, level);
-        serde_json::to_string(&result)
-            .map_err(|e| JsError::new(&format!("Serialization error: {}", e)))
-    }
-
-    /// Handle an MCP `tools/call` request.
-    ///
-    /// `args` is a JSON string of tool arguments. Returns a JSON string
-    /// with the tool result (content body for content tools, or a routing
-    /// indicator for upstream tools).
-    pub fn tools_call(
-        &self,
-        tool_name: &str,
-        args: &str,
-        auth_level: &str,
-    ) -> Result<String, JsError> {
-        let level = parse_auth_level(auth_level)?;
-        let parsed_args: serde_json::Value = serde_json::from_str(args)
-            .map_err(|e| JsError::new(&format!("Invalid args JSON: {}", e)))?;
-        let result = mcp::handle_tools_call(&self.manifest, tool_name, &parsed_args, level)
-            .map_err(|e| JsError::new(&format!("Tool call error: {}", e)))?;
-        serde_json::to_string(&result)
-            .map_err(|e| JsError::new(&format!("Serialization error: {}", e)))
-    }
-
-    /// Search the tool catalog by name or description substring.
-    ///
-    /// Returns a JSON-serialized array of matching `Tool` definitions.
-    pub fn query_tools(&self, search: &str) -> Result<String, JsError> {
-        let results = self.catalog.query(search);
-        serde_json::to_string(&results)
             .map_err(|e| JsError::new(&format!("Serialization error: {}", e)))
     }
 }
