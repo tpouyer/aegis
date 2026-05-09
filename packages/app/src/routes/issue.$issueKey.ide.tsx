@@ -70,10 +70,10 @@ function IdePage() {
 
   const navigate = useNavigate()
 
-  const [isGitHubConnected, setIsGitHubConnected] = useState(() => authManager.isConnected('github'))
+  const [isGitHubConnected, setIsGitHubConnected] = useState(() => !!authManager.getState().tokens.github?.accessToken)
   useEffect(() => {
     return authManager.onAuthChange(() => {
-      setIsGitHubConnected(authManager.isConnected('github'))
+      setIsGitHubConnected(!!authManager.getState().tokens.github?.accessToken)
     })
   }, [])
 
