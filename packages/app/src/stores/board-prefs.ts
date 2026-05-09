@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { recordBoardFilterApplied, recordBoardStarToggle } from '@/lib/telemetry/instruments/board'
 
 export interface RecentBoard {
   id: number
@@ -119,6 +120,7 @@ export const useBoardPrefsStore = create<BoardPrefsStore>((set, get) => {
       const state = { lastBoardId, recentBoards, starredBoardIds: updatedIds, starredBoards: updatedBoards }
       set(state)
       persist(state)
+      recordBoardStarToggle(isStarred ? 'unstar' : 'star')
     },
 
     isBoardStarred: (boardId) => get().starredBoardIds.includes(boardId),
@@ -129,6 +131,9 @@ export const useBoardPrefsStore = create<BoardPrefsStore>((set, get) => {
       const state = { lastBoardId, recentBoards, starredBoardIds, starredBoards, pickerFilters: updated }
       set({ pickerFilters: updated })
       persist(state)
+      for (const key of Object.keys(filters)) {
+        if ((filters as Record<string, unknown>)[key] !== null) recordBoardFilterApplied(key)
+      }
     },
 
     clearPickerFilters: () => {

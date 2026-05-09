@@ -7,12 +7,14 @@ import { CacheStore } from './lib/cache/indexeddb'
 import { initJiraClient } from './lib/jira/client'
 import { restoreProviders } from './lib/llm/restore-providers'
 import { mcpManager } from './lib/mcp/manager'
+import { skillManager } from './lib/skills/manager'
 import { getWellKnownConfig, loadWellKnownConfig } from './lib/telemetry/config'
 import { initTelemetry } from './lib/telemetry/init'
 import { instrumentNavigation } from './lib/telemetry/instruments/navigation'
 import { routeTree } from './routeTree.gen'
 import { useJiraConfigStore } from './stores/jira-config'
 import { useMCPConfigStore } from './stores/mcp-config'
+import { useSkillsConfigStore } from './stores/skills-config'
 import './app.css'
 
 authManager.clearExpiredTokens()
@@ -67,6 +69,20 @@ async function bootstrap() {
     }
   }
   mcpManager.connectAll().catch(() => {})
+
+  const skillsConfig = getWellKnownConfig().skills
+  const skillsStore = useSkillsConfigStore.getState()
+  for (const marketplace of skillsConfig?.defaultMarketplaces ?? []) {
+    if (!skillsStore.hasMarketplace(marketplace.id)) {
+      skillsStore.addMarketplace({ ...marketplace, enabled: true })
+    }
+  }
+  for (const plugin of skillsConfig?.defaultPlugins ?? []) {
+    if (!skillsStore.hasPlugin(plugin.id)) {
+      skillsStore.addPlugin({ id: plugin.id, name: plugin.id, source: plugin.source, enabled: true, isDefault: true })
+    }
+  }
+  skillManager.loadAll().catch(() => {})
 
   const jiraConfig = useJiraConfigStore.getState().config
   if (jiraConfig) {

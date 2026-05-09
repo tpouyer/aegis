@@ -321,7 +321,6 @@ describe('SourceControl', () => {
     const { unmount } = render(
       <SourceControl
         changes={[]}
-        repoKey="org/repo"
         onCommit={vi.fn().mockResolvedValue('sha')}
         onCreatePR={vi.fn().mockResolvedValue('url')}
         onFileClick={vi.fn()}
@@ -342,7 +341,6 @@ describe('SourceControl', () => {
     const { unmount } = render(
       <SourceControl
         changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
-        repoKey="org/repo"
         onCommit={vi.fn().mockResolvedValue('sha')}
         onCreatePR={vi.fn().mockResolvedValue('url')}
         onFileClick={vi.fn()}
@@ -368,7 +366,6 @@ describe('SourceControl', () => {
     const { unmount } = render(
       <SourceControl
         changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
-        repoKey="org/repo"
         onCommit={vi.fn().mockResolvedValue('sha')}
         onCreatePR={vi.fn().mockResolvedValue('url')}
         onFileClick={vi.fn()}
@@ -395,7 +392,6 @@ describe('SourceControl', () => {
     const { unmount } = render(
       <SourceControl
         changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
-        repoKey="org/repo"
         onCommit={onCommit}
         onCreatePR={vi.fn().mockResolvedValue('url')}
         onFileClick={vi.fn()}
@@ -428,7 +424,6 @@ describe('SourceControl', () => {
     const { unmount } = render(
       <SourceControl
         changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
-        repoKey="org/repo"
         onCommit={onCommit}
         onCreatePR={vi.fn().mockResolvedValue('url')}
         onFileClick={vi.fn()}
@@ -457,7 +452,6 @@ describe('SourceControl', () => {
     const { unmount } = render(
       <SourceControl
         changes={[{ path: 'file.ts', status: 'modified', repo: 'org/repo' }]}
-        repoKey="org/repo"
         onCommit={vi.fn().mockResolvedValue('sha')}
         onCreatePR={onCreatePR}
         onFileClick={vi.fn()}
@@ -490,7 +484,6 @@ describe('SourceControl', () => {
           { path: 'changed.ts', status: 'modified', repo: 'org/repo' },
           { path: 'removed.ts', status: 'deleted', repo: 'org/repo' },
         ]}
-        repoKey="org/repo"
         onCommit={vi.fn().mockResolvedValue('sha')}
         onCreatePR={vi.fn().mockResolvedValue('url')}
         onFileClick={vi.fn()}

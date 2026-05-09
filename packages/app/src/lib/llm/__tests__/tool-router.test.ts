@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mcpManager } from '@/lib/mcp/manager'
+import { skillManager } from '@/lib/skills/manager'
 import { routeToolCall } from '../tool-router'
 import type { ToolCall } from '../types'
 
@@ -7,6 +8,13 @@ vi.mock('@/lib/mcp/manager', () => ({
   mcpManager: {
     findServerForTool: vi.fn(),
     callTool: vi.fn(),
+  },
+}))
+
+vi.mock('@/lib/skills/manager', () => ({
+  skillManager: {
+    readSkillFile: vi.fn(),
+    listSkillFiles: vi.fn(),
   },
 }))
 
@@ -93,5 +101,44 @@ describe('routeToolCall', () => {
     const result = await routeToolCall(makeToolCall('org_context', { topic: 'nonexistent' }))
     expect(result.isError).toBe(true)
     expect(result.content).toContain('not found')
+  })
+
+  it('routes read_skill_file to skill manager', async () => {
+    vi.mocked(skillManager.readSkillFile).mockResolvedValue('# Skill Instructions\nDo things.')
+
+    const result = await routeToolCall(makeToolCall('read_skill_file', { skillId: 'p:review', path: 'SKILL.md' }))
+
+    expect(result.toolCallId).toBe('call-read_skill_file')
+    expect(result.content).toContain('Skill Instructions')
+    expect(skillManager.readSkillFile).toHaveBeenCalledWith('p:review', 'SKILL.md')
+  })
+
+  it('routes list_skill_files to skill manager', async () => {
+    vi.mocked(skillManager.listSkillFiles).mockResolvedValue([
+      { path: 'SKILL.md', size: 100 },
+      { path: 'script.py', size: 50 },
+    ])
+
+    const result = await routeToolCall(makeToolCall('list_skill_files', { skillId: 'p:review' }))
+
+    expect(result.toolCallId).toBe('call-list_skill_files')
+    expect(result.content).toContain('SKILL.md')
+    expect(result.content).toContain('script.py')
+  })
+
+  it('returns error for read_skill_file without skillId', async () => {
+    const result = await routeToolCall(makeToolCall('read_skill_file'))
+    expect(result.isError).toBe(true)
+    expect(result.content).toContain('Missing required argument: skillId')
+  })
+
+  it('routes add_repo_to_workspace and returns proposal', async () => {
+    const result = await routeToolCall(
+      makeToolCall('add_repo_to_workspace', { owner: 'ansible', repo: 'awx', reason: 'API changes' }),
+    )
+    expect(result.toolCallId).toBe('call-add_repo_to_workspace')
+    const parsed = JSON.parse(result.content)
+    expect(parsed.type).toBe('workspace_proposal')
+    expect(parsed.repos[0].owner).toBe('ansible')
   })
 })

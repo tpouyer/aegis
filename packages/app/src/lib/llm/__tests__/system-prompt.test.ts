@@ -108,4 +108,54 @@ describe('buildSystemPrompt', () => {
 
     expect(prompt).not.toContain('## Available Tools')
   })
+
+  it('includes skill index when provided', () => {
+    const prompt = buildSystemPrompt({
+      issueKey: 'AAP-2000',
+      issueSummary: 'Skills test',
+      supportsToolUse: true,
+      skillIndex: 'skills[1]{id,name,description}:\n  p:review,code-review,Reviews code',
+    })
+
+    expect(prompt).toContain('## Available Skills')
+    expect(prompt).toContain('read_skill_file')
+    expect(prompt).toContain('skills[1]{id,name,description}:')
+  })
+
+  it('omits skills section when skillIndex is undefined', () => {
+    const prompt = buildSystemPrompt({
+      issueKey: 'AAP-2001',
+      issueSummary: 'No skills',
+      supportsToolUse: true,
+    })
+
+    expect(prompt).not.toContain('## Available Skills')
+  })
+
+  it('includes workspace setup when workspace has no repos', () => {
+    const prompt = buildSystemPrompt({
+      issueKey: 'AAP-3000',
+      issueSummary: 'Workspace test',
+      supportsToolUse: true,
+      workspace: { issueKey: 'AAP-3000', repos: [] },
+    })
+
+    expect(prompt).toContain('## Workspace Setup')
+    expect(prompt).toContain('recommend which git repositories')
+  })
+
+  it('includes workspace context when repos are present', () => {
+    const prompt = buildSystemPrompt({
+      issueKey: 'AAP-3001',
+      issueSummary: 'Active workspace',
+      supportsToolUse: true,
+      workspace: { issueKey: 'AAP-3001', repos: ['ansible/awx', 'ansible/receptor'], activeFile: 'awx/api/views.py' },
+    })
+
+    expect(prompt).toContain('## Workspace')
+    expect(prompt).toContain('ansible/awx')
+    expect(prompt).toContain('ansible/receptor')
+    expect(prompt).toContain('awx/api/views.py')
+    expect(prompt).toContain('executePython')
+  })
 })

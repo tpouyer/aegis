@@ -26,6 +26,7 @@ import { buildSystemPrompt } from '@/lib/llm/system-prompt'
 import { routeToolCall } from '@/lib/llm/tool-router'
 import type { ChatMessage, ToolDefinition } from '@/lib/llm/types'
 import { mcpManager } from '@/lib/mcp/manager'
+import { skillManager } from '@/lib/skills/manager'
 import { instrumentedChat } from '@/lib/telemetry/instruments/llm'
 import { useChatStore } from '@/stores/chat'
 import { PERSONA_LABELS, usePersonaStore } from '@/stores/persona'
@@ -125,6 +126,54 @@ export function ChatView({ issueKey, issueSummary, issueDescription, acceptanceC
         inputSchema: t.inputSchema,
       }))
 
+      const skillIndex = skillManager.getSkillIndex()
+      if (skillIndex) {
+        toolDefinitions.push(
+          {
+            name: 'read_skill_file',
+            description: 'Read a file from a skill. Use the skill id from the skills index.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                skillId: { type: 'string', description: 'The skill identifier' },
+                path: { type: 'string', description: 'File path (default: SKILL.md)' },
+              },
+              required: ['skillId'],
+            },
+          },
+          {
+            name: 'list_skill_files',
+            description: 'List all files in a skill directory.',
+            inputSchema: {
+              type: 'object',
+              properties: { skillId: { type: 'string', description: 'The skill identifier' } },
+              required: ['skillId'],
+            },
+          },
+        )
+      }
+
+      toolDefinitions.push(
+        {
+          name: 'executePython',
+          description: 'Execute a Python script. Workspace files are mounted at /workspace/.',
+          inputSchema: {
+            type: 'object',
+            properties: { script: { type: 'string', description: 'Python code to execute' } },
+            required: ['script'],
+          },
+        },
+        {
+          name: 'executeBash',
+          description: 'Execute bash commands. Supports cat, grep, sed, find, ls, mkdir, and more.',
+          inputSchema: {
+            type: 'object',
+            properties: { script: { type: 'string', description: 'Bash commands to execute' } },
+            required: ['script'],
+          },
+        },
+      )
+
       const personaRole = usePersonaStore.getState().role
       const systemPrompt = buildSystemPrompt({
         issueKey: issueKey || undefined,
@@ -137,6 +186,7 @@ export function ChatView({ issueKey, issueSummary, issueDescription, acceptanceC
           description: PERSONA_SYSTEM_DESCRIPTIONS[personaRole],
         },
         mcpTools: mcpTools.map((t) => ({ name: t.name, description: t.description, serverName: t.serverName })),
+        skillIndex: skillIndex || undefined,
       })
 
       // Start streaming

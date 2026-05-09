@@ -23,7 +23,6 @@ import { useIDEStore } from '@/stores/ide'
 
 interface SourceControlProps {
   changes: FileChange[]
-  repoKey: string
   onCommit: (repoKey: string, message: string) => Promise<string>
   onCreatePR: (repoKey: string) => Promise<string>
   onFileClick: (repoKey: string, path: string) => void
@@ -55,7 +54,7 @@ function statusVariant(status: FileChange['status']) {
   }
 }
 
-export function SourceControl({ changes, repoKey, onCommit, onCreatePR, onFileClick }: SourceControlProps) {
+export function SourceControl({ changes, onCommit, onCreatePR, onFileClick }: SourceControlProps) {
   const { commitMessage, setCommitMessage } = useIDEStore()
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCommitting, setIsCommitting] = useState(false)

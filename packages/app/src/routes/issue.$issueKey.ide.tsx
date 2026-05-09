@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AlertTriangle, Github } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { IDELayout } from '@/components/ide/IDELayout'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Loading } from '@/components/shared/Loading'
 import { authManager } from '@/lib/auth/manager'
 import { githubClient } from '@/lib/github/client'
 import type { TreeEntry } from '@/lib/github/types'
+import { WorkspaceManager } from '@/lib/ide/workspace'
 import { shortcutRegistry, useShortcuts } from '@/lib/shortcuts'
 import { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
 import { useIDEStore } from '@/stores/ide'
@@ -16,25 +17,6 @@ export const Route = createFileRoute('/issue/$issueKey/ide')({
   component: IdePage,
 })
 
-/**
- * Generate a branch name from the issue key.
- * Pattern: feature/{issueKey}-impl (slugified).
- */
-function branchName(issueKey: string): string {
-  return `feature/${issueKey.toLowerCase()}-impl`
-}
-
-/**
- * Default repo config — in production this comes from the manifest's
- * component-to-repo mapping or the Jira issue's "repository" custom field.
- * For now, use a placeholder that can be overridden via search params.
- */
-function getRepoConfig(issueKey: string): { owner: string; repo: string } {
-  // TODO: Wire to manifest config / Jira custom field
-  void issueKey
-  return { owner: 'ansible', repo: 'awx' }
-}
-
 function IdePage() {
   const { issueKey } = Route.useParams()
   const setActiveRepo = useIDEStore((s) => s.setActiveRepo)
@@ -43,25 +25,19 @@ function IdePage() {
     document.title = `${issueKey} IDE — Aegis`
   }, [issueKey])
 
-  // Record visit for recent issues on landing page
   const recordVisit = useRecentStore((s) => s.recordVisit)
   useEffect(() => {
     recordVisit(issueKey, 'IDE Session', 'ide')
   }, [issueKey, recordVisit])
 
-  // Activate IDE-scope keyboard shortcut handling
   useShortcuts('ide')
 
-  // Register IDE-scoped shortcuts
   useEffect(() => {
     const unregisterSave = shortcutRegistry.register({
       key: 'mod+s',
       scope: 'ide',
       description: 'Save file',
-      action: () => {
-        // No-op — prevents browser save dialog. Actual save is handled
-        // by the VFS auto-save on change.
-      },
+      action: () => {},
     })
 
     const unregisterCloseTab = shortcutRegistry.register({
@@ -70,9 +46,7 @@ function IdePage() {
       description: 'Close active tab',
       action: () => {
         const { activeTab, closeTab } = useIDEStore.getState()
-        if (activeTab >= 0) {
-          closeTab(activeTab)
-        }
+        if (activeTab >= 0) closeTab(activeTab)
       },
     })
 
@@ -82,9 +56,7 @@ function IdePage() {
       description: 'Close diff view',
       action: () => {
         const { showDiff, toggleDiffView } = useIDEStore.getState()
-        if (showDiff) {
-          toggleDiffView()
-        }
+        if (showDiff) toggleDiffView()
       },
       when: () => useIDEStore.getState().showDiff,
     })
@@ -98,7 +70,6 @@ function IdePage() {
 
   const navigate = useNavigate()
 
-  // Subscribe to auth state changes so the IDE re-renders when GitHub is connected
   const [isGitHubConnected, setIsGitHubConnected] = useState(() => authManager.isConnected('github'))
   useEffect(() => {
     return authManager.onAuthChange(() => {
@@ -106,13 +77,13 @@ function IdePage() {
     })
   }, [])
 
-  const [vfs, setVfs] = useState<VirtualFileSystem | null>(null)
-  const [tree, setTree] = useState<TreeEntry[]>([])
-  const [branch, setBranch] = useState('')
-  const [baseBranch, setBaseBranch] = useState('')
-  const [repoKey, setRepoKey] = useState('')
+  const [workspace, setWorkspace] = useState<WorkspaceManager | null>(null)
+  const [repoKeys, setRepoKeys] = useState<string[]>([])
+  const [repoTrees, setRepoTrees] = useState<Map<string, TreeEntry[]>>(new Map())
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error] = useState<string | null>(null)
+
+  const branchName = `feature/${issueKey.toLowerCase()}-impl`
 
   useEffect(() => {
     if (!isGitHubConnected) {
@@ -120,47 +91,22 @@ function IdePage() {
       return
     }
 
-    let cancelled = false
+    const vfs = new VirtualFileSystem(githubClient)
+    const ws = new WorkspaceManager(vfs, issueKey)
+    setWorkspace(ws)
+    setIsLoading(false)
+  }, [issueKey, isGitHubConnected])
 
-    async function init() {
-      try {
-        const { owner, repo } = getRepoConfig(issueKey)
-        const key = `${owner}/${repo}`
-        const brName = branchName(issueKey)
-
-        const fs = new VirtualFileSystem(githubClient)
-
-        // Ensure branch exists (creates from default if needed)
-        await fs.ensureBranch(owner, repo, brName)
-
-        // Initialize the repo in the VFS
-        await fs.initRepo(owner, repo, brName)
-
-        if (cancelled) return
-
-        const repoInfo = await githubClient.getRepo(owner, repo)
-        const fileTree = fs.getTree(key)
-
-        setVfs(fs)
-        setTree(fileTree)
-        setBranch(brName)
-        setBaseBranch(repoInfo.defaultBranch)
-        setRepoKey(key)
-        setActiveRepo(key)
-        setIsLoading(false)
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to initialize IDE')
-          setIsLoading(false)
-        }
-      }
-    }
-
-    init()
-    return () => {
-      cancelled = true
-    }
-  }, [issueKey, setActiveRepo, isGitHubConnected])
+  const handleAddRepo = useCallback(
+    async (owner: string, repo: string) => {
+      if (!workspace) return
+      const repoKey = await workspace.addRepo(owner, repo)
+      setActiveRepo(repoKey)
+      setRepoKeys(workspace.getRepoKeys())
+      setRepoTrees(workspace.getAllTrees())
+    },
+    [workspace, setActiveRepo],
+  )
 
   if (!isGitHubConnected) {
     return (
@@ -180,15 +126,15 @@ function IdePage() {
   }
 
   if (isLoading) {
-    return <Loading className="h-full" message={`Initializing IDE for ${issueKey}...`} />
+    return <Loading className="h-full" message={`Initializing workspace for ${issueKey}...`} />
   }
 
-  if (error || !vfs) {
+  if (error || !workspace) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
         <AlertTriangle className="h-12 w-12 text-destructive" />
         <div className="text-center">
-          <h2 className="text-lg font-semibold text-foreground">IDE initialization failed</h2>
+          <h2 className="text-lg font-semibold text-foreground">Workspace initialization failed</h2>
           <p className="mt-1 text-sm text-muted-foreground">{error ?? 'Unknown error'}</p>
         </div>
       </div>
@@ -196,6 +142,13 @@ function IdePage() {
   }
 
   return (
-    <IDELayout vfs={vfs} repoKey={repoKey} tree={tree} issueKey={issueKey} branch={branch} baseBranch={baseBranch} />
+    <IDELayout
+      workspace={workspace}
+      issueKey={issueKey}
+      branch={branchName}
+      repoKeys={repoKeys}
+      repoTrees={repoTrees}
+      onAddRepo={handleAddRepo}
+    />
   )
 }

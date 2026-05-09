@@ -25,6 +25,13 @@ interface WellKnownConfig {
   mcp?: {
     defaultServers?: MCPDefaultServer[]
   }
+  skills?: {
+    defaultMarketplaces?: Array<{ id: string; source: string }>
+    defaultPlugins?: Array<{ id: string; source: string }>
+  }
+  devel?: {
+    enabled?: boolean
+  }
 }
 
 let wellKnownCache: WellKnownConfig | null = null
@@ -53,6 +60,10 @@ export function getWellKnownConfig(): WellKnownConfig {
 
 export function isWellKnownLoaded(): boolean {
   return wellKnownFetched
+}
+
+export function isDevelEnabled(): boolean {
+  return wellKnownCache?.devel?.enabled ?? false
 }
 
 /**

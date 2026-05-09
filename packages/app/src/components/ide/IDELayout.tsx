@@ -16,15 +16,15 @@ import { useCallback, useEffect, useState } from 'react'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Button } from '@/components/ui/button'
 import type { TreeEntry } from '@/lib/github/types'
+import type { WorkspaceManager } from '@/lib/ide/workspace'
 import { cn } from '@/lib/utils'
 import type { FileChange } from '@/lib/vfs/types'
-import type { VirtualFileSystem } from '@/lib/vfs/virtual-fs'
 import { useIDEStore } from '@/stores/ide'
 import { EditorTabs } from './EditorTabs'
-import { FileExplorer } from './FileExplorer'
 import { MonacoDiffView } from './MonacoDiffView'
 import { MonacoEditor } from './MonacoEditor'
 import { SourceControl } from './SourceControl'
+import { WorkspaceExplorer } from './WorkspaceExplorer'
 
 /** Tracks which file+repo the diff view is showing. */
 interface DiffTarget {
@@ -35,15 +35,16 @@ interface DiffTarget {
 }
 
 interface IDELayoutProps {
-  vfs: VirtualFileSystem
-  repoKey: string
-  tree: TreeEntry[]
+  workspace: WorkspaceManager
   issueKey: string
   branch: string
-  baseBranch: string
+  repoKeys: string[]
+  repoTrees: Map<string, TreeEntry[]>
+  onAddRepo: (owner: string, repo: string) => Promise<void>
 }
 
-export function IDELayout({ vfs, repoKey, tree, issueKey, branch, baseBranch }: IDELayoutProps) {
+export function IDELayout({ workspace, issueKey, branch, repoKeys, repoTrees, onAddRepo }: IDELayoutProps) {
+  const vfs = workspace.getVfs()
   const navigate = useNavigate()
   const { openTabs, activeTab, showDiff, openFile, toggleDiffView } = useIDEStore()
 
@@ -56,10 +57,10 @@ export function IDELayout({ vfs, repoKey, tree, issueKey, branch, baseBranch }: 
   // Current active tab info
   const currentTab = activeTab >= 0 && activeTab < openTabs.length ? openTabs[activeTab] : null
 
-  // Refresh the changes list
+  // Refresh the changes list across all workspace repos
   const refreshChanges = useCallback(() => {
-    setChanges(vfs.getChanges(repoKey))
-  }, [vfs, repoKey])
+    setChanges(vfs.getChanges())
+  }, [vfs])
 
   // Load file content when active tab changes
   useEffect(() => {
@@ -185,7 +186,7 @@ export function IDELayout({ vfs, repoKey, tree, issueKey, branch, baseBranch }: 
             Branch: <code className="rounded bg-muted px-1.5 py-0.5">{branch}</code>
           </span>
           <span>
-            Base: <code className="rounded bg-muted px-1.5 py-0.5">{baseBranch}</code>
+            {repoKeys.length} repo{repoKeys.length !== 1 ? 's' : ''}
           </span>
         </div>
       </div>
@@ -214,7 +215,7 @@ export function IDELayout({ vfs, repoKey, tree, issueKey, branch, baseBranch }: 
             'lg:block',
           )}
         >
-          <FileExplorer repoKey={repoKey} tree={tree} />
+          <WorkspaceExplorer issueKey={issueKey} repoKeys={repoKeys} repoTrees={repoTrees} onAddRepo={onAddRepo} />
         </div>
 
         {/* Center panel -- Editor */}
@@ -234,7 +235,7 @@ export function IDELayout({ vfs, repoKey, tree, issueKey, branch, baseBranch }: 
               ) : (
                 <MonacoEditor path={currentTab.path} content={fileContent} repoKey={currentTab.repoKey} vfs={vfs} />
               )
-            ) : tree.length === 0 ? (
+            ) : repoKeys.length === 0 ? (
               <div className="flex h-full items-center justify-center p-8">
                 <EmptyState
                   variant="auth-required"
@@ -266,7 +267,6 @@ export function IDELayout({ vfs, repoKey, tree, issueKey, branch, baseBranch }: 
       {/* Bottom panel -- Source Control */}
       <SourceControl
         changes={changes}
-        repoKey={repoKey}
         onCommit={handleCommit}
         onCreatePR={handleCreatePR}
         onFileClick={handleSourceControlFileClick}

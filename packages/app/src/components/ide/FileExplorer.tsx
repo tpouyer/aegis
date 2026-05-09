@@ -8,7 +8,6 @@
 
 import { ChevronDown, ChevronRight, File, Folder, FolderOpen } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import type { TreeEntry } from '@/lib/github/types'
 import { cn } from '@/lib/utils'
 import { useIDEStore } from '@/stores/ide'
@@ -133,25 +132,11 @@ function TreeItem({ node, repoKey, depth }: TreeItemProps) {
 export function FileExplorer({ repoKey, tree }: FileExplorerProps) {
   const nodes = useMemo(() => buildTree(tree), [tree])
 
-  const repoName = repoKey.split('/').pop() ?? repoKey
-
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <Folder className="h-4 w-4 text-muted-foreground" />
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Explorer</span>
-      </div>
-      <ScrollArea className="flex-1">
-        <div className="p-1" role="tree" aria-label="File explorer">
-          <div className="mb-1 flex items-center gap-1 px-1 py-0.5">
-            <FolderOpen className="h-4 w-4 text-blue-400" />
-            <span className="text-sm font-medium text-foreground">{repoName}</span>
-          </div>
-          {nodes.map((node) => (
-            <TreeItem key={node.path} node={node} repoKey={repoKey} depth={1} />
-          ))}
-        </div>
-      </ScrollArea>
+    <div className="pl-2" role="tree" aria-label={`Files in ${repoKey}`}>
+      {nodes.map((node) => (
+        <TreeItem key={node.path} node={node} repoKey={repoKey} depth={1} />
+      ))}
     </div>
   )
 }

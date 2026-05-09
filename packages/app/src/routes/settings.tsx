@@ -71,9 +71,11 @@ function useAuthState(): AuthState {
 import { initJiraClient } from '@/lib/jira/client'
 import { mcpManager } from '@/lib/mcp/manager'
 import type { MCPConnection } from '@/lib/mcp/types'
+import { skillManager } from '@/lib/skills/manager'
 import { useJiraConfigStore } from '@/stores/jira-config'
 import { type MCPServerConfig, useMCPConfigStore } from '@/stores/mcp-config'
 import { PERSONA_DESCRIPTIONS, PERSONA_LABELS, type PersonaRole, usePersonaStore } from '@/stores/persona'
+import { useSkillsConfigStore } from '@/stores/skills-config'
 import { useTelemetryStore } from '@/stores/telemetry'
 import { useThemeStore } from '@/stores/theme'
 
@@ -465,6 +467,178 @@ function MCPServersSection() {
   )
 }
 
+function SkillsSection() {
+  const { plugins, marketplaces, addPlugin, removePlugin, togglePlugin, addMarketplace, removeMarketplace } =
+    useSkillsConfigStore()
+  const [addingPlugin, setAddingPlugin] = useState(false)
+  const [pluginRepoInput, setPluginRepoInput] = useState('')
+  const [addingMarketplace, setAddingMarketplace] = useState(false)
+  const [marketplaceName, setMarketplaceName] = useState('')
+  const [marketplaceSource, setMarketplaceSource] = useState('')
+
+  const handleAddPlugin = useCallback(() => {
+    const trimmed = pluginRepoInput.trim()
+    if (!trimmed) return
+    const id = trimmed.split('/').pop() ?? trimmed
+    addPlugin({ id, name: id, source: trimmed, enabled: true, isDefault: false })
+    skillManager.loadPlugin(id).catch(() => {})
+    setPluginRepoInput('')
+    setAddingPlugin(false)
+  }, [pluginRepoInput, addPlugin])
+
+  const handleAddMarketplace = useCallback(() => {
+    if (!marketplaceName.trim() || !marketplaceSource.trim()) return
+    addMarketplace({ id: marketplaceName.trim(), source: marketplaceSource.trim(), enabled: true })
+    setMarketplaceName('')
+    setMarketplaceSource('')
+    setAddingMarketplace(false)
+  }, [marketplaceName, marketplaceSource, addMarketplace])
+
+  const handleRemovePlugin = useCallback(
+    (id: string) => {
+      skillManager.unloadPlugin(id)
+      removePlugin(id)
+    },
+    [removePlugin],
+  )
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5" />
+          Skills & Plugins
+        </CardTitle>
+        <CardDescription>Add skills from git repos or plugin marketplaces.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {plugins.length === 0 && marketplaces.length === 0 && !addingPlugin && !addingMarketplace && (
+          <p className="text-sm text-muted-foreground">No plugins or marketplaces configured.</p>
+        )}
+
+        {marketplaces.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Marketplaces</p>
+            {marketplaces.map((m) => (
+              <div key={m.id} className="mb-1 flex items-center justify-between rounded-lg border border-border p-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{m.id}</p>
+                  <p className="max-w-xs truncate text-xs text-muted-foreground">
+                    {typeof m.source === 'string' ? m.source : 'configured'}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeMarketplace(m.id)}
+                  aria-label="Remove marketplace"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {plugins.length > 0 && (
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Installed Plugins</p>
+            {plugins.map((p) => (
+              <div key={p.id} className="mb-1 flex items-center justify-between rounded-lg border border-border p-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{p.name}</p>
+                  {p.description && <p className="text-xs text-muted-foreground">{p.description}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant={p.enabled ? 'default' : 'outline'} size="sm" onClick={() => togglePlugin(p.id)}>
+                    {p.enabled ? 'Enabled' : 'Disabled'}
+                  </Button>
+                  {!p.isDefault && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemovePlugin(p.id)}
+                      aria-label="Remove plugin"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {addingPlugin && (
+          <div className="space-y-2 rounded-md border border-border bg-muted/30 p-4">
+            <p className="text-xs font-medium text-foreground">Add Plugin from Git</p>
+            <Input
+              placeholder="owner/repo or https://github.com/owner/repo"
+              value={pluginRepoInput}
+              onChange={(e) => setPluginRepoInput(e.target.value)}
+              aria-label="Plugin repository"
+              className="text-sm"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleAddPlugin} disabled={!pluginRepoInput.trim()}>
+                Add
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setAddingPlugin(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {addingMarketplace && (
+          <div className="space-y-2 rounded-md border border-border bg-muted/30 p-4">
+            <p className="text-xs font-medium text-foreground">Add Marketplace</p>
+            <Input
+              placeholder="Marketplace name"
+              value={marketplaceName}
+              onChange={(e) => setMarketplaceName(e.target.value)}
+              aria-label="Marketplace name"
+              className="text-sm"
+            />
+            <Input
+              placeholder="owner/repo or https://github.com/owner/repo"
+              value={marketplaceSource}
+              onChange={(e) => setMarketplaceSource(e.target.value)}
+              aria-label="Marketplace source"
+              className="text-sm"
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleAddMarketplace}
+                disabled={!marketplaceName.trim() || !marketplaceSource.trim()}
+              >
+                Add
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setAddingMarketplace(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!addingPlugin && !addingMarketplace && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setAddingPlugin(true)}>
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Add Plugin
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setAddingMarketplace(true)}>
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Add Marketplace
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 function LLMProviderSection() {
   const [defaultProvider, setDefaultProvider] = useState<LLMProvider | undefined>(() =>
     providerRegistry.getDefaultProvider(),
@@ -752,6 +926,8 @@ function SettingsPage() {
           <AuthConnectionsSection />
           <Separator />
           <MCPServersSection />
+          <Separator />
+          <SkillsSection />
           <Separator />
           <LLMProviderSection />
         </TabsContent>
