@@ -1,3 +1,4 @@
+import { recordMcpConnectionStart, recordMcpToolCallStart } from '@/lib/telemetry/instruments/mcp'
 import type { MCPServerConfig } from '@/stores/mcp-config'
 import type {
   JSONRPCRequest,
@@ -77,6 +78,8 @@ export async function connect(config: MCPServerConfig): Promise<MCPConnection> {
     status: 'connecting',
   }
 
+  const metric = recordMcpConnectionStart(config.id, config.name)
+
   try {
     log('initializing connection to %s (%s)', config.name, config.url)
 
@@ -115,10 +118,12 @@ export async function connect(config: MCPServerConfig): Promise<MCPConnection> {
     const toolsResult = toolsJson.result as { tools: MCPToolInfo[] }
     conn.tools = toolsResult.tools ?? []
     conn.status = 'connected'
+    metric.success(conn.tools.length)
     log('discovered %d tools from %s', conn.tools.length, config.name)
   } catch (err) {
     conn.status = 'error'
     conn.error = err instanceof Error ? err.message : String(err)
+    metric.error(conn.error)
     log('connection failed: %s', conn.error)
   }
 
@@ -144,8 +149,15 @@ export async function callTool(
   }
 
   log('calling tool %s on %s', toolName, connection.serverName)
-  const { json } = await sendRequest(config.url, req, headers)
-  return json.result as MCPToolCallResult
+  const toolMetric = recordMcpToolCallStart(connection.serverId, toolName)
+  try {
+    const { json } = await sendRequest(config.url, req, headers)
+    toolMetric.end()
+    return json.result as MCPToolCallResult
+  } catch (err) {
+    toolMetric.error(err instanceof Error ? err.message : String(err))
+    throw err
+  }
 }
 
 export async function disconnect(config: MCPServerConfig, connection: MCPConnection): Promise<void> {

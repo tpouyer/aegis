@@ -310,6 +310,12 @@ async function cacheFirst(request) {
     if (response.ok) {
       const cache = await caches.open(STATIC_CACHE);
       cache.put(request, response.clone());
+      return response;
+    }
+    // Non-OK response for navigation → serve index.html (SPA routing)
+    if (request.mode === 'navigate') {
+      const fallback = await caches.match('/index.html');
+      if (fallback) return fallback;
     }
     return response;
   } catch {

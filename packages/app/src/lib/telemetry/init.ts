@@ -3,8 +3,9 @@ import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http'
 import { resourceFromAttributes } from '@opentelemetry/resources'
 import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
-import { getTelemetryConfig, loadWellKnownConfig } from './config'
+import { getTelemetryConfig, isDevelEnabled, loadWellKnownConfig } from './config'
 import { ConsoleMetricExporter } from './exporters/console'
+import { DashboardMetricExporter } from './exporters/dashboard'
 import { resetMeters } from './meters'
 
 let _meterProvider: MeterProvider | null = null
@@ -28,6 +29,16 @@ function createProvider(): () => void {
       new PeriodicExportingMetricReader({
         exporter: new ConsoleMetricExporter(),
         exportIntervalMillis: 15_000,
+      }),
+    )
+  }
+
+  if (isDevelEnabled()) {
+    console.debug('[telemetry] devel dashboard exporter enabled (5s interval)')
+    readers.push(
+      new PeriodicExportingMetricReader({
+        exporter: new DashboardMetricExporter(),
+        exportIntervalMillis: 5_000,
       }),
     )
   }

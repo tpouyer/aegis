@@ -1,4 +1,5 @@
 import type { ToolDefinition, ToolResult } from '@/lib/llm/types'
+import { recordMcpDisconnect } from '@/lib/telemetry/instruments/mcp'
 import type { MCPServerConfig } from '@/stores/mcp-config'
 import { useMCPConfigStore } from '@/stores/mcp-config'
 import * as mcpClient from './client'
@@ -50,6 +51,7 @@ class MCPConnectionManager {
     const config = this.configs.get(serverId)
     if (connection && config) {
       await mcpClient.disconnect(config, connection)
+      recordMcpDisconnect(serverId)
     }
     this.connections.delete(serverId)
     this.configs.delete(serverId)

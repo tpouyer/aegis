@@ -30,6 +30,7 @@ import { authManager } from '@/lib/auth/manager'
 import { getJiraClient } from '@/lib/jira/client'
 import { useBoard, useBoards, useIssues, useTransitionMutation } from '@/lib/jira/queries'
 import type { BoardColumn, JiraTransition } from '@/lib/jira/types'
+import { recordBoardViewLoad } from '@/lib/telemetry/instruments/board'
 import { useBoardStore } from '@/stores/board'
 import { useBoardPrefsStore } from '@/stores/board-prefs'
 import { toast } from '@/stores/toast'
@@ -185,6 +186,7 @@ export function BoardView({ boardId }: BoardViewProps) {
     if (!boardConfig) return
     const board = allBoards?.find((b) => b.id === boardId)
     useBoardPrefsStore.getState().setLastBoard(boardId, boardConfig.name, board?.location?.projectKey)
+    recordBoardViewLoad(boardId, board?.type ?? 'unknown')
   }, [boardId, boardConfig, allBoards])
 
   // Build columns from board config and issues
