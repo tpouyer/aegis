@@ -1,10 +1,8 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { AlertTriangle, Github } from 'lucide-react'
+import { createFileRoute } from '@tanstack/react-router'
+import { AlertTriangle } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { IDELayout } from '@/components/ide/IDELayout'
-import { EmptyState } from '@/components/shared/EmptyState'
 import { Loading } from '@/components/shared/Loading'
-import { authManager } from '@/lib/auth/manager'
 import { githubClient } from '@/lib/github/client'
 import type { TreeEntry } from '@/lib/github/types'
 import { WorkspaceManager } from '@/lib/ide/workspace'
@@ -68,15 +66,6 @@ function IdePage() {
     }
   }, [])
 
-  const navigate = useNavigate()
-
-  const [isGitHubConnected, setIsGitHubConnected] = useState(() => !!authManager.getState().tokens.github?.accessToken)
-  useEffect(() => {
-    return authManager.onAuthChange(() => {
-      setIsGitHubConnected(!!authManager.getState().tokens.github?.accessToken)
-    })
-  }, [])
-
   const [workspace, setWorkspace] = useState<WorkspaceManager | null>(null)
   const [repoKeys, setRepoKeys] = useState<string[]>([])
   const [repoTrees, setRepoTrees] = useState<Map<string, TreeEntry[]>>(new Map())
@@ -86,16 +75,11 @@ function IdePage() {
   const branchName = `feature/${issueKey.toLowerCase()}-impl`
 
   useEffect(() => {
-    if (!isGitHubConnected) {
-      setIsLoading(false)
-      return
-    }
-
     const vfs = new VirtualFileSystem(githubClient)
     const ws = new WorkspaceManager(vfs, issueKey)
     setWorkspace(ws)
     setIsLoading(false)
-  }, [issueKey, isGitHubConnected])
+  }, [issueKey])
 
   const handleAddRepo = useCallback(
     async (owner: string, repo: string) => {
@@ -107,23 +91,6 @@ function IdePage() {
     },
     [workspace, setActiveRepo],
   )
-
-  if (!isGitHubConnected) {
-    return (
-      <div className="flex h-full items-center justify-center p-8">
-        <EmptyState
-          variant="auth-required"
-          icon={Github}
-          title="Connect GitHub to use the IDE"
-          description="The web IDE needs access to your GitHub repositories. Connect your GitHub account in Settings."
-          action={{
-            label: 'Go to Settings',
-            onClick: () => navigate({ to: '/settings' }),
-          }}
-        />
-      </div>
-    )
-  }
 
   if (isLoading) {
     return <Loading className="h-full" message={`Initializing workspace for ${issueKey}...`} />
